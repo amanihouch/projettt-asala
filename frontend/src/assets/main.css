@@ -1,0 +1,12 @@
+/* frontend/src/assets/main.css */
+/* Styles globaux de l'application */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Cairo', sans-serif;
+  direction: rtl;
+}

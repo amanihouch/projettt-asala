@@ -1,0 +1,211 @@
+/* src/assets/colors.css */
+:root {
+  /* ===== COULEURS DE BASE ===== */
+
+  /* Blancs & Gris (Niveaux de gris organiques) */
+  --color-sand-50: #faf9f7;
+  --color-sand-100: #f4f2ef;
+  --color-sand-200: #e9e6e0;
+  --color-sand-300: #d8d3c9;
+  --color-sand-400: #b8b1a2;
+  --color-sand-500: #9c927f;
+  --color-sand-600: #7a705d;
+  --color-sand-700: #5c5443;
+  --color-sand-800: #3e392d;
+  --color-sand-900: #27231a;
+
+  /* Bleu Méditerranéen (Inspiré de la mer Tunisienne) */
+  --color-sea-50: #eff8ff;
+  --color-sea-100: #dbeefe;
+  --color-sea-200: #c0e2fd;
+  --color-sea-300: #94d1fb;
+  --color-sea-400: #61b8f7;
+  --color-sea-500: #3b9ef1;
+  --color-sea-600: #2582e6;
+  --color-sea-700: #1d6bd3;
+  --color-sea-800: #1e56ab;
+  --color-sea-900: #1e4a87;
+
+  /* Terre cuite (Inspiré de la poterie tunisienne) */
+  --color-terracotta-50: #fef6f2;
+  --color-terracotta-100: #fdeadf;
+  --color-terracotta-200: #fbd0c1;
+  --color-terracotta-300: #f6ac99;
+  --color-terracotta-400: #f07e6a;
+  --color-terracotta-500: #e85c45;
+  --color-terracotta-600: #d4432b;
+  --color-terracotta-700: #b13522;
+  --color-terracotta-800: #912f21;
+  --color-terracotta-900: #772a20;
+
+  /* Or Sfaxien (Inspiré des bijoux tunisiens) */
+  --color-gold-50: #fffce6;
+  --color-gold-100: #fff8cc;
+  --color-gold-200: #fff099;
+  --color-gold-300: #ffe566;
+  --color-gold-400: #ffd633;
+  --color-gold-500: #ffc107;
+  --color-gold-600: #e6a800;
+  --color-gold-700: #bf8b00;
+  --color-gold-800: #997000;
+  --color-gold-900: #735600;
+
+  /* Vert Olive (Inspiré des oliviers) */
+  --color-olive-50: #f7f9f2;
+  --color-olive-100: #ecf0e3;
+  --color-olive-200: #d6dfc4;
+  --color-olive-300: #b8ca9a;
+  --color-olive-400: #99b26e;
+  --color-olive-500: #7d9b4a;
+  --color-olive-600: #628037;
+  --color-olive-700: #4c662b;
+  --color-olive-800: #3c5124;
+  --color-olive-900: #32411f;
+
+  /* Violet Jasmin (Inspiré du jasmin tunisien) */
+  --color-jasmine-50: #f9f6fe;
+  --color-jasmine-100: #f0eafd;
+  --color-jasmine-200: #e2d6fb;
+  --color-jasmine-300: #ccb6f7;
+  --color-jasmine-400: #b28cf1;
+  --color-jasmine-500: #9966e8;
+  --color-jasmine-600: #8347db;
+  --color-jasmine-700: #6f37c1;
+  --color-jasmine-800: #5c2e9e;
+  --color-jasmine-900: #4d287f;
+
+  /* ===== COULEURS SÉMANTIQUES ===== */
+
+  /* Primaires */
+  --color-primary: var(--color-sea-600); /* Bleu principal */
+  --color-primary-light: var(--color-sea-400); /* Bleu clair */
+  --color-primary-dark: var(--color-sea-800); /* Bleu foncé */
+
+  /* Secondaires */
+  --color-secondary: var(--color-terracotta-600); /* Terre cuite */
+  --color-secondary-light: var(--color-terracotta-400);
+  --color-secondary-dark: var(--color-terracotta-800);
+
+  /* Accents */
+  --color-accent: var(--color-gold-500); /* Or */
+  --color-accent-light: var(--color-gold-300);
+  --color-accent-dark: var(--color-gold-700);
+
+  /* Neutres (pour textes et arrière-plans) */
+  --color-neutral-50: var(--color-sand-50);
+  --color-neutral-100: var(--color-sand-100);
+  --color-neutral-200: var(--color-sand-200);
+  --color-neutral-300: var(--color-sand-300);
+  --color-neutral-400: var(--color-sand-400);
+  --color-neutral-500: var(--color-sand-500);
+  --color-neutral-600: var(--color-sand-600);
+  --color-neutral-700: var(--color-sand-700);
+  --color-neutral-800: var(--color-sand-800);
+  --color-neutral-900: var(--color-sand-900);
+
+  /* Succès/Échecs/Alertes */
+  --color-success: var(--color-olive-600);
+  --color-warning: var(--color-gold-600);
+  --color-error: var(--color-terracotta-600);
+  --color-info: var(--color-sea-600);
+
+  /* ===== DÉGRADÉS ===== */
+  --gradient-sea: linear-gradient(135deg, var(--color-sea-400), var(--color-sea-700));
+  --gradient-terracotta: linear-gradient(
+    135deg,
+    var(--color-terracotta-400),
+    var(--color-terracotta-700)
+  );
+  --gradient-gold: linear-gradient(135deg, var(--color-gold-400), var(--color-gold-700));
+  --gradient-olive: linear-gradient(135deg, var(--color-olive-400), var(--color-olive-700));
+  --gradient-jasmine: linear-gradient(135deg, var(--color-jasmine-400), var(--color-jasmine-700));
+
+  --gradient-hero: linear-gradient(
+    135deg,
+    var(--color-sea-800) 0%,
+    var(--color-terracotta-700) 100%
+  );
+  --gradient-card: linear-gradient(
+    135deg,
+    var(--color-neutral-50) 0%,
+    var(--color-neutral-100) 100%
+  );
+  --gradient-overlay: linear-gradient(
+    180deg,
+    rgba(30, 58, 138, 0.9) 0%,
+    rgba(155, 107, 41, 0.7) 100%
+  );
+
+  /* ===== TYPOGRAPHIE ===== */
+  --font-arabic: 'Tajawal', 'Cairo', 'Noto Naskh Arabic', sans-serif;
+  --font-latin: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'Amiri', 'Scheherazade New', serif;
+
+  /* ===== ESPACEMENT ===== */
+  --space-0: 0;
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
+  --space-10: 2.5rem; /* 40px */
+  --space-12: 3rem; /* 48px */
+  --space-16: 4rem; /* 64px */
+  --space-20: 5rem; /* 80px */
+  --space-24: 6rem; /* 96px */
+
+  /* ===== BORDS ===== */
+  --radius-sm: 0.25rem; /* 4px */
+  --radius-md: 0.5rem; /* 8px */
+  --radius-lg: 0.75rem; /* 12px */
+  --radius-xl: 1rem; /* 16px */
+  --radius-2xl: 1.5rem; /* 24px */
+  --radius-full: 9999px;
+
+  /* ===== OMBRES ===== */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* ===== TRANSITIONS ===== */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== Z-INDEX ===== */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal: 1040;
+  --z-popover: 1050;
+  --z-toast: 1060;
+}
+
+/* Mode sombre */
+[data-theme='dark'],
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Inversion des neutres */
+    --color-neutral-50: var(--color-sand-900);
+    --color-neutral-100: var(--color-sand-800);
+    --color-neutral-200: var(--color-sand-700);
+    --color-neutral-300: var(--color-sand-600);
+    --color-neutral-400: var(--color-sand-500);
+    --color-neutral-500: var(--color-sand-400);
+    --color-neutral-600: var(--color-sand-300);
+    --color-neutral-700: var(--color-sand-200);
+    --color-neutral-800: var(--color-sand-100);
+    --color-neutral-900: var(--color-sand-50);
+
+    /* Ajustement des couleurs pour le mode sombre */
+    --color-primary: var(--color-sea-400);
+    --color-primary-dark: var(--color-sea-300);
+    --color-secondary: var(--color-terracotta-400);
+    --color-accent: var(--color-gold-400);
+  }
+}
