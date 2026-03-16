@@ -1,15 +1,25 @@
-// backend/src/routes/admin/index.js
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../../middleware/auth');
-const { admin } = require('../../middleware/admin');
-const dashboardController = require('../../controllers/admin/DashboardController');
 
-// Toutes les routes admin nécessitent authentification et rôle admin
-router.use(protect);
-router.use(admin);
+// Import des sous-routes
+const userRoutes = require('./users');
+const vendorRoutes = require('./vendors');
+const productRoutes = require('./products');
+const orderRoutes = require('./orders');
+const postRoutes = require('./posts');    // ✅ Assurez-vous que cette ligne existe
+const categoryRoutes = require('./categories');
 
-// Dashboard
-router.get('/dashboard', dashboardController.getDashboardStats);
+// Montage des routes
+router.use('/users', userRoutes);
+router.use('/vendors', vendorRoutes);
+router.use('/products', productRoutes);
+router.use('/orders', orderRoutes);
+router.use('/posts', postRoutes);          // ✅ Et celle-ci
+router.use('/categories', categoryRoutes);
+
+// Route dashboard
+router.get('/dashboard', (req, res) => {
+  res.json({ success: true, data: { message: 'Admin dashboard' } });
+});
 
 module.exports = router;
