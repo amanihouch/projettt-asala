@@ -13,13 +13,13 @@ export const useLikesStore = defineStore('likes', () => {
   // Charger depuis le backend
   const loadFromBackend = async () => {
     if (!authStore.isAuthenticated) return;
-    
+
     loading.value = true;
     try {
       const response = await api.get('/users/likes').catch(() => null);
       if (response && response.data.data.likes) {
         const likedProducts = response.data.data.likes || [];
-        
+
         likedProductsMap.value.clear();
         likedProducts.forEach(like => {
           likedProductsMap.value.set(like.productId, {
@@ -85,7 +85,7 @@ export const useLikesStore = defineStore('likes', () => {
     if (likedProductsMap.value.has(productId)) {
       // Unlike
       likedProductsMap.value.delete(productId);
-      
+
       if (authStore.isAuthenticated) {
         try {
           await api.delete(`/users/likes/${productId}`).catch(() => {});
@@ -101,7 +101,7 @@ export const useLikesStore = defineStore('likes', () => {
           ...productData,
           likedAt: new Date().toISOString(),
         });
-        
+
         if (authStore.isAuthenticated) {
           try {
             await api.post(`/users/likes/${productId}`).catch(() => {});
@@ -125,7 +125,7 @@ export const useLikesStore = defineStore('likes', () => {
         ...product,
         likedAt: new Date().toISOString(),
       });
-      
+
       if (authStore.isAuthenticated) {
         try {
           await api.post(`/users/likes/${productId}`).catch(() => {});
@@ -133,7 +133,7 @@ export const useLikesStore = defineStore('likes', () => {
           console.error('Error adding like:', error);
         }
       }
-      
+
       saveToStorage();
     }
   };
@@ -142,7 +142,7 @@ export const useLikesStore = defineStore('likes', () => {
   const removeLike = async (productId) => {
     if (likedProductsMap.value.has(productId)) {
       likedProductsMap.value.delete(productId);
-      
+
       if (authStore.isAuthenticated) {
         try {
           await api.delete(`/users/likes/${productId}`).catch(() => {});
@@ -150,7 +150,7 @@ export const useLikesStore = defineStore('likes', () => {
           console.error('Error removing like:', error);
         }
       }
-      
+
       saveToStorage();
     }
   };
@@ -158,7 +158,7 @@ export const useLikesStore = defineStore('likes', () => {
   // Clear all likes
   const clearAllLikes = async () => {
     likedProductsMap.value.clear();
-    
+
     if (authStore.isAuthenticated) {
       try {
         await api.delete('/users/likes').catch(() => {});
@@ -166,7 +166,7 @@ export const useLikesStore = defineStore('likes', () => {
         console.error('Error clearing likes:', error);
       }
     }
-    
+
     saveToStorage();
   };
 

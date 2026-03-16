@@ -1,4 +1,3 @@
-<!-- frontend/src/components/Header.vue -->
 <template>
   <header
     class="header"
@@ -97,7 +96,7 @@
                       @click="showCategories = false"
                     >
                       <span class="category-icon">{{ category.icon }}</span>
-                      <span class="category-name">{{ category.name }}</span>
+                      <span class="category-name">{{ currentLanguage === 'ar' ? category.name : category.nameFr }}</span>
                       <span class="category-count">{{ category.count }}</span>
                     </router-link>
                   </div>
@@ -191,26 +190,27 @@
                       <span class="item-text">{{ t('common.profile') }}</span>
                     </router-link>
 
-                    <!-- Pour les vendeurs -->
-                    <router-link
-                      v-if="userRole === 'vendor'"
-                      :to="`/vendor/${userId}`"
-                      class="dropdown-item modern-item"
-                      @click="closeUserMenu"
-                    >
-                      <div class="item-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                          <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.5" />
-                          <path
-                            d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
-                            stroke="currentColor"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                          />
-                        </svg>
-                      </div>
-                      <span class="item-text">{{ t('vendor.shop') }}</span>
-                    </router-link>
+                    <!-- ✅ CORRECTION: Lien vers le profil vendeur avec l'ID dynamique -->
+                    <!-- ✅ Ce lien est correct, il utilise vendorProfileId -->
+<router-link
+  v-if="userRole === 'vendor'"
+  :to="`/vendor/${vendorProfileId}`"
+  class="dropdown-item modern-item"
+  @click="closeUserMenu"
+>
+  <div class="item-icon">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.5" />
+      <path
+        d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+      />
+    </svg>
+  </div>
+  <span class="item-text">{{ t('vendor.shop') }}</span>
+</router-link>
 
                     <!-- Commandes pour tous -->
                     <router-link
@@ -312,7 +312,7 @@
                   @click="closeMobileMenu"
                 >
                   <span class="category-icon">{{ category.icon }}</span>
-                  <span class="category-name">{{ category.name }}</span>
+                  <span class="category-name">{{ currentLanguage === 'ar' ? category.name : category.nameFr }}</span>
                   <span class="category-count">{{ category.count }}</span>
                 </router-link>
               </div>
@@ -338,10 +338,10 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useCartStore } from '../stores/cart';
 import { useLikesStore } from '../stores/likes';
-import { useAuthStore } from '../stores/auth';
+import { useAuthStore } from '../stores/auth'; // ✅ Correction: authStore
 
 const router = useRouter();
-const { t, locale } = useI18n(); // ← CORRECTION: utiliser useI18n() au lieu de useI18n
+const { t, locale } = useI18n();
 const cartStore = useCartStore();
 const likesStore = useLikesStore();
 const authStore = useAuthStore();
@@ -381,9 +381,21 @@ const userName = computed(() => authStore.userName || 'User');
 const userEmail = computed(() => authStore.userEmail || '');
 const userRole = computed(() => authStore.userRole);
 const userId = computed(() => authStore.userId);
+const userVendorId = computed(() => authStore.userVendorId); // ✅ ID du vendeur
 const userInitials = computed(() => {
   const name = userName.value;
   return name ? name.charAt(0).toUpperCase() : 'U';
+});
+
+// ✅ L'ID à utiliser pour le lien "متجري"
+
+const vendorProfileId = computed(() => {
+  if (userRole.value === 'vendor') {
+    // Essayer d'abord le store, puis localStorage
+    const vendorId = userVendorId.value || localStorage.getItem('vendorId');
+    return vendorId || userId.value;
+  }
+  return userId.value;
 });
 
 // Methods
@@ -401,9 +413,9 @@ const toggleWishlist = () => {
 
 const performSearch = () => {
   if (searchQuery.value.trim()) {
-    router.push({ 
-      path: '/products', 
-      query: { search: searchQuery.value } 
+    router.push({
+      path: '/products',
+      query: { search: searchQuery.value }
     });
   }
 };
@@ -484,6 +496,11 @@ onMounted(() => {
   router.afterEach(handleRouteChange);
   likesStore.loadFromStorage();
   cartStore.loadFromStorage();
+
+  // ✅ Debug: voir les IDs
+  console.log('👤 User ID:', userId.value);
+  console.log('🏪 Vendor ID:', userVendorId.value);
+  console.log('🔗 Lien vers:', vendorProfileId.value);
 });
 
 onUnmounted(() => {
@@ -1332,6 +1349,7 @@ onUnmounted(() => {
     height: 40px;
     min-width: 100px;
     margin-right: 5px;
+
   }
 
   .logo-image {

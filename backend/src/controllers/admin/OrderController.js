@@ -1,32 +1,28 @@
 // backend/src/controllers/admin/OrderController.js
 const Order = require('../../models/Order');
+const db = require('../../models/db');
 
-// @desc    Obtenir toutes les commandes
-// @route   GET /api/v1/admin/orders
-// @access  Private/Admin
+// ===== RÉCUPÉRER TOUTES LES COMMANDES =====
 exports.getAllOrders = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search, status, fromDate, toDate } = req.query;
+    const { page = 1, limit = 20, status = '', search = '' } = req.query;
 
-    const result = await Order.getAll({ page, limit, search, status, fromDate, toDate });
+    const result = await Order.getAll({ page, limit, status, search });
 
     res.json({
       success: true,
       data: result
     });
   } catch (error) {
-    console.error('❌ Erreur getOrders:', error);
+    console.error('❌ Erreur admin getAllOrders:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors du chargement des commandes',
-      error: error.message
+      message: error.message
     });
   }
 };
 
-// @desc    Obtenir une commande par ID
-// @route   GET /api/v1/admin/orders/:id
-// @access  Private/Admin
+// ===== RÉCUPÉRER UNE COMMANDE =====
 exports.getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -43,61 +39,66 @@ exports.getOrderById = async (req, res) => {
       data: { order }
     });
   } catch (error) {
-    console.error('❌ Erreur getOrderById:', error);
+    console.error('❌ Erreur admin getOrderById:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors du chargement de la commande',
-      error: error.message
+      message: error.message
     });
   }
 };
 
-// @desc    Mettre à jour le statut d'une commande
-// @route   PATCH /api/v1/admin/orders/:id/status
-// @access  Private/Admin
+// ===== METTRE À JOUR LE STATUT =====
 exports.updateOrderStatus = async (req, res) => {
   try {
-    const { status, trackingNumber, notes, cancellationReason } = req.body;
+    const { status, trackingNumber, notes } = req.body;
 
-    const order = await Order.updateStatus(req.params.id, {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Commande non trouvée'
+      });
+    }
+
+    const updated = await Order.updateStatus(req.params.id, {
       status,
       trackingNumber,
-      notes,
-      cancellationReason
+      notes
     });
 
     res.json({
       success: true,
-      message: 'Statut de la commande mis à jour',
-      data: { order }
+      message: 'Statut mis à jour avec succès',
+      data: { order: updated }
     });
   } catch (error) {
-    console.error('❌ Erreur updateOrderStatus:', error);
+    console.error('❌ Erreur admin updateOrderStatus:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la mise à jour',
-      error: error.message
+      message: error.message
     });
   }
 };
 
-// @desc    Supprimer une commande
-// @route   DELETE /api/v1/admin/orders/:id
-// @access  Private/Admin
-exports.deleteOrder = async (req, res) => {
+// ===== STATISTIQUES DES COMMANDES =====
+exports.getOrderStats = async (req, res) => {
   try {
-    await Order.delete(req.params.id);
+    const stats = await Order.getStats();
+
+    const recent = await Order.getRecent(5);
 
     res.json({
       success: true,
-      message: 'Commande supprimée avec succès'
+      data: {
+        stats,
+        recent
+      }
     });
   } catch (error) {
-    console.error('❌ Erreur deleteOrder:', error);
+    console.error('❌ Erreur admin getOrderStats:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Erreur lors de la suppression',
-      error: error.message
+      message: error.message
     });
   }
 };

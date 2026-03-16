@@ -1,38 +1,46 @@
+// backend/src/models/Vendor.js
 const db = require('./db');
 
 const Vendor = {
   // ===== CRÉER UN VENDEUR =====
   async create(vendorData) {
     const {
-      userId, shopName, description, specialty, location,
-      coverImage, facebookUrl, instagramUrl, websiteUrl,
+      userId, shopName, specialty, description, location,
+      coverImage, experience, totalProducts
     } = vendorData;
 
-    const socialLinks = {};
-    if (facebookUrl) socialLinks.facebook = facebookUrl;
-    if (instagramUrl) socialLinks.instagram = instagramUrl;
-    if (websiteUrl) socialLinks.website = websiteUrl;
+    console.log('📝 Création vendeur avec données:', { userId, shopName, specialty });
 
+    // Requête SQL avec les bonnes colonnes de votre schema.sql
     const sql = `
-      INSERT INTO vendors
-      (userId, shopName, description, specialty, location,
-       coverImage, socialLinks)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO vendors 
+      (userId, shopName, specialty, description, location, coverImage, 
+       verified, followers, rating, totalProducts, experience, isActive)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    const vendorId = await db.insert(sql, [
+    const params = [
       userId,
       shopName,
-      description,
-      specialty,
-      location,
+      specialty || null,
+      description || null,
+      location || 'تونس',
       coverImage || null,
-      Object.keys(socialLinks).length ? JSON.stringify(socialLinks) : null,
-    ]);
+      0, // verified (false)
+      0, // followers
+      0, // rating
+      totalProducts || 0, // totalProducts
+      experience || 0,
+      1  // isActive (true)
+    ];
 
+    console.log('📝 SQL params:', params);
+
+    const vendorId = await db.insert(sql, params);
     return this.findById(vendorId);
   },
 
+  // ===== TROUVER PAR ID =====
   async findById(id) {
     const sql = `
       SELECT v.*, 
@@ -46,11 +54,13 @@ const Vendor = {
     return db.getOne(sql, [id]);
   },
 
+  // ===== TROUVER PAR USER ID =====
   async findByUserId(userId) {
     const sql = 'SELECT * FROM vendors WHERE userId = ?';
     return db.getOne(sql, [userId]);
   },
 
+  // ===== RÉCUPÉRER TOUS LES VENDEURS =====
   async getAll({ page = 1, limit = 20, search = null, verified = null }) {
     let sql = `
       SELECT v.*, 
@@ -78,32 +88,22 @@ const Vendor = {
     return db.paginate(sql, params, page, limit);
   },
 
+  // ===== METTRE À JOUR =====
   async update(id, updates) {
-    let socialLinks = null;
-    if (updates.facebookUrl || updates.instagramUrl || updates.websiteUrl) {
-      socialLinks = {};
-      if (updates.facebookUrl) socialLinks.facebook = updates.facebookUrl;
-      if (updates.instagramUrl) socialLinks.instagram = updates.instagramUrl;
-      if (updates.websiteUrl) socialLinks.website = updates.websiteUrl;
-    }
-
     const fields = [];
     const values = [];
+    
     const allowedFields = [
-      'shopName', 'description', 'specialty', 'location',
-      'verified', 'coverImage', 'rating', 'totalReviews',
+      'shopName', 'specialty', 'description', 'location',
+      'coverImage', 'verified', 'rating', 'followers', 'totalProducts',
+      'experience', 'isActive'
     ];
 
-    Object.keys(updates).forEach(key => {
-      if (allowedFields.includes(key)) {
+    for (const key of allowedFields) {
+      if (updates[key] !== undefined) {
         fields.push(`${key} = ?`);
         values.push(updates[key]);
       }
-    });
-
-    if (socialLinks) {
-      fields.push('socialLinks = ?');
-      values.push(JSON.stringify(socialLinks));
     }
 
     if (fields.length === 0) return null;
@@ -111,37 +111,17 @@ const Vendor = {
     values.push(id);
     const sql = `UPDATE vendors SET ${fields.join(', ')} WHERE id = ?`;
     await db.query(sql, values);
+    
     return this.findById(id);
   },
 
-  async toggleVerification(id) {
-    const vendor = await this.findById(id);
-    if (!vendor) return null;
-    const newStatus = vendor.verified ? 0 : 1;
-    await db.query('UPDATE vendors SET verified = ? WHERE id = ?', [newStatus, id]);
-    return { verified: newStatus === 1 };
-  },
-
+  // ===== SUPPRIMER =====
   async delete(id) {
-    const hasProducts = await db.exists('SELECT 1 FROM products WHERE vendorId = ?', [id]);
-    if (hasProducts) {
-      throw new Error('Impossible de supprimer un vendeur avec des produits');
-    }
     await db.query('DELETE FROM vendors WHERE id = ?', [id]);
     return true;
   },
 
-  async count(verified = null) {
-    let sql = 'SELECT COUNT(*) as count FROM vendors';
-    const params = [];
-    if (verified !== null) {
-      sql += ' WHERE verified = ?';
-      params.push(verified ? 1 : 0);
-    }
-    const result = await db.getOne(sql, params);
-    return result?.count || 0;
-  },
-
+  // ===== RÉCUPÉRER LES PRODUITS =====
   async getProducts(vendorId, { page = 1, limit = 10 }) {
     const sql = `
       SELECT p.*,
@@ -154,20 +134,25 @@ const Vendor = {
     return db.paginate(sql, [vendorId], page, limit);
   },
 
+  // ===== SUIVRE/NE PLUS SUIVRE =====
   async toggleFollow(followerId, vendorId) {
     const exists = await db.exists(
       'SELECT 1 FROM followers WHERE followerId = ? AND vendorId = ?',
       [followerId, vendorId]
     );
+    
     if (exists) {
       await db.query('DELETE FROM followers WHERE followerId = ? AND vendorId = ?', [followerId, vendorId]);
+      await db.query('UPDATE vendors SET followers = followers - 1 WHERE id = ?', [vendorId]);
       return { following: false };
     } else {
       await db.insert('INSERT INTO followers (followerId, vendorId) VALUES (?, ?)', [followerId, vendorId]);
+      await db.query('UPDATE vendors SET followers = followers + 1 WHERE id = ?', [vendorId]);
       return { following: true };
     }
   },
 
+  // ===== VÉRIFIER SI L'UTILISATEUR SUIT =====
   async isFollowing(followerId, vendorId) {
     return db.exists(
       'SELECT 1 FROM followers WHERE followerId = ? AND vendorId = ?',
@@ -175,6 +160,7 @@ const Vendor = {
     );
   },
 
+  // ===== RÉCUPÉRER LES VENDEURS LES PLUS RÉCENTS =====
   async getRecent(limit = 4) {
     const sql = `
       SELECT v.*, u.name, u.avatar as userAvatar,
@@ -186,6 +172,21 @@ const Vendor = {
     `;
     return db.query(sql, [limit]);
   },
+
+  // ===== RÉCUPÉRER LES MEILLEURS VENDEURS =====
+  async getTopRated(limit = 8) {
+    const sql = `
+      SELECT v.*, u.name, u.avatar as userAvatar,
+             (SELECT COUNT(*) FROM products WHERE vendorId = v.id) as productsCount,
+             (SELECT COUNT(*) FROM followers WHERE vendorId = v.id) as followersCount
+      FROM vendors v
+      JOIN users u ON v.userId = u.id
+      WHERE v.verified = 1
+      ORDER BY v.rating DESC, followersCount DESC
+      LIMIT ?
+    `;
+    return db.query(sql, [limit]);
+  }
 };
 
 module.exports = Vendor;

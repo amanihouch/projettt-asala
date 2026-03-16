@@ -327,11 +327,10 @@ const toast = ref({
 // ===== COMPUTED =====
 // Les posts du feed sont dans postStore.posts (après fetchFeed)
 const feedPosts = computed(() => {
-  return (postStore.posts || []).map((post) => ({
-    ...post,
-    rating: post.rating || 5.0,
-    reviews: post.reviews || Math.floor(Math.random() * 100) + 50,
-  }))
+  // postStore.posts est déjà un tableau réactif
+  const posts = postStore.posts || []
+  console.log('📦 feedPosts computed:', posts.length, 'posts')
+  return posts
 })
 
 // Produits sponsorisés (inchangé)
@@ -575,12 +574,24 @@ const openQuickView = (product) => {
 }
 
 // ===== LIFECYCLE =====
+// ===== LIFECYCLE =====
 onMounted(async () => {
+  console.log('🚀 Homepage mounted')
+
+  // Charger les données locales
   likesStore.loadFromStorage()
   cartStore.loadFromStorage()
+
+  // Charger les posts depuis l'API
   isLoadingPosts.value = true
-  await postStore.fetchFeed() // Charger les posts depuis l'API
-  isLoadingPosts.value = false
+  try {
+    await postStore.fetchFeed()
+    console.log('📊 Posts après chargement:', postStore.posts.value?.length || 0)
+  } catch (error) {
+    console.error('❌ Erreur chargement feed:', error)
+  } finally {
+    isLoadingPosts.value = false
+  }
 })
 </script>
 

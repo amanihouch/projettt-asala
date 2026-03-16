@@ -237,7 +237,7 @@ router.beforeEach(async (to, from, next) => {
 
   // Attendre que le store auth soit initialisé
   const authStore = useAuthStore();
-  
+
   // Vérifier l'authentification
   const isAuthenticated = authStore.isAuthenticated;
   const userRole = authStore.userRole;

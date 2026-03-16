@@ -26,7 +26,7 @@ export const useCartStore = defineStore('cart', () => {
   const saveToStorage = () => {
     try {
       localStorage.setItem('cart', JSON.stringify(items.value));
-      
+
       // Si utilisateur connecté, synchroniser avec le backend (optionnel)
       if (authStore.isAuthenticated) {
         // Implémentation future
@@ -56,10 +56,10 @@ export const useCartStore = defineStore('cart', () => {
   // Actions
   const addItem = (product) => {
     console.log('🛒 Ajout au panier:', product);
-    
+
     // Vérifier si le produit existe déjà
     const existingItem = items.value.find(item => item.id === product.id);
-    
+
     if (existingItem) {
       // Incrémenter la quantité
       existingItem.quantity = (existingItem.quantity || 1) + (product.quantity || 1);
@@ -77,7 +77,7 @@ export const useCartStore = defineStore('cart', () => {
       });
       console.log('✅ Nouvel article ajouté');
     }
-    
+
     saveToStorage();
     // Ouvrir automatiquement le panier
     isOpen.value = true;
@@ -132,12 +132,12 @@ export const useCartStore = defineStore('cart', () => {
     // State
     items,
     isOpen,
-    
+
     // Getters
     itemCount,
     totalPrice,
     isInCart,
-    
+
     // Actions
     addItem,
     removeItem,

@@ -1,6 +1,6 @@
 // backend/src/middleware/auth.js
 const jwt = require('jsonwebtoken');
-const db = require('../models/db');
+const User = require('../models/User');
 
 const protect = async (req, res, next) => {
   let token;
@@ -9,14 +9,9 @@ const protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'votre_secret_jwt_tres_long_et_securise_2024');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'votre_secret_jwt_tres_long_et_securise_2026');
 
-      const [users] = await db.pool.execute(
-        'SELECT id, name, email, role, avatar, isActive FROM users WHERE id = ?',
-        [decoded.id]
-      );
-
-      const user = users[0];
+      const user = await User.findById(decoded.id);
 
       if (!user) {
         return res.status(401).json({
@@ -35,7 +30,7 @@ const protect = async (req, res, next) => {
       req.user = user;
       next();
     } catch (error) {
-      console.error('❌ Erreur d\'authentification:', error);
+      console.error('❌ Erreur auth:', error);
       return res.status(401).json({
         success: false,
         message: 'Non autorisé',

@@ -1,72 +1,45 @@
 // backend/src/controllers/admin/VendorController.js
 const Vendor = require('../../models/Vendor');
 const User = require('../../models/User');
+const db = require('../../models/db');
 
-// ===== LISTE ADMIN DES VENDEURS =====
+// ===== RÉCUPÉRER TOUS LES VENDEURS =====
 exports.getAllVendors = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search, verified } = req.query;
-    const result = await Vendor.getAll({ page, limit, search, verified });
-    res.json({ success: true, data: result });
-  } catch (error) {
-    console.error('❌ admin getAllVendors:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-// backend/src/controllers/vendorController.js
-// AJOUTEZ cette méthode (si elle n'existe pas déjà)
+    const { page = 1, limit = 20, search = '', verified = '' } = req.query;
 
-exports.createVendor = async (req, res) => {
-  try {
-    const {
-      userId, shopName, specialty, description, location,
-      experience, coverImage
-    } = req.body;
+    let sql = `
+      SELECT v.*, 
+             u.name, u.email, u.avatar as userAvatar,
+             (SELECT COUNT(*) FROM products WHERE vendorId = v.id) as productsCount,
+             (SELECT COUNT(*) FROM followers WHERE vendorId = v.id) as followersCount
+      FROM vendors v
+      JOIN users u ON v.userId = u.id
+      WHERE 1=1
+    `;
+    const params = [];
 
-    // Vérifier que l'utilisateur existe
-    const User = require('../models/User');
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Utilisateur non trouvé'
-      });
+    if (verified === 'true' || verified === 'false') {
+      sql += ' AND v.verified = ?';
+      params.push(verified === 'true' ? 1 : 0);
     }
 
-    // Vérifier que le vendeur n'existe pas déjà
-    const Vendor = require('../models/Vendor');
-    const existingVendor = await Vendor.findByUserId(userId);
-    if (existingVendor) {
-      return res.status(400).json({
-        success: false,
-        message: 'Un profil vendeur existe déjà pour cet utilisateur'
-      });
+    if (search) {
+      sql += ' AND (v.shopName LIKE ? OR u.name LIKE ? OR u.email LIKE ?)';
+      const term = `%${search}%`;
+      params.push(term, term, term);
     }
 
-    // Créer le vendeur
-    const vendorData = {
-      userId,
-      shopName,
-      specialty,
-      description,
-      location: location || 'تونس',
-      experience: experience || 0,
-      coverImage: coverImage || null,
-      verified: false,
-      followersCount: 0,
-      productsCount: 0,
-      rating: 0
-    };
+    sql += ' ORDER BY v.createdAt DESC';
 
-    const vendor = await Vendor.create(vendorData);
+    const result = await db.paginate(sql, params, page, limit);
 
-    res.status(201).json({
+    res.json({
       success: true,
-      message: 'Profil vendeur créé avec succès',
-      data: { vendor }
+      data: result
     });
   } catch (error) {
-    console.error('❌ Erreur createVendor:', error);
+    console.error('❌ Erreur admin getAllVendors:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -74,72 +47,138 @@ exports.createVendor = async (req, res) => {
   }
 };
 
-// ===== DÉTAIL ADMIN D'UN VENDEUR =====
+// ===== RÉCUPÉRER UN VENDEUR =====
 exports.getVendorById = async (req, res) => {
   try {
     const vendor = await Vendor.findById(req.params.id);
+
     if (!vendor) {
-      return res.status(404).json({ success: false, message: 'Vendeur non trouvé' });
+      return res.status(404).json({
+        success: false,
+        message: 'Vendeur non trouvé'
+      });
     }
-    const products = await Vendor.getProducts(req.params.id, { page: 1, limit: 20 });
-    res.json({ success: true, data: { vendor, products: products.data } });
+
+    // Récupérer les produits
+    const products = await Vendor.getProducts(req.params.id, { page: 1, limit: 100 });
+
+    // Récupérer les posts
+    const posts = await db.query(
+      'SELECT * FROM posts WHERE vendorId = ? ORDER BY createdAt DESC LIMIT 20',
+      [req.params.id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        vendor,
+        products: products.data,
+        posts
+      }
+    });
   } catch (error) {
-    console.error('❌ admin getVendorById:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('❌ Erreur admin getVendorById:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-// ===== METTRE À JOUR UN VENDEUR (admin) =====
+// ===== METTRE À JOUR UN VENDEUR =====
 exports.updateVendor = async (req, res) => {
   try {
-    const {
-      shopName, description, specialty, location, verified,
-      facebookUrl, instagramUrl, websiteUrl
-    } = req.body;
+    const { shopName, specialty, description, location, verified } = req.body;
 
-    const updates = {
+    const vendor = await Vendor.findById(req.params.id);
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vendeur non trouvé'
+      });
+    }
+
+    const updated = await Vendor.update(req.params.id, {
       shopName,
-      description,
       specialty,
+      description,
       location,
-      verified: verified !== undefined ? (verified ? 1 : 0) : undefined,
-      facebookUrl,
-      instagramUrl,
-      websiteUrl
-    };
+      verified: verified !== undefined ? verified : vendor.verified
+    });
 
-    const vendor = await Vendor.update(req.params.id, updates);
-    res.json({ success: true, message: 'Vendeur mis à jour', data: { vendor } });
+    res.json({
+      success: true,
+      message: 'Vendeur mis à jour avec succès',
+      data: { vendor: updated }
+    });
   } catch (error) {
-    console.error('❌ admin updateVendor:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('❌ Erreur admin updateVendor:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-// ===== SUPPRIMER UN VENDEUR (admin) =====
+// ===== SUPPRIMER UN VENDEUR =====
 exports.deleteVendor = async (req, res) => {
   try {
     const vendor = await Vendor.findById(req.params.id);
     if (!vendor) {
-      return res.status(404).json({ success: false, message: 'Vendeur non trouvé' });
+      return res.status(404).json({
+        success: false,
+        message: 'Vendeur non trouvé'
+      });
     }
+
+    // Vérifier s'il a des produits
+    const hasProducts = await db.exists('SELECT 1 FROM products WHERE vendorId = ?', [vendor.id]);
+    if (hasProducts) {
+      return res.status(400).json({
+        success: false,
+        message: 'Impossible de supprimer un vendeur avec des produits'
+      });
+    }
+
     await Vendor.delete(req.params.id);
-    // Optionnel : supprimer aussi l'utilisateur associé
-    await User.delete(vendor.userId);
-    res.json({ success: true, message: 'Vendeur supprimé' });
+
+    res.json({
+      success: true,
+      message: 'Vendeur supprimé avec succès'
+    });
   } catch (error) {
-    console.error('❌ admin deleteVendor:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('❌ Erreur admin deleteVendor:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-// ===== ACTIVER/DÉSACTIVER LA VÉRIFICATION =====
+// ===== ACTIVER LA VÉRIFICATION =====
 exports.toggleVerification = async (req, res) => {
   try {
-    const result = await Vendor.toggleVerification(req.params.id);
-    res.json({ success: true, data: result });
+    const vendor = await Vendor.findById(req.params.id);
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vendeur non trouvé'
+      });
+    }
+
+    const newStatus = !vendor.verified;
+    await Vendor.update(req.params.id, { verified: newStatus });
+
+    res.json({
+      success: true,
+      message: newStatus ? 'Vendeur vérifié' : 'Vérification retirée',
+      data: { verified: newStatus }
+    });
   } catch (error) {
-    console.error('❌ admin toggleVerification:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('❌ Erreur admin toggleVerification:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };

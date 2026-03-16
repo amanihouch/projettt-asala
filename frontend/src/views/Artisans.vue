@@ -10,7 +10,7 @@
             <span class="title-text">الحرفيون</span>
           </h1>
           <p class="hero-subtitle">اكتشف أمهر الحرفيين التونسيين وتعرف على إبداعاتهم</p>
-          
+
           <!-- Search Bar -->
           <div class="search-container">
             <div class="search-box">
@@ -113,7 +113,7 @@
                 :alt="vendor.shopName"
                 class="cover-image"
               />
-              
+
               <!-- Verified Badge -->
               <div v-if="vendor.verified" class="verified-badge" title="حرفي موثوق">
                 <span class="verified-icon">✓</span>
@@ -197,7 +197,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useVendorStore } from '../stores/vendor'
+import { useVendorStore } from '../stores/vendorStore'
 
 const router = useRouter()
 const vendorStore = useVendorStore()
@@ -224,7 +224,7 @@ const filteredVendors = computed(() => {
   // Search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    result = result.filter(v => 
+    result = result.filter(v =>
       v.shopName?.toLowerCase().includes(query) ||
       v.name?.toLowerCase().includes(query) ||
       v.specialty?.toLowerCase().includes(query) ||
@@ -267,7 +267,7 @@ const formatDate = (dateString) => {
   const date = new Date(dateString)
   const now = new Date()
   const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24))
-  
+
   if (diffDays === 0) return 'اليوم'
   if (diffDays === 1) return 'أمس'
   if (diffDays < 7) return `منذ ${diffDays} أيام`
@@ -293,14 +293,14 @@ const showNotification = (message, type = 'success') => {
     error: '❌',
     info: 'ℹ️'
   }
-  
+
   toast.value = {
     show: true,
     message,
     type,
     icon: icons[type]
   }
-  
+
   setTimeout(() => {
     toast.value.show = false
   }, 3000)
@@ -309,11 +309,11 @@ const showNotification = (message, type = 'success') => {
 // Lifecycle
 onMounted(() => {
   loading.value = true
-  
+
   // Simulate loading
   setTimeout(() => {
     loading.value = false
-    
+
     // Show welcome message if no vendors
     if (vendors.value.length === 0) {
       showNotification('لا يوجد حرفيين بعد', 'info')
@@ -329,14 +329,14 @@ onMounted(() => {
   --primary-teal-light: #0a94a6;
   --primary-teal-dark: #065a69;
   --primary-teal-soft: #e0f5f7;
-  
+
   --primary-red: #d40025;
   --primary-red-light: #ff1744;
   --primary-red-dark: #b00020;
   --primary-red-soft: #ffe8ed;
-  
+
   --gradient-dual: linear-gradient(135deg, #08717f 0%, #d40025 100%);
-  
+
   --neutral-50: #f8fafc;
   --neutral-100: #f1f5f9;
   --neutral-200: #e2e8f0;
@@ -347,17 +347,17 @@ onMounted(() => {
   --neutral-700: #334155;
   --neutral-800: #1e293b;
   --neutral-900: #0f172a;
-  
+
   --shadow-sm: 0 1px 3px rgba(8, 113, 127, 0.08);
   --shadow-md: 0 4px 6px rgba(8, 113, 127, 0.1);
   --shadow-lg: 0 10px 15px rgba(212, 0, 37, 0.1);
   --shadow-xl: 0 20px 25px rgba(8, 113, 127, 0.15);
-  
+
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
-  
+
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

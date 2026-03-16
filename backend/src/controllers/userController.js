@@ -9,7 +9,7 @@ exports.getProfile = async (req, res) => {
   try {
     const user = await User.getUserWithStats(req.user.id);
 
-    // Get user's wishlist - CORRIGÉ avec les bons noms de colonnes
+    // Get user's wishlist (products liked)
     const wishlist = await db.query(`
       SELECT p.*, 
              (SELECT imageUrl FROM product_images WHERE productId = p.id LIMIT 1) as mainImage
@@ -19,11 +19,30 @@ exports.getProfile = async (req, res) => {
       ORDER BY l.createdAt DESC
     `, [req.user.id]);
 
+    // Get user's post likes
+    const postLikes = await db.query(`
+      SELECT p.*, 
+             v.shopName,
+             pl.createdAt as likedAt
+      FROM post_likes pl
+      JOIN posts p ON pl.postId = p.id
+      LEFT JOIN vendors v ON p.vendorId = v.id
+      WHERE pl.userId = ?
+      ORDER BY pl.createdAt DESC
+    `, [req.user.id]);
+
+    // Parse JSON fields for posts
+    postLikes.forEach(post => {
+      try { post.colors = JSON.parse(post.colors); } catch { post.colors = []; }
+      try { post.images = JSON.parse(post.images); } catch { post.images = []; }
+    });
+
     res.json({
       success: true,
       data: {
         user,
-        wishlist
+        wishlist,
+        postLikes
       }
     });
   } catch (error) {
@@ -102,7 +121,7 @@ exports.changePassword = async (req, res) => {
   }
 };
 
-// @desc    Get user wishlist
+// @desc    Get user wishlist (products)
 // @route   GET /api/v1/users/wishlist
 // @access  Private
 exports.getWishlist = async (req, res) => {
@@ -130,8 +149,81 @@ exports.getWishlist = async (req, res) => {
     });
   }
 };
-// backend/src/controllers/userController.js
-// ... (autres méthodes existantes)
+
+// @desc    Get user's liked posts
+// @route   GET /api/v1/users/likes
+// @access  Private
+exports.getUserLikes = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const posts = await db.query(`
+      SELECT p.*, 
+             v.shopName,
+             pl.createdAt as likedAt
+      FROM post_likes pl
+      JOIN posts p ON pl.postId = p.id
+      LEFT JOIN vendors v ON p.vendorId = v.id
+      WHERE pl.userId = ?
+      ORDER BY pl.createdAt DESC
+    `, [userId]);
+
+    // Parser les JSON
+    posts.forEach(post => {
+      try { post.colors = JSON.parse(post.colors); } catch { post.colors = []; }
+      try { post.images = JSON.parse(post.images); } catch { post.images = []; }
+    });
+
+    res.json({
+      success: true,
+      data: { posts }
+    });
+  } catch (error) {
+    console.error('❌ Erreur getUserLikes:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// @desc    Get user post likes
+// @route   GET /api/v1/users/post-likes
+// @access  Private
+exports.getPostLikes = async (req, res) => {
+  try {
+    const postLikes = await db.query(`
+      SELECT p.*, 
+             v.shopName,
+             u.name as vendorName,
+             pl.createdAt as likedAt
+      FROM post_likes pl
+      JOIN posts p ON pl.postId = p.id
+      LEFT JOIN vendors v ON p.vendorId = v.id
+      LEFT JOIN users u ON v.userId = u.id
+      WHERE pl.userId = ?
+      ORDER BY pl.createdAt DESC
+    `, [req.user.id]);
+
+    // Parse JSON fields
+    postLikes.forEach(post => {
+      try { post.colors = JSON.parse(post.colors); } catch { post.colors = []; }
+      try { post.images = JSON.parse(post.images); } catch { post.images = []; }
+    });
+
+    res.json({
+      success: true,
+      data: { postLikes }
+    });
+  } catch (error) {
+    console.error('❌ Erreur getPostLikes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors du chargement des likes de posts',
+      error: error.message
+    });
+  }
+};
 
 // @desc    Mettre à jour l'avatar de l'utilisateur
 // @route   POST /api/v1/users/avatar
@@ -146,7 +238,6 @@ exports.updateAvatar = async (req, res) => {
     }
 
     // Construire l'URL accessible publiquement
-    // Note : le dossier uploads est servi statiquement dans server.js
     const avatarUrl = `/uploads/avatars/${req.file.filename}`;
 
     // Mettre à jour l'utilisateur

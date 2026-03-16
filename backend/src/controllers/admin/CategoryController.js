@@ -1,22 +1,8 @@
 // backend/src/controllers/admin/CategoryController.js
 const Category = require('../../models/Category');
+const db = require('../../models/db');
 
-// Fonction pour générer un slug manuellement
-const generateSlug = (text) => {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '_')           // Remplacer les espaces par _
-    .replace(/[^\w\-]+/g, '')       // Enlever les caractères spéciaux
-    .replace(/\-\-+/g, '_')         // Remplacer plusieurs - par un seul _
-    .replace(/^-+/, '')              // Enlever - au début
-    .replace(/-+$/, '');             // Enlever - à la fin
-};
-
-// @desc    Obtenir toutes les catégories
-// @route   GET /api/v1/admin/categories
-// @access  Private/Admin
+// ===== RÉCUPÉRER TOUTES LES CATÉGORIES =====
 exports.getAllCategories = async (req, res) => {
   try {
     const categories = await Category.getAll();
@@ -26,31 +12,32 @@ exports.getAllCategories = async (req, res) => {
       data: { categories }
     });
   } catch (error) {
-    console.error('❌ Erreur getCategories:', error);
+    console.error('❌ Erreur admin getAllCategories:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors du chargement des catégories',
-      error: error.message
+      message: error.message
     });
   }
 };
 
-// @desc    Créer une catégorie
-// @route   POST /api/v1/admin/categories
-// @access  Private/Admin
+// ===== CRÉER UNE CATÉGORIE =====
 exports.createCategory = async (req, res) => {
   try {
-    const { name, nameAr, icon, description, parentId, sortOrder } = req.body;
+    const { name, nameAr, slug, icon, description, parentId, sortOrder } = req.body;
 
-    // Générer le slug manuellement
-    const slug = generateSlug(name);
+    if (!name || !slug) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nom et slug requis'
+      });
+    }
 
-    // Vérifier si le slug existe
+    // Vérifier si le slug existe déjà
     const exists = await Category.slugExists(slug);
     if (exists) {
       return res.status(400).json({
         success: false,
-        message: 'Une catégorie avec ce nom existe déjà'
+        message: 'Ce slug existe déjà'
       });
     }
 
@@ -58,10 +45,10 @@ exports.createCategory = async (req, res) => {
       name,
       nameAr,
       slug,
-      icon: icon || '📦',
+      icon,
       description,
-      parent_id: parentId,
-      sortOrder: sortOrder || 0
+      parentId,
+      sortOrder
     });
 
     res.status(201).json({
@@ -70,66 +57,62 @@ exports.createCategory = async (req, res) => {
       data: { category }
     });
   } catch (error) {
-    console.error('❌ Erreur createCategory:', error);
+    console.error('❌ Erreur admin createCategory:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la création',
-      error: error.message
+      message: error.message
     });
   }
 };
 
-// @desc    Mettre à jour une catégorie
-// @route   PUT /api/v1/admin/categories/:id
-// @access  Private/Admin
+// ===== METTRE À JOUR UNE CATÉGORIE =====
 exports.updateCategory = async (req, res) => {
   try {
     const { name, nameAr, icon, description, parentId, sortOrder, isActive } = req.body;
 
-    const updates = {
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Catégorie non trouvée'
+      });
+    }
+
+    const updated = await Category.update(req.params.id, {
       name,
       nameAr,
       icon,
       description,
-      parent_id: parentId,
+      parentId,
       sortOrder,
       isActive
-    };
-
-    if (name) {
-      const slug = generateSlug(name);
-      const exists = await Category.slugExists(slug, req.params.id);
-      if (exists) {
-        return res.status(400).json({
-          success: false,
-          message: 'Une catégorie avec ce nom existe déjà'
-        });
-      }
-      updates.slug = slug;
-    }
-
-    const category = await Category.update(req.params.id, updates);
+    });
 
     res.json({
       success: true,
       message: 'Catégorie mise à jour avec succès',
-      data: { category }
+      data: { category: updated }
     });
   } catch (error) {
-    console.error('❌ Erreur updateCategory:', error);
+    console.error('❌ Erreur admin updateCategory:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la mise à jour',
-      error: error.message
+      message: error.message
     });
   }
 };
 
-// @desc    Supprimer une catégorie
-// @route   DELETE /api/v1/admin/categories/:id
-// @access  Private/Admin
+// ===== SUPPRIMER UNE CATÉGORIE =====
 exports.deleteCategory = async (req, res) => {
   try {
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Catégorie non trouvée'
+      });
+    }
+
     await Category.delete(req.params.id);
 
     res.json({
@@ -137,11 +120,10 @@ exports.deleteCategory = async (req, res) => {
       message: 'Catégorie supprimée avec succès'
     });
   } catch (error) {
-    console.error('❌ Erreur deleteCategory:', error);
+    console.error('❌ Erreur admin deleteCategory:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Erreur lors de la suppression',
-      error: error.message
+      message: error.message
     });
   }
 };

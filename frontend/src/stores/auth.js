@@ -1,3 +1,4 @@
+// frontend/src/stores/authStore.js
 import { defineStore } from 'pinia'
 import api from '../services/api'
 
@@ -5,6 +6,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: JSON.parse(localStorage.getItem('user')) || null,
     token: localStorage.getItem('token') || null,
+    vendorId: localStorage.getItem('vendorId') || null, // ✅ Ajout de vendorId
     loading: false,
     error: null,
   }),
@@ -16,20 +18,27 @@ export const useAuthStore = defineStore('auth', {
     userEmail: (state) => state.user?.email || '',
     userAvatar: (state) => state.user?.avatar || 'https://i.pravatar.cc/300',
     userId: (state) => state.user?.id || null,
+    userVendorId: (state) => state.vendorId || null, // ✅ ID du vendeur
     userPhone: (state) => state.user?.phone || '',
     userAddress: (state) => state.user?.address || '',
     userCreatedAt: (state) => state.user?.createdAt || null,
   },
 
   actions: {
-    // ✅ Méthodes pour définir directement l'utilisateur et le token
     setUser(user) {
       this.user = user
       localStorage.setItem('user', JSON.stringify(user))
     },
+
     setToken(token) {
       this.token = token
       localStorage.setItem('token', token)
+    },
+
+    // ✅ Méthode pour définir l'ID du vendeur
+    setVendorId(id) {
+      this.vendorId = id
+      localStorage.setItem('vendorId', id)
     },
 
     async fetchProfile() {
@@ -142,8 +151,10 @@ export const useAuthStore = defineStore('auth', {
     logout() {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
+      localStorage.removeItem('vendorId') // ✅ Nettoyer vendorId
       this.user = null
       this.token = null
+      this.vendorId = null
     },
 
     async initAuth() {
