@@ -509,7 +509,7 @@ const canProceedToStep2 = computed(() => {
 
 // ===== NOTIFICATION =====
 const showNotification = (message, type = 'success') => {
-  const icons = { success: '✅', error: '❌', warning: '⚠️' }
+  const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' }
   toast.value = { show: true, message, type, icon: icons[type] }
   setTimeout(() => (toast.value.show = false), 3000)
 }
@@ -554,6 +554,7 @@ const handleLogin = async () => {
       showNotification(result.error, 'error')
     }
   } catch (error) {
+    console.error('❌ Erreur login:', error)
     showNotification('حدث خطأ غير متوقع', 'error')
   } finally {
     isLoading.value = false
@@ -569,7 +570,7 @@ const goToStep2 = () => {
 const validateStep1 = () => {
   errors.value = {}
 
-  if (!registerForm.fullName) {
+  if (!registerForm.fullName?.trim()) {
     errors.value.fullName = 'الاسم مطلوب'
     return false
   }
@@ -577,7 +578,7 @@ const validateStep1 = () => {
     errors.value.email = 'بريد إلكتروني غير صحيح'
     return false
   }
-  if (!registerForm.phone) {
+  if (!registerForm.phone?.trim()) {
     errors.value.phone = 'رقم الهاتف مطلوب'
     return false
   }
@@ -607,7 +608,8 @@ const handleClientRegister = async () => {
       email: registerForm.email,
       phone: registerForm.phone,
       password: registerForm.password,
-      address: registerForm.address,
+      address: registerForm.address || '',
+      avatar: avatarPreview.value || null
     })
 
     if (result.success) {
@@ -617,6 +619,7 @@ const handleClientRegister = async () => {
       showNotification(result.error, 'error')
     }
   } catch (error) {
+    console.error('❌ Erreur register:', error)
     showNotification('حدث خطأ أثناء التسجيل', 'error')
   } finally {
     isLoading.value = false
@@ -672,6 +675,7 @@ const sendResetCode = async () => {
       showNotification(data.message || 'حدث خطأ', 'error')
     }
   } catch (error) {
+    console.error('❌ Erreur sendResetCode:', error)
     showNotification('خطأ في الاتصال بالخادم', 'error')
   } finally {
     modalLoading.value = false
@@ -703,6 +707,7 @@ const verifyCode = async () => {
       showNotification(data.message || 'رمز غير صحيح', 'error')
     }
   } catch (error) {
+    console.error('❌ Erreur verifyCode:', error)
     showNotification('خطأ في الاتصال بالخادم', 'error')
   } finally {
     modalLoading.value = false
@@ -740,6 +745,7 @@ const resetPassword = async () => {
       showNotification(data.message || 'حدث خطأ', 'error')
     }
   } catch (error) {
+    console.error('❌ Erreur resetPassword:', error)
     showNotification('خطأ في الاتصال بالخادم', 'error')
   } finally {
     modalLoading.value = false
@@ -772,9 +778,25 @@ const triggerAvatarUpload = () => {
 const handleAvatarUpload = (event) => {
   const file = event.target.files[0]
   if (file) {
+    // Vérifier la taille (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      showNotification('حجم الصورة يجب أن يكون أقل من 2 ميجابايت', 'warning')
+      return
+    }
+
+    // Vérifier le type
+    if (!file.type.startsWith('image/')) {
+      showNotification('الرجاء اختيار صورة صالحة', 'warning')
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = (e) => {
       avatarPreview.value = e.target.result
+      showNotification('✅ تم تحميل الصورة بنجاح', 'success')
+    }
+    reader.onerror = () => {
+      showNotification('❌ فشل تحميل الصورة', 'error')
     }
     reader.readAsDataURL(file)
   }
@@ -785,7 +807,7 @@ const handleAvatarUpload = (event) => {
 * {
   margin: 0;
   padding: 0;
-  box-sizing: border-box; /* corrigé : boarder-box → border-box */
+  box-sizing: border-box;
 }
 
 .login-page {

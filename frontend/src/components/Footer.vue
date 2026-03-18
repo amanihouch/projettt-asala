@@ -1,112 +1,292 @@
+<!-- frontend/src/components/Footer.vue -->
 <template>
   <footer class="footer">
-    <div class="container">
-      <!-- Footer Top - PLUS COMPACT -->
-      <div class="footer-top">
-        <!-- Logo & Social -->
-        <div class="footer-brand">
-          <router-link to="/" class="logo">
-            <img src="/src/assets/asala logo.svg" alt="ASALA" class="logo-image" />
-          </router-link>
-          <p class="brand-desc">حرف يدوية تونسية أصيلة</p>
-          <div class="social-links">
-            <a href="#" class="social-link">📘</a>
-            <a href="#" class="social-link">📸</a>
-            <a href="#" class="social-link">🐦</a>
-            <a href="#" class="social-link">📺</a>
+    <!-- Wave decoration -->
+    <div class="footer-wave">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+        <path fill="#08717f" fill-opacity="0.1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,170.7C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+      </svg>
+    </div>
+
+    <div class="footer-content">
+      <div class="container">
+        <!-- Main Footer -->
+        <div class="footer-main">
+          <!-- Logo & Info -->
+          <div class="footer-section brand-section">
+            <router-link to="/" class="footer-logo">
+              <div class="logo-icon">
+                <img src="@/assets/asala logo.svg" alt="أصالة" class="logo-svg" />
+              </div>
+              <span class="logo-text">أصالة</span>
+            </router-link>
+            <p class="footer-description">
+              منصة الحرف اليدوية التونسية الأصيلة، حيث تلتقي أصالة الماضي بإبداع الحاضر
+            </p>
+
+            <!-- Social Media avec animations -->
+            <div class="social-wrapper">
+              <h4 class="social-title">تواصل معنا</h4>
+              <div class="social-grid">
+                <a href="https://facebook.com" target="_blank" class="social-btn facebook" title="فيسبوك">
+                  <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" fill="currentColor"/>
+                  </svg>
+                </a>
+                <a href="https://instagram.com" target="_blank" class="social-btn instagram" title="انستغرام">
+                  <svg viewBox="0 0 24 24" width="20" height="20">
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="12" cy="12" r="4" fill="currentColor"/>
+                    <circle cx="18" cy="6" r="1.5" fill="currentColor"/>
+                  </svg>
+                </a>
+                <a href="https://youtube.com" target="_blank" class="social-btn youtube" title="يوتيوب">
+                  <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" fill="currentColor"/>
+                    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="white"/>
+                  </svg>
+                </a>
+                <a href="https://twitter.com" target="_blank" class="social-btn twitter" title="تويتر">
+                  <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z" fill="currentColor"/>
+                  </svg>
+                </a>
+                <a href="https://pinterest.com" target="_blank" class="social-btn pinterest" title="بينتريست">
+                  <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M12 0a12 12 0 0 0-4.5 23.1 10 10 0 0 1 .1-3.2l1.4-5.5a4 4 0 0 1-.4-1.7c0-1.6.9-2.8 2.1-2.8 1 0 1.5.7 1.5 1.6 0 1-.6 2.5-.9 3.9a1.7 1.7 0 0 0 1.7 2.1c2.1 0 3.7-2.2 3.7-5.4 0-2.8-2-4.8-5-4.8a5.2 5.2 0 0 0-5.4 5.2 4.7 4.7 0 0 0 .9 2.8.4.4 0 0 1 .1.4c0 .2-.1.5-.2.6-.1.2-.2.2-.4.1-1.4-.6-2.3-2.5-2.3-4.2 0-3.4 2.5-6.6 7.2-6.6 3.8 0 6.7 2.7 6.7 6.3 0 3.8-2.4 6.8-5.7 6.8a3 3 0 0 1-2.6-1.3l-.7 2.7a11 11 0 0 1-1.3 2.7A12 12 0 1 0 12 0z" fill="currentColor"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="contact-info">
+              <div class="contact-item">
+                <span class="contact-emoji">📞</span>
+                <a href="tel:+21612345678">+216 12 345 678</a>
+              </div>
+              <div class="contact-item">
+                <span class="contact-emoji">✉️</span>
+                <a href="mailto:contact@asala.tn">contact@asala.tn</a>
+              </div>
+              <div class="contact-item">
+                <span class="contact-emoji">📍</span>
+                <span>تونس العاصمة</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Links -->
+          <div class="footer-section">
+            <h3 class="footer-title">
+              <span class="title-icon">🔗</span>
+              روابط سريعة
+            </h3>
+            <ul class="footer-links">
+              <li><router-link to="/products" class="red-hover">المنتجات</router-link></li>
+              <li><router-link to="/artisans" class="green-hover">الحرفيون</router-link></li>
+              <li><router-link to="/about" class="red-hover">من نحن</router-link></li>
+              <li><router-link to="/contact" class="green-hover">اتصل بنا</router-link></li>
+              <li><router-link to="/blog" class="red-hover">المدونة</router-link></li>
+            </ul>
+          </div>
+
+          <!-- Categories -->
+          <div class="footer-section">
+            <h3 class="footer-title">
+              <span class="title-icon">🏷️</span>
+              التصنيفات
+            </h3>
+            <div class="categories-grid">
+              <router-link to="/products?category=textiles" class="category-chip red-chip">
+                <span>🧵</span>
+                <span>سجاد</span>
+              </router-link>
+              <router-link to="/products?category=pottery" class="category-chip green-chip">
+                <span>🏺</span>
+                <span>فخار</span>
+              </router-link>
+              <router-link to="/products?category=jewelry" class="category-chip red-chip">
+                <span>💍</span>
+                <span>مجوهرات</span>
+              </router-link>
+              <router-link to="/products?category=clothing" class="category-chip green-chip">
+                <span>👗</span>
+                <span>ملابس</span>
+              </router-link>
+              <router-link to="/products?category=woodwork" class="category-chip red-chip">
+                <span>🪵</span>
+                <span>خشب</span>
+              </router-link>
+              <router-link to="/products?category=metalwork" class="category-chip green-chip">
+                <span>⚒️</span>
+                <span>نحاس</span>
+              </router-link>
+              <router-link to="/products?category=perfumes" class="category-chip red-chip">
+                <span>🌸</span>
+                <span>عطور</span>
+              </router-link>
+              <router-link to="/products?category=decoration" class="category-chip green-chip">
+                <span>✨</span>
+                <span>ديكور</span>
+              </router-link>
+            </div>
+          </div>
+
+          <!-- Newsletter -->
+          <div class="footer-section newsletter-section">
+            <h3 class="footer-title">
+              <span class="title-icon">📧</span>
+              النشرة البريدية
+            </h3>
+            <p class="newsletter-text">
+              اشترك لتصلك أحدث العروض والمنتجات الحرفية
+            </p>
+
+            <!-- Message de notification -->
+            <div v-if="message" class="newsletter-message" :class="messageType">
+              {{ message }}
+            </div>
+
+            <form @submit.prevent="subscribeNewsletter" class="newsletter-form-enhanced">
+              <div class="input-group">
+                <input
+                  type="email"
+                  v-model="email"
+                  placeholder="بريدك الإلكتروني"
+                  :disabled="loading"
+                  required
+                />
+                <button type="submit" :disabled="loading" class="red-gradient-btn">
+                  <span v-if="!loading">اشترك</span>
+                  <span v-else class="loading-spinner-small"></span>
+                </button>
+              </div>
+            </form>
+
+            <div class="newsletter-features">
+              <div class="feature red-feature">
+                <span class="feature-icon">🎁</span>
+                <span class="feature-text">عروض حصرية</span>
+              </div>
+              <div class="feature green-feature">
+                <span class="feature-icon">📦</span>
+                <span class="feature-text">منتجات جديدة</span>
+              </div>
+              <div class="feature red-feature">
+                <span class="feature-icon">💝</span>
+                <span class="feature-text">هدايا مجانية</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Quick Links -->
-        <div class="footer-links">
-          <h4>روابط سريعة</h4>
-          <ul>
-            <li><router-link to="/products">المنتجات</router-link></li>
-            <li><router-link to="/about">من نحن</router-link></li>
-            <li><router-link to="/contact">اتصل بنا</router-link></li>
-          </ul>
-        </div>
-
-        <!-- Categories -->
-        <div class="footer-categories">
-          <h4>التصنيفات</h4>
-          <div class="category-tags">
-            <router-link to="/category/carpets" class="tag">🧵 سجاد</router-link>
-            <router-link to="/category/pottery" class="tag">🏺 فخار</router-link>
-            <router-link to="/category/jewelry" class="tag">💍 مجوهرات</router-link>
-            <router-link to="/category/clothing" class="tag">👗 ملابس</router-link>
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+          <div class="copyright">
+            <p>© 2026 أصالة - جميع الحقوق محفوظة</p>
           </div>
-        </div>
-
-        <!-- Newsletter -->
-        <div class="footer-newsletter">
-          <h4>النشرة البريدية</h4>
-          <form @submit.prevent="subscribe" class="newsletter-form">
-            <input
-              type="email"
-              v-model="email"
-              placeholder="بريدك الإلكتروني"
-              class="newsletter-input"
-              required
-            />
-            <button type="submit" class="newsletter-btn">→</button>
-          </form>
-        </div>
-      </div>
-
-      <!-- Footer Bottom - PLUS COMPACT -->
-      <div class="footer-bottom">
-        <div class="copyright">
-          <p>© 2026 ASALA - جميع الحقوق محفوظة</p>
-        </div>
-        <div class="footer-bottom-links">
-          <router-link to="/privacy">الخصوصية</router-link>
-          <span class="separator">•</span>
-          <router-link to="/terms">الشروط</router-link>
-          <span class="separator">•</span>
-          <router-link to="/shipping">الشحن</router-link>
+          <div class="footer-bottom-links">
+            <router-link to="/privacy" class="red-link">سياسة الخصوصية</router-link>
+            <span class="dot">•</span>
+            <router-link to="/terms" class="green-link">الشروط والأحكام</router-link>
+            <span class="dot">•</span>
+            <router-link to="/shipping" class="red-link">الشحن والتوصيل</router-link>
+            <span class="dot">•</span>
+            <router-link to="/faq" class="green-link">الأسئلة الشائعة</router-link>
+          </div>
         </div>
       </div>
     </div>
   </footer>
 </template>
 
-<script>
+<script setup>
 import { ref } from 'vue'
+import api from '../services/api'
 
-export default {
-  name: 'Footer',
-  setup() {
-    const email = ref('')
+const email = ref('')
+const loading = ref(false)
+const message = ref('')
+const messageType = ref('')
 
-    const subscribe = () => {
-      if (email.value) {
-        alert(`شكراً للاشتراك: ${email.value}`)
-        email.value = ''
-      }
+const subscribeNewsletter = async () => {
+  if (!email.value) {
+    showMessage('الرجاء إدخال البريد الإلكتروني', 'error')
+    return
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email.value)) {
+    showMessage('بريد إلكتروني غير صحيح', 'error')
+    return
+  }
+
+  loading.value = true
+  console.log('📧 Abonnement newsletter:', email.value)
+
+  try {
+    const response = await api.post('/newsletter/subscribe', {
+      email: email.value
+    })
+
+    console.log('📦 Réponse newsletter:', response.data)
+
+    if (response.data.success) {
+      showMessage(response.data.message, 'success')
+      email.value = ''
+    } else {
+      showMessage(response.data.message, 'error')
     }
+  } catch (error) {
+    console.error('❌ Erreur newsletter:', error)
+    showMessage(error.response?.data?.message || 'حدث خطأ', 'error')
+  } finally {
+    loading.value = false
+  }
+}
 
-    return {
-      email,
-      subscribe,
-    }
-  },
+const showMessage = (msg, type) => {
+  message.value = msg
+  messageType.value = type
+  setTimeout(() => {
+    message.value = ''
+  }, 5000)
 }
 </script>
 
 <style scoped>
-/* ========================================
-   FOOTER - VERSION MINIMISÉE
-   Couleurs du header en version blanche
-   Taille réduite - Plus compact
-======================================== */
 .footer {
-  background: white;
-  color: #1e293b;
-  padding: 1.5rem 0 0.8rem;  /* ← RÉDUIT : de 3rem à 1.5rem */
-  margin-top: auto;
-  border-top: 2px solid #d30025;  /* ← RÉDUIT : de 3px à 2px */
-  box-shadow: 0 -2px 10px rgba(8, 113, 127, 0.05);  /* ← RÉDUIT */
+  position: relative;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  color: #334155;
+  font-family: 'Cairo', sans-serif;
+  direction: rtl;
+  border-top: 1px solid rgba(8, 113, 127, 0.1);
+}
+
+/* Wave decoration */
+.footer-wave {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+  transform: rotate(180deg);
+}
+
+.footer-wave svg {
+  position: relative;
+  display: block;
+  width: calc(100% + 1.3px);
+  height: 60px;
+}
+
+.footer-content {
+  position: relative;
+  padding: 3rem 0 1.5rem;
+  z-index: 2;
 }
 
 .container {
@@ -115,310 +295,587 @@ export default {
   padding: 0 20px;
 }
 
-/* ========== FOOTER TOP - ESPACES RÉDUITS ========== */
-.footer-top {
+/* Main Footer Grid */
+.footer-main {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.5fr 1.5fr;
-  gap: 1.5rem;  /* ← RÉDUIT : de 2rem à 1.5rem */
-  margin-bottom: 1.2rem;  /* ← RÉDUIT : de 2.5rem à 1.2rem */
+  grid-template-columns: 2fr 1fr 2fr 2fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
 }
 
-/* ========== BRAND - PLUS COMPACT ========== */
-.footer-brand {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;  /* ← RÉDUIT : de 0.75rem à 0.4rem */
-}
-
-.logo {
-  display: flex;
+/* Logo Section - Agrandi */
+.footer-logo {
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;  /* ← RÉDUIT */
+  gap: 0.8rem;
   text-decoration: none;
+  margin-bottom: 1.5rem;
 }
 
-.logo-symbol {
-  width: 32px;  /* ← RÉDUIT : de 40px à 32px */
-  height: 32px;  /* ← RÉDUIT : de 40px à 32px */
+.logo-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #08717f, #d40025);
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #08717f;  /* ← Turquoise header */
-  color: white;
-  font-size: 1.2rem;  /* ← RÉDUIT : de 1.5rem à 1.2rem */
-  font-weight: 800;
-  border-radius: 8px;  /* ← RÉDUIT : de 10px à 8px */
-  transition: transform 0.3s ease;
+  transform: rotate(-5deg);
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 20px rgba(212, 0, 37, 0.2);
 }
 
-.logo:hover .logo-symbol {
-  transform: scale(1.1);
-  background: #065a69;
+.logo-icon:hover {
+  transform: rotate(0deg) scale(1.15);
+  box-shadow: 0 15px 30px rgba(8, 113, 127, 0.3);
+}
+
+.logo-svg {
+  width: 45px;
+  height: 45px;
+  filter: brightness(0) invert(1);
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 .logo-text {
-  font-size: 1.2rem;  /* ← RÉDUIT : de 1.5rem à 1.2rem */
+  font-size: 2rem;
   font-weight: 800;
-  color: #08717f;  /* ← Turquoise header */
-  letter-spacing: 0.5px;  /* ← RÉDUIT */
+  background: linear-gradient(135deg, #08717f, #d40025);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.footer-description {
+  color: #64748b;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+/* Social Section */
+.social-wrapper {
+  margin-bottom: 1.5rem;
+}
+
+.social-title {
+  font-size: 0.9rem;
+  color: #1e293b;
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+}
+
+.social-grid {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.social-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+}
+
+.social-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.social-btn:hover {
+  transform: translateY(-5px) scale(1.1);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.social-btn.facebook {
+  background: #1877f2;
+  color: white;
+}
+
+.social-btn.instagram {
+  background: linear-gradient(45deg, #f09433, #d62976, #962fbf);
+  color: white;
+}
+
+.social-btn.youtube {
+  background: #ff0000;
+  color: white;
+}
+
+.social-btn.twitter {
+  background: #1da1f2;
+  color: white;
+}
+
+.social-btn.pinterest {
+  background: #e60023;
+  color: white;
+}
+
+/* Contact Info */
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.contact-emoji {
+  font-size: 1rem;
+  width: 24px;
+  height: 24px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contact-item a {
+  color: #475569;
+  text-decoration: none;
   transition: color 0.3s ease;
 }
 
-.logo:hover .logo-text {
-  color: #065a69;
+.contact-item a:hover {
+  color: #08717f;
 }
 
-.brand-desc {
-  color: #64748b;
-  font-size: 0.8rem;  /* ← RÉDUIT : de 0.9rem à 0.8rem */
-  margin: 0;
-  line-height: 1.4;  /* ← RÉDUIT : de 1.6 à 1.4 */
-}
-
-/* ========== SOCIAL LINKS - PLUS PETITS ========== */
-.social-links {
+/* Footer Titles */
+.footer-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1.2rem;
   display: flex;
-  gap: 0.4rem;  /* ← RÉDUIT */
-  margin-top: 0.3rem;  /* ← RÉDUIT */
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.social-link {
-  width: 30px;  /* ← RÉDUIT : de 36px à 30px */
-  height: 30px;  /* ← RÉDUIT : de 36px à 30px */
+.title-icon {
+  font-size: 1.1rem;
+  background: #f1f5f9;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f1f5f9;
-  border-radius: 6px;  /* ← RÉDUIT : de 8px à 6px */
-  font-size: 0.95rem;  /* ← RÉDUIT : de 1.1rem à 0.95rem */
-  text-decoration: none;
-  color: #475569;
-  transition: all 0.3s ease;
 }
 
-.social-link:hover {
-  background: #d30025;  /* ← ROUGE */
-  color: white;
-  transform: translateY(-2px);  /* ← RÉDUIT : de -3px à -2px */
-  box-shadow: 0 3px 10px rgba(211, 0, 37, 0.3);  /* ← RÉDUIT */
-}
-
-/* ========== SECTION TITLES - PLUS COMPACTS ========== */
-.footer-links h4,
-.footer-categories h4,
-.footer-newsletter h4 {
-  color: #08717f;  /* ← Turquoise header */
-  font-size: 0.9rem;  /* ← RÉDUIT : de 1rem à 0.9rem */
-  font-weight: 700;
-  margin: 0 0 0.6rem 0;  /* ← RÉDUIT : de 1rem à 0.6rem */
-  position: relative;
-  padding-bottom: 0.3rem;  /* ← RÉDUIT : de 0.5rem à 0.3rem */
-}
-
-.footer-links h4::after,
-.footer-categories h4::after,
-.footer-newsletter h4::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 25px;  /* ← RÉDUIT : de 30px à 25px */
-  height: 2px;
-  background: #d30025;  /* ← ROUGE */
-  border-radius: 2px;
-}
-
-/* ========== LINKS - PLUS COMPACTS ========== */
-.footer-links ul {
+/* Links avec couleurs */
+.footer-links {
   list-style: none;
-  margin: 0;
   padding: 0;
+  margin: 0;
 }
 
 .footer-links li {
-  margin-bottom: 0.3rem;  /* ← RÉDUIT : de 0.5rem à 0.3rem */
+  margin-bottom: 0.6rem;
 }
 
 .footer-links a {
-  color: #64748b;
   text-decoration: none;
-  font-size: 0.8rem;  /* ← RÉDUIT : de 0.9rem à 0.8rem */
+  font-size: 0.85rem;
   transition: all 0.3s ease;
   display: inline-block;
+  position: relative;
+  padding-right: 0;
+}
+
+.footer-links a::before {
+  content: '←';
+  position: absolute;
+  right: -15px;
+  opacity: 0;
+  transition: all 0.3s ease;
 }
 
 .footer-links a:hover {
-  color: #08717f;  /* ← Turquoise header */
-  transform: translateX(-3px);  /* ← RÉDUIT : de -4px à -3px */
+  transform: translateX(-5px);
+  padding-right: 5px;
 }
 
-/* ========== CATEGORY TAGS - PLUS PETITS ========== */
-.category-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;  /* ← RÉDUIT */
+.footer-links a:hover::before {
+  opacity: 1;
 }
 
-.tag {
-  padding: 0.25rem 0.6rem;  /* ← RÉDUIT : de 0.4rem 0.75rem à 0.25rem 0.6rem */
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;  /* ← RÉDUIT : de 20px à 16px */
-  color: #475569;
-  text-decoration: none;
-  font-size: 0.7rem;  /* ← RÉDUIT : de 0.8rem à 0.7rem */
-  transition: all 0.3s ease;
+/* Couleurs rouges et vertes pour les liens */
+.red-hover {
+  color: #d40025;
 }
 
-.tag:hover {
-  background: #d30025;  /* ← ROUGE */
-  border-color: #d30025;
-  color: white;
-  transform: translateY(-1px);  /* ← RÉDUIT : de -2px à -1px */
-  box-shadow: 0 2px 8px rgba(211, 0, 37, 0.3);  /* ← RÉDUIT */
+.red-hover::before {
+  color: #d40025;
 }
 
-/* ========== NEWSLETTER - PLUS COMPACT ========== */
-.newsletter-form {
-  display: flex;
-  gap: 0.4rem;  /* ← RÉDUIT */
+.red-hover:hover {
+  color: #a0001c;
 }
 
-.newsletter-input {
-  flex: 1;
-  padding: 0.4rem 0.8rem;  /* ← RÉDUIT : de 0.6rem 1rem à 0.4rem 0.8rem */
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;  /* ← RÉDUIT : de 8px à 6px */
-  color: #1e293b;
-  font-size: 0.8rem;  /* ← RÉDUIT : de 0.9rem à 0.8rem */
-  transition: all 0.3s ease;
+.green-hover {
+  color: #2e7d32;
 }
 
-.newsletter-input::placeholder {
-  color: #94a3b8;
-  font-size: 0.75rem;  /* ← AJOUTÉ */
+.green-hover::before {
+  color: #2e7d32;
 }
 
-.newsletter-input:focus {
-  outline: none;
-  border-color: #08717f;  /* ← Turquoise header */
-  background: white;
-  box-shadow: 0 0 0 2px rgba(8, 113, 127, 0.1);  /* ← RÉDUIT : de 3px à 2px */
+.green-hover:hover {
+  color: #1b5e20;
 }
 
-.newsletter-btn {
-  width: 36px;  /* ← RÉDUIT : de 42px à 36px */
+/* Categories Grid */
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.category-chip {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: #d30025;  /* ← ROUGE */
-  border: none;
-  border-radius: 6px;  /* ← RÉDUIT : de 8px à 6px */
-  color: white;
-  font-size: 1rem;  /* ← RÉDUIT : de 1.2rem à 1rem */
-  cursor: pointer;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 30px;
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 500;
   transition: all 0.3s ease;
 }
 
-.newsletter-btn:hover {
-  background: #b00020;
-  transform: scale(1.05);
-  box-shadow: 0 3px 8px rgba(211, 0, 37, 0.4);  /* ← RÉDUIT */
+.category-chip span:first-child {
+  font-size: 0.9rem;
 }
 
-/* ========== FOOTER BOTTOM - PLUS COMPACT ========== */
+/* Chips rouges */
+.red-chip {
+  color: #d40025;
+  border-color: #ffcdd2;
+}
+
+.red-chip:hover {
+  background: linear-gradient(135deg, #d40025, #a0001c);
+  color: white;
+  border-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(212, 0, 37, 0.2);
+}
+
+/* Chips vertes */
+.green-chip {
+  color: #2e7d32;
+  border-color: #c8e6c9;
+}
+
+.green-chip:hover {
+  background: linear-gradient(135deg, #2e7d32, #1b5e20);
+  color: white;
+  border-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(46, 125, 50, 0.2);
+}
+
+/* Newsletter Section */
+.newsletter-section {
+  background: rgba(8, 113, 127, 0.03);
+  padding: 1.5rem;
+  border-radius: 20px;
+  border: 1px solid rgba(8, 113, 127, 0.1);
+}
+
+.newsletter-text {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.newsletter-form-enhanced {
+  margin-bottom: 1rem;
+}
+
+.input-group {
+  display: flex;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.3rem;
+  border-radius: 50px;
+  border: 2px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.input-group:focus-within {
+  border-color: #d40025;
+  box-shadow: 0 0 0 3px rgba(212, 0, 37, 0.1);
+}
+
+.input-group input {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: none;
+  background: transparent;
+  font-size: 0.85rem;
+  outline: none;
+  color: #1e293b;
+}
+
+.input-group input::placeholder {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+/* Bouton avec dégradé rouge */
+.red-gradient-btn {
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(135deg, #d40025, #a0001c);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.red-gradient-btn:hover:not(:disabled) {
+  transform: translateX(-2px);
+  box-shadow: 0 5px 15px rgba(212, 0, 37, 0.3);
+}
+
+.red-gradient-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #d40025, #a0001c);
+}
+
+.loading-spinner-small {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid white;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Newsletter Features avec couleurs */
+.newsletter-features {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: space-around;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.feature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.feature-icon {
+  font-size: 1.1rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.feature-text {
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+.red-feature .feature-text {
+  color: #d40025;
+}
+
+.green-feature .feature-text {
+  color: #2e7d32;
+}
+
+.red-feature .feature-icon {
+  color: #d40025;
+}
+
+.green-feature .feature-icon {
+  color: #2e7d32;
+}
+
+/* Footer Bottom avec couleurs */
 .footer-bottom {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 0.8rem;  /* ← RÉDUIT : de 1.5rem à 0.8rem */
-  border-top: 1px solid #e2e8f0;
-  font-size: 0.75rem;  /* ← RÉDUIT : de 0.85rem à 0.75rem */
+  padding-top: 1.5rem;
+  border-top: 2px solid rgba(8, 113, 127, 0.1);
+  font-size: 0.75rem;
 }
 
 .copyright p {
   color: #64748b;
   margin: 0;
-  font-size: 0.75rem;  /* ← RÉDUIT */
 }
 
 .footer-bottom-links {
   display: flex;
-  gap: 0.4rem;  /* ← RÉDUIT : de 0.5rem à 0.4rem */
+  gap: 0.8rem;
   align-items: center;
   flex-wrap: wrap;
 }
 
 .footer-bottom-links a {
-  color: #64748b;
   text-decoration: none;
   transition: color 0.3s ease;
-  font-size: 0.75rem;  /* ← RÉDUIT */
+  font-size: 0.75rem;
 }
 
-.footer-bottom-links a:hover {
-  color: #08717f;  /* ← Turquoise header */
+.red-link {
+  color: #d40025;
 }
 
-.separator {
+.red-link:hover {
+  color: #a0001c;
+  text-decoration: underline;
+}
+
+.green-link {
+  color: #2e7d32;
+}
+
+.green-link:hover {
+  color: #1b5e20;
+  text-decoration: underline;
+}
+
+.dot {
   color: #cbd5e1;
-  font-size: 0.6rem;  /* ← RÉDUIT : de 0.7rem à 0.6rem */
+  font-size: 0.5rem;
 }
 
-/* ========== RESPONSIVE - AJUSTÉ ========== */
-@media (max-width: 1024px) {
-  .footer-top {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.2rem;  /* ← RÉDUIT */
+/* Newsletter Message */
+.newsletter-message {
+  font-size: 0.8rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  margin-bottom: 0.8rem;
+  text-align: center;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
   }
-  
-  .footer {
-    padding: 1.2rem 0 0.6rem;  /* ← RÉDUIT */
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.newsletter-message.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.newsletter-message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .footer-main {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
   }
 }
 
 @media (max-width: 768px) {
-  .footer {
-    padding: 1rem 0 0.5rem;  /* ← RÉDUIT */
+  .footer-content {
+    padding: 2rem 0 1rem;
   }
 
-  .footer-top {
+  .footer-main {
     grid-template-columns: 1fr;
-    gap: 1.2rem;  /* ← RÉDUIT */
+    gap: 2rem;
   }
 
-  .footer-brand {
-    text-align: center;
-    align-items: center;
-  }
-
-  .logo {
-    justify-content: center;
-  }
-
-  .social-links {
-    justify-content: center;
-  }
-
-  .footer-links h4::after,
-  .footer-categories h4::after,
-  .footer-newsletter h4::after {
-    right: 50%;
-    transform: translateX(50%);
-  }
-
-  .footer-links {
+  .brand-section {
     text-align: center;
   }
 
-  .category-tags {
+  .footer-logo {
     justify-content: center;
+  }
+
+  .social-grid {
+    justify-content: center;
+  }
+
+  .contact-item {
+    justify-content: center;
+  }
+
+  .footer-title {
+    justify-content: center;
+  }
+
+  .footer-links a:hover {
+    transform: translateX(0);
+    padding-right: 0;
+  }
+
+  .footer-links a::before {
+    display: none;
+  }
+
+  .categories-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .footer-bottom {
     flex-direction: column;
-    gap: 0.5rem;  /* ← RÉDUIT */
+    gap: 1rem;
     text-align: center;
   }
 
@@ -428,39 +885,42 @@ export default {
 }
 
 @media (max-width: 480px) {
-  .footer {
-    padding: 0.8rem 0 0.4rem;  /* ← RÉDUIT */
+  .categories-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .footer-top {
-    gap: 1rem;  /* ← RÉDUIT */
+  .newsletter-section {
+    padding: 1rem;
   }
 
-  .logo-symbol {
-    width: 28px;  /* ← RÉDUIT : de 35px à 28px */
-    height: 28px;  /* ← RÉDUIT : de 35px à 28px */
-    font-size: 1rem;  /* ← RÉDUIT : de 1.3rem à 1rem */
-  }
-
-  .logo-text {
-    font-size: 1rem;  /* ← RÉDUIT : de 1.3rem à 1rem */
-  }
-
-  .newsletter-form {
+  .input-group {
     flex-direction: column;
+    background: transparent;
+    border: none;
+    padding: 0;
   }
 
-  .newsletter-btn {
+  .input-group input {
+    border: 2px solid #e2e8f0;
+    border-radius: 30px;
+    padding: 0.8rem 1rem;
+  }
+
+  .input-group button {
     width: 100%;
-    padding: 0.4rem;  /* ← RÉDUIT : de 0.6rem à 0.4rem */
+    padding: 0.8rem;
+  }
+
+  .newsletter-features {
+    flex-wrap: wrap;
   }
 
   .footer-bottom-links {
     flex-direction: column;
-    gap: 0.3rem;  /* ← RÉDUIT */
+    gap: 0.3rem;
   }
 
-  .separator {
+  .dot {
     display: none;
   }
 }

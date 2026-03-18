@@ -1,3 +1,4 @@
+<!-- frontend/src/components/Header.vue -->
 <template>
   <header
     class="header"
@@ -96,7 +97,7 @@
                       @click="showCategories = false"
                     >
                       <span class="category-icon">{{ category.icon }}</span>
-                      <span class="category-name">{{ currentLanguage === 'ar' ? category.name : category.nameFr }}</span>
+                      <span class="category-name">{{ category.name }}</span>
                       <span class="category-count">{{ category.count }}</span>
                     </router-link>
                   </div>
@@ -190,27 +191,26 @@
                       <span class="item-text">{{ t('common.profile') }}</span>
                     </router-link>
 
-                    <!-- ✅ CORRECTION: Lien vers le profil vendeur avec l'ID dynamique -->
-                    <!-- ✅ Ce lien est correct, il utilise vendorProfileId -->
-<router-link
-  v-if="userRole === 'vendor'"
-  :to="`/vendor/${vendorProfileId}`"
-  class="dropdown-item modern-item"
-  @click="closeUserMenu"
->
-  <div class="item-icon">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.5" />
-      <path
-        d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
-        stroke="currentColor"
-        stroke-width="1.5"
-        stroke-linecap="round"
-      />
-    </svg>
-  </div>
-  <span class="item-text">{{ t('vendor.shop') }}</span>
-</router-link>
+                    <!-- Pour les vendeurs - CORRIGÉ: utilisation de vendorId -->
+                    <router-link
+                      v-if="userRole === 'vendor'"
+                      :to="`/vendor/${vendorId}`"
+                      class="dropdown-item modern-item"
+                      @click="closeUserMenu"
+                    >
+                      <div class="item-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.5" />
+                          <path
+                            d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                          />
+                        </svg>
+                      </div>
+                      <span class="item-text">{{ t('vendor.shop') }}</span>
+                    </router-link>
 
                     <!-- Commandes pour tous -->
                     <router-link
@@ -312,7 +312,7 @@
                   @click="closeMobileMenu"
                 >
                   <span class="category-icon">{{ category.icon }}</span>
-                  <span class="category-name">{{ currentLanguage === 'ar' ? category.name : category.nameFr }}</span>
+                  <span class="category-name">{{ category.name }}</span>
                   <span class="category-count">{{ category.count }}</span>
                 </router-link>
               </div>
@@ -333,12 +333,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useCartStore } from '../stores/cart';
 import { useLikesStore } from '../stores/likes';
-import { useAuthStore } from '../stores/auth'; // ✅ Correction: authStore
+import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
 const { t, locale } = useI18n();
@@ -346,7 +346,7 @@ const cartStore = useCartStore();
 const likesStore = useLikesStore();
 const authStore = useAuthStore();
 
-// State
+// ===== STATE =====
 const searchQuery = ref('');
 const showUserMenu = ref(false);
 const showMobileMenu = ref(false);
@@ -357,10 +357,31 @@ const showHeader = ref(true);
 const lastScrollY = ref(0);
 const userMenu = ref(null);
 
-// Langue actuelle
+// ===== COMPUTED =====
 const currentLanguage = computed(() => locale.value);
 
-// Categories
+const cartCount = computed(() => cartStore.itemCount);
+const likesCount = computed(() => likesStore.likesCount);
+const isAuthenticated = computed(() => authStore.isAuthenticated);
+const userName = computed(() => authStore.userName || 'User');
+const userEmail = computed(() => authStore.userEmail || '');
+const userRole = computed(() => authStore.userRole);
+const userId = computed(() => authStore.userId);
+
+// ✅ CORRECTION: vendorId computed qui combine plusieurs sources
+const vendorId = computed(() => {
+  // Priorité: store vendorId > user.vendorId > localStorage
+  return authStore.vendorId ||
+         authStore.user?.vendorId ||
+         localStorage.getItem('vendorId');
+});
+
+const userInitials = computed(() => {
+  const name = userName.value;
+  return name ? name.charAt(0).toUpperCase() : 'U';
+});
+
+// ===== CATEGORIES =====
 const categories = ref([
   { id: 1, name: 'عطور', nameFr: 'Parfums', slug: 'perfumes', icon: '🌸', count: 87 },
   { id: 2, name: 'حلي و اكسسوارات', nameFr: 'Bijoux et accessoires', slug: 'jewelry', icon: '💍', count: 312 },
@@ -373,32 +394,7 @@ const categories = ref([
   { id: 9, name: 'أخرى', nameFr: 'Autres', slug: 'other', icon: '✨', count: 45 },
 ]);
 
-// Computed
-const cartCount = computed(() => cartStore.itemCount);
-const likesCount = computed(() => likesStore.likesCount);
-const isAuthenticated = computed(() => authStore.isAuthenticated);
-const userName = computed(() => authStore.userName || 'User');
-const userEmail = computed(() => authStore.userEmail || '');
-const userRole = computed(() => authStore.userRole);
-const userId = computed(() => authStore.userId);
-const userVendorId = computed(() => authStore.userVendorId); // ✅ ID du vendeur
-const userInitials = computed(() => {
-  const name = userName.value;
-  return name ? name.charAt(0).toUpperCase() : 'U';
-});
-
-// ✅ L'ID à utiliser pour le lien "متجري"
-
-const vendorProfileId = computed(() => {
-  if (userRole.value === 'vendor') {
-    // Essayer d'abord le store, puis localStorage
-    const vendorId = userVendorId.value || localStorage.getItem('vendorId');
-    return vendorId || userId.value;
-  }
-  return userId.value;
-});
-
-// Methods
+// ===== METHODS =====
 const toggleLanguage = () => {
   const newLocale = locale.value === 'ar' ? 'fr' : 'ar';
   locale.value = newLocale;
@@ -459,7 +455,7 @@ const logout = () => {
   router.push('/');
 };
 
-// Scroll handler
+// ===== SCROLL HANDLER =====
 const handleScroll = () => {
   const currentScrollY = window.scrollY;
   isScrolled.value = currentScrollY > 30;
@@ -489,18 +485,34 @@ const handleRouteChange = () => {
   lastScrollY.value = 0;
 };
 
-// Lifecycle
+// ===== LOGGING POUR DEBUG =====
+const logUserInfo = () => {
+  console.log('👤 User ID:', userId.value);
+  console.log('🏪 Vendor ID:', vendorId.value);
+  console.log('🔗 Lien vers:', vendorId.value || userId.value);
+  console.log('🎭 Rôle:', userRole.value);
+  console.log('📦 localStorage vendorId:', localStorage.getItem('vendorId'));
+};
+
+// ===== WATCHERS =====
+watch([userId, vendorId, userRole], () => {
+  logUserInfo();
+});
+
+// ===== LIFECYCLE =====
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true });
   document.addEventListener('click', handleClickOutside);
   router.afterEach(handleRouteChange);
+
+  // Charger les données
   likesStore.loadFromStorage();
   cartStore.loadFromStorage();
 
-  // ✅ Debug: voir les IDs
-  console.log('👤 User ID:', userId.value);
-  console.log('🏪 Vendor ID:', userVendorId.value);
-  console.log('🔗 Lien vers:', vendorProfileId.value);
+  // Log initial
+  setTimeout(() => {
+    logUserInfo();
+  }, 100);
 });
 
 onUnmounted(() => {
@@ -511,6 +523,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* ===== TOUS VOS STYLES EXISTANTS ===== */
 .header {
   position: sticky;
   top: 0;
@@ -1349,7 +1362,6 @@ onUnmounted(() => {
     height: 40px;
     min-width: 100px;
     margin-right: 5px;
-
   }
 
   .logo-image {

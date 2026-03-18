@@ -1,4 +1,4 @@
-// frontend/src/stores/vendor.js
+import api from '../services/api'\r\n// frontend/src/stores/vendor.js
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -59,3 +59,4 @@ export const useVendorStore = defineStore('vendor', () => {
     loadVendors,
   }
 })
+

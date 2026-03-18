@@ -516,10 +516,11 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useVendorStore } from '../stores/vendorStore'
+import api from '../services/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -608,7 +609,7 @@ const showNotification = (message, type = 'success') => {
 }
 
 // ===== IMAGE COMPRESSION =====
-const compressImage = (base64, maxWidth = 400, quality = 0.7) => {
+const compressImage = (base64, maxWidth = 400, maxSizeKB = 500) => {
   return new Promise((resolve) => {
     const img = new Image()
     img.src = base64
@@ -617,6 +618,7 @@ const compressImage = (base64, maxWidth = 400, quality = 0.7) => {
       const canvas = document.createElement('canvas')
       let width = img.width
       let height = img.height
+      let quality = 0.9
 
       if (width > maxWidth) {
         height = Math.round(height * (maxWidth / width))
@@ -625,49 +627,77 @@ const compressImage = (base64, maxWidth = 400, quality = 0.7) => {
 
       canvas.width = width
       canvas.height = height
-
       const ctx = canvas.getContext('2d')
       ctx.drawImage(img, 0, 0, width, height)
 
-      const compressedBase64 = canvas.toDataURL('image/jpeg', quality)
-      resolve(compressedBase64)
+      let compressed = canvas.toDataURL('image/jpeg', quality)
+
+      while (compressed.length > maxSizeKB * 1024 && quality > 0.3) {
+        quality -= 0.1
+        compressed = canvas.toDataURL('image/jpeg', quality)
+      }
+
+      console.log(`📸 Image compressée: ${(compressed.length / 1024).toFixed(2)}KB (qualité: ${quality.toFixed(2)})`)
+      resolve(compressed)
+    }
+
+    img.onerror = () => {
+      resolve(base64)
     }
   })
 }
 
 // ===== UPLOAD HANDLERS =====
 const triggerProfileUpload = () => {
-  profileInput.value.click()
+  profileInput.value?.click()
 }
 
 const triggerCoverUpload = () => {
-  coverInput.value.click()
+  coverInput.value?.click()
 }
 
 const handleProfileUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) return
 
-  if (file.size > 5 * 1024 * 1024) {
-    showNotification('حجم الصورة يجب أن لا يتجاوز 5MB', 'error')
+  if (file.size > 2 * 1024 * 1024) {
+    showNotification('حجم الصورة يجب أن لا يتجاوز 2MB', 'error')
+    return
+  }
+
+  if (!file.type.startsWith('image/')) {
+    showNotification('الرجاء اختيار صورة صالحة', 'error')
     return
   }
 
   isLoading.value = true
 
-  const reader = new FileReader()
-  reader.readAsDataURL(file)
+  try {
+    const reader = new FileReader()
 
-  reader.onload = async (e) => {
-    try {
-      const compressed = await compressImage(e.target.result, 300, 0.7)
-      profilePreview.value = compressed
-      showNotification('✅ تم تحميل الصورة بنجاح', 'success')
-    } catch (error) {
-      showNotification('❌ فشل تحميل الصورة', 'error')
-    } finally {
+    reader.onload = async (e) => {
+      try {
+        const compressed = await compressImage(e.target.result, 300, 300)
+        profilePreview.value = compressed
+        showNotification('✅ تم تحميل الصورة بنجاح', 'success')
+      } catch (error) {
+        console.error('Erreur compression:', error)
+        showNotification('❌ فشل تحميل الصورة', 'error')
+      } finally {
+        isLoading.value = false
+      }
+    }
+
+    reader.onerror = () => {
+      showNotification('❌ فشل قراءة الملف', 'error')
       isLoading.value = false
     }
+
+    reader.readAsDataURL(file)
+  } catch (error) {
+    console.error('Erreur upload:', error)
+    showNotification('❌ فشل تحميل الصورة', 'error')
+    isLoading.value = false
   }
 }
 
@@ -675,26 +705,45 @@ const handleCoverUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) return
 
-  if (file.size > 5 * 1024 * 1024) {
-    showNotification('حجم الصورة يجب أن لا يتجاوز 5MB', 'error')
+  if (file.size > 2 * 1024 * 1024) {
+    showNotification('حجم الصورة يجب أن لا يتجاوز 2MB', 'error')
+    return
+  }
+
+  if (!file.type.startsWith('image/')) {
+    showNotification('الرجاء اختيار صورة صالحة', 'error')
     return
   }
 
   isLoading.value = true
 
-  const reader = new FileReader()
-  reader.readAsDataURL(file)
+  try {
+    const reader = new FileReader()
 
-  reader.onload = async (e) => {
-    try {
-      const compressed = await compressImage(e.target.result, 800, 0.8)
-      coverPreview.value = compressed
-      showNotification('✅ تم تحميل الغلاف بنجاح', 'success')
-    } catch (error) {
-      showNotification('❌ فشل تحميل الغلاف', 'error')
-    } finally {
+    reader.onload = async (e) => {
+      try {
+        const compressed = await compressImage(e.target.result, 800, 400)
+        coverPreview.value = compressed
+        console.log(`✅ Image couverture prête: ${(compressed.length / 1024).toFixed(2)}KB`)
+        showNotification('✅ تم تحميل الغلاف بنجاح', 'success')
+      } catch (error) {
+        console.error('Erreur compression:', error)
+        showNotification('❌ فشل تحميل الغلاف', 'error')
+      } finally {
+        isLoading.value = false
+      }
+    }
+
+    reader.onerror = () => {
+      showNotification('❌ فشل قراءة الملف', 'error')
       isLoading.value = false
     }
+
+    reader.readAsDataURL(file)
+  } catch (error) {
+    console.error('Erreur upload:', error)
+    showNotification('❌ فشل تحميل الغلاف', 'error')
+    isLoading.value = false
   }
 }
 
@@ -702,14 +751,19 @@ const handleCoverUpload = async (event) => {
 const validateStep1 = () => {
   errors.value = {}
 
-  if (!form.fullName) errors.value.fullName = 'الاسم الكامل مطلوب'
-  if (!form.email) errors.value.email = 'البريد الإلكتروني مطلوب'
-  else if (!form.email.includes('@')) errors.value.email = 'بريد إلكتروني غير صحيح'
-  if (!form.phone) errors.value.phone = 'رقم الهاتف مطلوب'
-  else if (form.phone.length < 8) errors.value.phone = '8 أرقام على الأقل'
-  if (!form.address) errors.value.address = 'العنوان مطلوب'
+  if (!form.fullName?.trim()) errors.value.fullName = 'الاسم الكامل مطلوب'
+  if (!form.email?.trim()) errors.value.email = 'البريد الإلكتروني مطلوب'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+    errors.value.email = 'بريد إلكتروني غير صحيح'
+
+  if (!form.phone?.trim()) errors.value.phone = 'رقم الهاتف مطلوب'
+  else if (!/^\d{8,}$/.test(form.phone.replace(/\s/g, '')))
+    errors.value.phone = '8 أرقام على الأقل'
+
+  if (!form.address?.trim()) errors.value.address = 'العنوان مطلوب'
   if (!form.password) errors.value.password = 'كلمة المرور مطلوبة'
   else if (form.password.length < 6) errors.value.password = '6 أحرف على الأقل'
+
   if (!form.confirmPassword) errors.value.confirmPassword = 'تأكيد كلمة المرور مطلوب'
   else if (form.password !== form.confirmPassword)
     errors.value.confirmPassword = 'كلمة المرور غير متطابقة'
@@ -724,9 +778,9 @@ const validateStep1 = () => {
 const validateStep2 = () => {
   errors.value = {}
 
-  if (!form.shopName) errors.value.shopName = 'اسم المتجر مطلوب'
+  if (!form.shopName?.trim()) errors.value.shopName = 'اسم المتجر مطلوب'
   if (!form.specialty) errors.value.specialty = 'التخصص مطلوب'
-  if (!form.description) errors.value.description = 'وصف النشاط مطلوب'
+  if (!form.description?.trim()) errors.value.description = 'وصف النشاط مطلوب'
   else if (form.description.length < 10) errors.value.description = '10 أحرف على الأقل'
 
   if (Object.keys(errors.value).length === 0) {
@@ -736,7 +790,7 @@ const validateStep2 = () => {
   }
 }
 
-// ===== SUBMIT =====
+// ===== SUBMIT CORRIGÉ =====
 const submitForm = async () => {
   if (!form.acceptTerms) {
     showNotification('يجب الموافقة على الشروط والأحكام', 'error')
@@ -748,172 +802,110 @@ const submitForm = async () => {
 
   try {
     // Format phone
-    let formattedPhone = form.phone
+    let formattedPhone = form.phone.replace(/\s/g, '')
     if (!formattedPhone.startsWith('+') && !formattedPhone.startsWith('0')) {
       formattedPhone = '+216' + formattedPhone
     }
 
-    // Prepare images
-    const randomAvatarNum = Math.floor(Math.random() * 70)
-    const defaultAvatar = `https://i.pravatar.cc/300?img=${randomAvatarNum}`
-    const defaultCover = 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1200'
+    // Préparer les images
+    const randomAvatarNum = Math.floor(Math.random() * 70) + 1
+    const defaultAvatar = `https://i.pravatar.cc/400?img=${randomAvatarNum}`
+    const defaultCover = 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1200&auto=format'
 
+    // Utiliser les images uploadées ou les défauts
     const avatar = profilePreview.value || defaultAvatar
-    const coverImage = coverPreview.value || defaultCover
+    let coverImage = coverPreview.value || defaultCover
 
-    // Register user
-    const userData = {
-      name: form.fullName,
-      email: form.email,
-      phone: formattedPhone,
-      password: form.password,
-      role: 'vendor',
-      address: form.address,
-      avatar,
-    }
-
-    console.log('📝 Tentative inscription:', userData.email)
-
-    const registerResponse = await fetch('http://localhost:5000/api/v1/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData),
+    console.log('📦 Tailles des images:', {
+      avatar: avatar ? `${(avatar.length / 1024).toFixed(2)}KB` : 'défaut',
+      coverImage: coverImage ? `${(coverImage.length / 1024).toFixed(2)}KB` : 'défaut'
     })
 
-    const registerResult = await registerResponse.json()
-    console.log('📦 Réponse register:', registerResult)
-
-    let token
-    let backendUser
-
-    if (!registerResponse.ok) {
-      // Si l'utilisateur existe déjà, essayer de se connecter
-      if (registerResult.message && registerResult.message.includes('existe déjà')) {
-        console.log('🔄 Utilisateur existe, tentative de connexion...')
-
-        const loginResponse = await fetch('http://localhost:5000/api/v1/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: form.email,
-            password: form.password,
-          }),
-        })
-
-        const loginResult = await loginResponse.json()
-        console.log('📦 Réponse login:', loginResult)
-
-        if (!loginResponse.ok) {
-          throw new Error(loginResult.message || 'Erreur de connexion')
-        }
-
-        token = loginResult.token
-        backendUser = loginResult.user || loginResult.data?.user
-      } else {
-        throw new Error(registerResult.message || "Erreur d'inscription")
-      }
-    } else {
-      token = registerResult.token
-      backendUser = registerResult.user || registerResult.data?.user
+    // 1. Register user
+    const registerData = {
+      name: form.fullName,
+      email: form.email.toLowerCase().trim(),
+      phone: formattedPhone,
+      password: form.password,
+      address: form.address,
+      avatar: avatar,
+      role: 'vendor'
     }
 
-    if (!backendUser || !backendUser.id) {
-      console.error('❌ Utilisateur invalide:', backendUser)
-      throw new Error('Utilisateur non trouvé')
-    }
+    console.log('📤 Envoi inscription:', { ...registerData, avatar: '...[image]' })
 
-    console.log('✅ Utilisateur connecté ID:', backendUser.id)
+    const registerResponse = await api.post('/auth/register', registerData)
 
-    // Create vendor profile
+    console.log('📦 Réponse register:', registerResponse.data)
+
+    const { token, user } = registerResponse.data
+
+    // 2. Sauvegarder dans authStore
+    authStore.setToken(token)
+    authStore.setUser(user)
+
+    // 3. Créer le profil vendeur
     const vendorData = {
-      userId: backendUser.id,
+      userId: user.id,
       shopName: form.shopName,
       specialty: form.specialty,
       description: form.description,
       location: 'تونس',
-      coverImage,
+      coverImage: coverImage,
       experience: form.experience || 0,
     }
 
-    console.log('📤 Création vendeur:', vendorData)
+    console.log('📤 Création vendeur avec image de taille:', coverImage.length)
 
-    const vendorResponse = await fetch('http://localhost:5000/api/v1/vendors', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(vendorData),
+    const vendorResponse = await api.post('/vendors', vendorData, {
+      headers: { Authorization: `Bearer ${token}` }
     })
 
-    const vendorResult = await vendorResponse.json()
-    console.log('📦 Réponse vendeur:', vendorResult)
+    console.log('📦 Réponse vendeur:', vendorResponse.data)
 
-    if (!vendorResponse.ok) {
-      throw new Error(vendorResult.message || 'Erreur création vendeur')
+    if (!vendorResponse.data.success) {
+      throw new Error(vendorResponse.data.message || 'Erreur création vendeur')
     }
 
-    // Extract vendor ID
+    // Extraire l'ID du vendeur
     let vendorId = null
+    const vendorResult = vendorResponse.data.data || vendorResponse.data
 
-    if (vendorResult.data?.vendor?.id) {
-      vendorId = vendorResult.data.vendor.id
-    } else if (vendorResult.data?.id) {
-      vendorId = vendorResult.data.id
-    } else if (vendorResult.vendor?.id) {
-      vendorId = vendorResult.vendor.id
-    } else if (vendorResult.id) {
-      vendorId = vendorResult.id
-    }
-
-    console.log('✅ ID vendeur extrait:', vendorId)
+    if (vendorResult.vendor?.id) vendorId = vendorResult.vendor.id
+    else if (vendorResult.id) vendorId = vendorResult.id
 
     if (!vendorId) {
       console.error('❌ Structure réponse:', vendorResult)
       throw new Error('ID du vendeur manquant')
     }
 
-    // Save to auth store
-    authStore.setToken(token)
-    authStore.setUser(backendUser)
+    console.log('✅ ID vendeur extrait:', vendorId)
 
-    // ✅ SAUVEGARDE DE L'ID DU VENDEUR
-    console.log('🚀 Sauvegarde de vendorId:', vendorId)
-
-    // Méthode 1: via l'action du store
+    // 4. Sauvegarder vendorId
     authStore.setVendorId(vendorId)
-
-    // Méthode 2: direct dans l'état
-    authStore.vendorId = vendorId
-
-    // Méthode 3: localStorage direct
     localStorage.setItem('vendorId', vendorId)
 
-    // Vérification
-    console.log('✅ authStore.vendorId =', authStore.vendorId)
-    console.log('✅ localStorage vendorId =', localStorage.getItem('vendorId'))
-
-    // Create vendor in local store
-    const newVendor = {
-      id: vendorId,
-      name: form.fullName,
-      shopName: form.shopName,
-      email: form.email,
-      phone: formattedPhone,
-      avatar,
-      coverImage,
-      specialty: form.specialty,
-      description: form.description,
-      location: 'تونس',
-      experience: form.experience || 0,
-      verified: false,
-      productsCount: 0,
-      followersCount: 0,
-      createdAt: new Date().toISOString(),
+    // 5. Créer dans le store local
+    if (vendorStore && typeof vendorStore.createVendor === 'function') {
+      const newVendor = {
+        id: vendorId,
+        name: form.fullName,
+        shopName: form.shopName,
+        email: form.email,
+        phone: formattedPhone,
+        avatar: avatar,
+        coverImage: coverImage,
+        specialty: form.specialty,
+        description: form.description,
+        location: 'تونس',
+        experience: form.experience || 0,
+        verified: false,
+        productsCount: 0,
+        followersCount: 0,
+        createdAt: new Date().toISOString(),
+      }
+      vendorStore.createVendor(newVendor)
     }
-
-    console.log('📦 Sauvegarde du vendeur dans le store:', newVendor)
-    vendorStore.createVendor(newVendor)
 
     showNotification('✅ تم إنشاء حسابك بنجاح!')
 
@@ -922,13 +914,40 @@ const submitForm = async () => {
     }, 2000)
 
   } catch (error) {
-    console.error('❌ Erreur:', error)
-    showNotification('❌ ' + (error.message || 'حدث خطأ'), 'error')
+    console.error('❌ Erreur complète:', error)
+
+    if (error.response) {
+      console.error('❌ Réponse erreur:', error.response.data)
+
+      // Gestion des erreurs spécifiques
+      if (error.response.status === 400) {
+        if (error.response.data.message?.includes('avatar')) {
+          showNotification('صورة الملف الشخصي كبيرة جداً', 'error')
+        } else if (error.response.data.message?.includes('coverImage')) {
+          showNotification('صورة الغلاف كبيرة جداً', 'error')
+        } else {
+          showNotification(error.response.data.message || 'بيانات غير صحيحة', 'error')
+        }
+      } else if (error.response.status === 500) {
+        showNotification('خطأ في الخادم، يرجى المحاولة لاحقاً', 'error')
+      } else {
+        showNotification('حدث خطأ غير متوقع', 'error')
+      }
+    } else {
+      showNotification(error.message || 'حدث خطأ', 'error')
+    }
   } finally {
     isSubmitting.value = false
     isLoading.value = false
   }
 }
+
+// ===== LIFE CYCLE =====
+onMounted(() => {
+  console.log('BecomeVendor mounted')
+  console.log('AuthStore disponible:', !!authStore)
+  console.log('VendorStore disponible:', !!vendorStore)
+})
 </script>
 
 <style scoped>

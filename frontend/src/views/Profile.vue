@@ -747,6 +747,11 @@ onMounted(() => {
   transform: scale(1.1);
 }
 
+.change-avatar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .profile-details {
   flex: 1;
 }
@@ -763,6 +768,30 @@ onMounted(() => {
   color: #64748b;
   font-size: 1rem;
   margin-bottom: 5px;
+}
+
+.profile-role {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.profile-role.admin {
+  background: #d40025;
+  color: white;
+}
+
+.profile-role.vendor {
+  background: #08717f;
+  color: white;
+}
+
+.profile-role.customer {
+  background: #10b981;
+  color: white;
 }
 
 .profile-stats {
@@ -885,6 +914,29 @@ onMounted(() => {
   color: #1e293b;
 }
 
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.role-badge.admin {
+  background: #d40025;
+  color: white;
+}
+
+.role-badge.vendor {
+  background: #08717f;
+  color: white;
+}
+
+.role-badge.customer {
+  background: #10b981;
+  color: white;
+}
+
 .btn-edit {
   display: inline-flex;
   align-items: center;
@@ -931,6 +983,16 @@ onMounted(() => {
   transform: translateX(-4px);
 }
 
+.setting-item.logout {
+  border-color: #fecdd3;
+  background: #fff5f7;
+}
+
+.setting-item.logout:hover {
+  background: #fee2e2;
+  border-color: #d40025;
+}
+
 .setting-icon {
   font-size: 1.2rem;
   width: 30px;
@@ -944,7 +1006,7 @@ onMounted(() => {
 }
 
 .logout-icon {
-  color: #d40025;
+  color: #d40025 !important;
 }
 
 .setting-text {
@@ -955,7 +1017,8 @@ onMounted(() => {
 }
 
 .logout-text {
-  color: #d40025;
+  color: #d40025 !important;
+  font-weight: 700;
 }
 
 .setting-arrow {
@@ -1511,75 +1574,5 @@ onMounted(() => {
     text-align: right;
     padding-right: 75px;
   }
-}
-.profile-role {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-top: 8px;
-}
-
-.profile-role.admin {
-  background: #d40025;
-  color: white;
-}
-
-.profile-role.vendor {
-  background: #08717f;
-  color: white;
-}
-
-.profile-role.customer {
-  background: #10b981;
-  color: white;
-}
-
-.role-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.role-badge.admin {
-  background: #d40025;
-  color: white;
-}
-
-.role-badge.vendor {
-  background: #08717f;
-  color: white;
-}
-
-.role-badge.customer {
-  background: #10b981;
-  color: white;
-}
-
-.setting-item.logout {
-  border-color: #fecdd3;
-  background: #fff5f7;
-}
-
-.setting-item.logout:hover {
-  background: #fee2e2;
-  border-color: #d40025;
-}
-
-.logout-icon {
-  color: #d40025 !important;
-}
-
-.logout-text {
-  color: #d40025 !important;
-  font-weight: 700;
-}
-
-.change-avatar-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 </style>

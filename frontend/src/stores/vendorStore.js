@@ -1,59 +1,49 @@
 // frontend/src/stores/vendorStore.js
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import api from '../services/api'
 
 export const useVendorStore = defineStore('vendor', () => {
+  // ===== STATE =====
   const vendors = ref([])
   const loading = ref(false)
   const error = ref(null)
   const currentVendor = ref(null)
+  const totalPages = ref(1)
+  const currentPage = ref(1)
+  const totalCount = ref(0)
 
-  // URL de base de l'API
-  const API_URL = 'http://localhost:5000/api/v1'
+  // ===== COMPUTED =====
+  const hasVendors = computed(() => vendors.value.length > 0)
+  const isLoading = computed(() => loading.value)
+  const hasError = computed(() => error.value !== null)
+  const getCurrentVendor = computed(() => currentVendor.value)
+  const hasCurrentVendor = computed(() => currentVendor.value !== null) // AJOUT
 
-  // Charger tous les vendeurs depuis l'API
-  const fetchVendors = async () => {
-    loading.value = true
-    error.value = null
+  // ===== MÉTHODES PRIVÉES =====
+  const saveToStorage = () => {
     try {
-      console.log('📦 Chargement des vendeurs depuis API...')
-      const response = await fetch(`${API_URL}/vendors`)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result = await response.json()
-
-      if (result.success) {
-        vendors.value = result.data.vendors
-        console.log('✅ Vendeurs chargés depuis API:', vendors.value.length)
-
-        // Sauvegarder aussi dans localStorage pour fallback
-        localStorage.setItem('vendors', JSON.stringify(vendors.value))
-      } else {
-        throw new Error(result.message || 'Erreur chargement vendeurs')
+      localStorage.setItem('vendors', JSON.stringify(vendors.value))
+      if (currentVendor.value) {
+        localStorage.setItem('currentVendor', JSON.stringify(currentVendor.value))
       }
     } catch (err) {
-      console.error('❌ Erreur fetchVendors:', err)
-      error.value = err.message
-
-      // Fallback: charger depuis localStorage
-      loadFromStorage()
-    } finally {
-      loading.value = false
+      console.error('❌ Erreur sauvegarde localStorage:', err)
     }
   }
 
-  // Charger depuis localStorage (fallback)
   const loadFromStorage = () => {
     try {
       const saved = localStorage.getItem('vendors')
       if (saved) {
         vendors.value = JSON.parse(saved)
-        console.log('✅ Vendeurs chargés depuis localStorage (fallback):', vendors.value.length)
-      } else {
-        vendors.value = []
+        console.log('✅ Vendeurs chargés depuis localStorage:', vendors.value.length)
+      }
+
+      const savedCurrent = localStorage.getItem('currentVendor')
+      if (savedCurrent) {
+        currentVendor.value = JSON.parse(savedCurrent)
+        console.log('✅ Vendeur courant chargé depuis localStorage')
       }
     } catch (err) {
       console.error('❌ Erreur chargement localStorage:', err)
@@ -61,88 +51,135 @@ export const useVendorStore = defineStore('vendor', () => {
     }
   }
 
-  // Récupérer un vendeur par ID (VERSION CORRIGÉE AVEC FALLBACK)
-  const getVendorById = async (id) => {
-    if (!id) return null
+  // ===== MÉTHODES PUBLIQUES =====
 
-    console.log('🔍 getVendorById:', id)
+  /**
+   * Récupère tous les vendeurs depuis l'API
+   */
+  const fetchVendors = async (params = {}) => {
     loading.value = true
+    error.value = null
 
     try {
-      // 1️⃣ Chercher d'abord dans le store local
-      let vendor = vendors.value.find(v => String(v.id) === String(id))
+      console.log('📦 Chargement des vendeurs depuis API...')
 
-      if (vendor) {
-        console.log('✅ Vendeur trouvé dans store:', vendor)
-        currentVendor.value = vendor
-        return vendor
-      }
+      const response = await api.get('/vendors', { params })
 
-      // 2️⃣ Sinon, chercher via l'API
-      console.log('📦 Chargement vendeur depuis API:', id)
-      const response = await fetch(`${API_URL}/vendors/${id}`)
+      if (response.data.success) {
+        vendors.value = response.data.data.vendors || response.data.data
+        totalCount.value = response.data.data.total || vendors.value.length
+        currentPage.value = response.data.data.page || 1
+        totalPages.value = response.data.data.pages || 1
 
-      if (response.status === 404) {
-        console.log('⚠️ Vendeur non trouvé dans API (404)')
-
-        // 🔁 FALLBACK: Si 404, l'ID est peut-être un userId, chercher dans la liste locale
-        if (vendors.value.length > 0) {
-          const foundByUserId = vendors.value.find(v => String(v.userId) === String(id))
-          if (foundByUserId) {
-            console.log('✅ Vendeur trouvé par userId dans la liste locale:', foundByUserId)
-            currentVendor.value = foundByUserId
-            return foundByUserId
-          }
-        }
-
-        // Si pas dans la liste locale, recharger tous les vendeurs
-        await fetchVendors()
-        const foundByUserId = vendors.value.find(v => String(v.userId) === String(id))
-        if (foundByUserId) {
-          console.log('✅ Vendeur trouvé par userId après rechargement:', foundByUserId)
-          currentVendor.value = foundByUserId
-          return foundByUserId
-        }
-
-        currentVendor.value = null
-        return null
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result = await response.json()
-
-      if (result.success) {
-        vendor = result.data.vendor
-        console.log('✅ Vendeur trouvé via API:', vendor)
-
-        // Mettre à jour le store local
-        vendors.value.push(vendor)
-        localStorage.setItem('vendors', JSON.stringify(vendors.value))
-        currentVendor.value = vendor
-
-        return vendor
+        console.log('✅ Vendeurs chargés depuis API:', vendors.value.length)
+        saveToStorage()
+      } else {
+        throw new Error(response.data.message || 'Erreur chargement vendeurs')
       }
     } catch (err) {
-      console.error('❌ Erreur getVendorById API:', err)
+      console.error('❌ Erreur fetchVendors:', err)
+      error.value = err.response?.data?.message || err.message
+      loadFromStorage()
+    } finally {
+      loading.value = false
+    }
 
-      // 3️⃣ Fallback: chercher encore dans vendors (au cas où)
-      const localVendor = vendors.value.find(v => String(v.id) === String(id))
+    return vendors.value
+  }
+
+  /**
+   * Récupère un vendeur par ID
+   */
+  const fetchVendorById = async (id) => {
+    if (!id) {
+      console.warn('⚠️ ID vendeur manquant')
+      return null
+    }
+
+    const numericId = parseInt(id)
+    if (isNaN(numericId)) {
+      console.warn('⚠️ ID vendeur invalide:', id)
+      return null
+    }
+
+    console.log('🔍 fetchVendorById:', numericId)
+    loading.value = true
+    error.value = null
+
+    try {
+      // Chercher d'abord dans le store local
+      let vendor = vendors.value.find(v => String(v.id) === String(numericId))
+
+      if (vendor) {
+        console.log('✅ Vendeur trouvé dans store local:', vendor)
+        currentVendor.value = vendor
+        saveToStorage()
+        return vendor
+      }
+
+      // Chercher via l'API
+      console.log('📦 Chargement vendeur depuis API:', numericId)
+
+      try {
+        const response = await api.get(`/vendors/${numericId}`)
+
+        if (response.data.success) {
+          vendor = response.data.data.vendor || response.data.data
+          console.log('✅ Vendeur trouvé via API:', vendor)
+
+          const existingIndex = vendors.value.findIndex(v => String(v.id) === String(vendor.id))
+          if (existingIndex === -1) {
+            vendors.value.push(vendor)
+          } else {
+            vendors.value[existingIndex] = vendor
+          }
+
+          currentVendor.value = vendor
+          saveToStorage()
+          return vendor
+        }
+      } catch (apiErr) {
+        if (apiErr.response?.status === 404) {
+          console.log('⚠️ Vendeur non trouvé dans API (404)')
+
+          // Fallback: chercher par userId
+          const foundByUserId = vendors.value.find(v => String(v.userId) === String(numericId))
+          if (foundByUserId) {
+            console.log('✅ Vendeur trouvé par userId:', foundByUserId)
+            currentVendor.value = foundByUserId
+            saveToStorage()
+            return foundByUserId
+          }
+
+          // Recharger tous les vendeurs
+          await fetchVendors()
+          const foundAfterReload = vendors.value.find(v => String(v.userId) === String(numericId))
+          if (foundAfterReload) {
+            console.log('✅ Vendeur trouvé après rechargement:', foundAfterReload)
+            currentVendor.value = foundAfterReload
+            saveToStorage()
+            return foundAfterReload
+          }
+        } else {
+          throw apiErr
+        }
+      }
+
+      currentVendor.value = null
+      return null
+
+    } catch (err) {
+      console.error('❌ Erreur fetchVendorById:', err)
+      error.value = err.response?.data?.message || err.message
+
+      // Dernier fallback
+      const localVendor = vendors.value.find(v => String(v.id) === String(numericId))
       if (localVendor) {
-        console.log('✅ Vendeur trouvé dans store (fallback):', localVendor)
+        console.log('✅ Vendeur trouvé dans store local (fallback):', localVendor)
         currentVendor.value = localVendor
         return localVendor
       }
 
-      // Fallback par userId
-      const foundByUserId = vendors.value.find(v => String(v.userId) === String(id))
-      if (foundByUserId) {
-        console.log('✅ Vendeur trouvé par userId (fallback):', foundByUserId)
-        currentVendor.value = foundByUserId
-        return foundByUserId
-      }
     } finally {
       loading.value = false
     }
@@ -152,81 +189,316 @@ export const useVendorStore = defineStore('vendor', () => {
     return null
   }
 
-  // Créer un nouveau vendeur
-  const createVendor = (vendorData) => {
+  /**
+   * Récupère un vendeur par User ID (AJOUT)
+   */
+  const fetchVendorByUserId = async (userId) => {
     try {
-      console.log('📝 Création vendeur dans store:', vendorData)
+      const response = await api.get(`/vendors/user/${userId}`)
 
-      const newVendor = {
+      if (response.data.success) {
+        const vendor = response.data.data.vendor
+
+        // Mettre à jour le store local
+        const existingIndex = vendors.value.findIndex(v => String(v.userId) === String(userId))
+        if (existingIndex === -1) {
+          vendors.value.push(vendor)
+        } else {
+          vendors.value[existingIndex] = vendor
+        }
+
+        return vendor
+      }
+      return null
+    } catch (err) {
+      if (err.response?.status === 404) {
+        return null
+      }
+      console.error('❌ Erreur fetchVendorByUserId:', err)
+      return null
+    }
+  }
+
+  /**
+   * Crée un nouveau vendeur
+   */
+  const createVendor = async (vendorData) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      console.log('📝 Création vendeur:', vendorData)
+
+      const response = await api.post('/vendors', vendorData)
+
+      if (response.data.success) {
+        const newVendor = response.data.data.vendor || response.data.data
+        console.log('✅ Vendeur créé:', newVendor)
+
+        vendors.value.push(newVendor)
+        currentVendor.value = newVendor
+        saveToStorage()
+
+        return newVendor
+      } else {
+        throw new Error(response.data.message || 'Erreur création vendeur')
+      }
+    } catch (err) {
+      console.error('❌ Erreur createVendor:', err)
+      error.value = err.response?.data?.message || err.message
+
+      // Fallback local
+      const fallbackVendor = {
         ...vendorData,
-        id: String(vendorData.id),
-        verified: vendorData.verified || false,
-        productsCount: vendorData.productsCount || 0,
-        followersCount: vendorData.followersCount || 0,
-        rating: vendorData.rating || 0,
-        createdAt: vendorData.createdAt || new Date().toISOString()
+        id: String(Date.now()),
+        verified: false,
+        productsCount: 0,
+        followersCount: 0,
+        rating: 0,
+        createdAt: new Date().toISOString()
       }
 
-      vendors.value.push(newVendor)
-      localStorage.setItem('vendors', JSON.stringify(vendors.value))
-      console.log('✅ Vendeur ajouté au store:', newVendor)
-      return newVendor
-    } catch (error) {
-      console.error('❌ Erreur création vendeur:', error)
-      return null
+      console.log('⚠️ Fallback: création locale:', fallbackVendor)
+      vendors.value.push(fallbackVendor)
+      currentVendor.value = fallbackVendor
+      saveToStorage()
+
+      return fallbackVendor
+    } finally {
+      loading.value = false
     }
   }
 
-  // Mettre à jour un vendeur
-  const updateVendor = (id, updates) => {
+  /**
+   * Met à jour un vendeur
+   */
+  const updateVendor = async (id, updates) => {
+    loading.value = true
+    error.value = null
+
     try {
+      console.log('📝 Mise à jour vendeur:', id, updates)
+
+      const response = await api.patch(`/vendors/${id}`, updates)
+
+      if (response.data.success) {
+        const updatedVendor = response.data.data.vendor || response.data.data
+
+        const index = vendors.value.findIndex(v => String(v.id) === String(id))
+        if (index !== -1) {
+          vendors.value[index] = { ...vendors.value[index], ...updatedVendor }
+        }
+
+        if (currentVendor.value && String(currentVendor.value.id) === String(id)) {
+          currentVendor.value = { ...currentVendor.value, ...updatedVendor }
+        }
+
+        saveToStorage()
+        console.log('✅ Vendeur mis à jour:', updatedVendor)
+
+        return updatedVendor
+      } else {
+        throw new Error(response.data.message || 'Erreur mise à jour vendeur')
+      }
+    } catch (err) {
+      console.error('❌ Erreur updateVendor:', err)
+      error.value = err.response?.data?.message || err.message
+
+      // Fallback local
       const index = vendors.value.findIndex(v => String(v.id) === String(id))
-      if (index === -1) return null
+      if (index !== -1) {
+        vendors.value[index] = { ...vendors.value[index], ...updates }
 
-      vendors.value[index] = { ...vendors.value[index], ...updates }
-      localStorage.setItem('vendors', JSON.stringify(vendors.value))
+        if (currentVendor.value && String(currentVendor.value.id) === String(id)) {
+          currentVendor.value = { ...currentVendor.value, ...updates }
+        }
 
-      if (currentVendor.value && String(currentVendor.value.id) === String(id)) {
-        currentVendor.value = vendors.value[index]
+        saveToStorage()
+        return vendors.value[index]
       }
 
-      return vendors.value[index]
-    } catch (error) {
-      console.error('❌ Erreur mise à jour vendeur:', error)
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Supprime un vendeur
+   */
+  const deleteVendor = async (id) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      console.log('🗑️ Suppression vendeur:', id)
+
+      const response = await api.delete(`/vendors/${id}`)
+
+      if (response.data.success) {
+        vendors.value = vendors.value.filter(v => String(v.id) !== String(id))
+
+        if (currentVendor.value && String(currentVendor.value.id) === String(id)) {
+          currentVendor.value = null
+        }
+
+        saveToStorage()
+        console.log('✅ Vendeur supprimé')
+
+        return true
+      } else {
+        throw new Error(response.data.message || 'Erreur suppression vendeur')
+      }
+    } catch (err) {
+      console.error('❌ Erreur deleteVendor:', err)
+      error.value = err.response?.data?.message || err.message
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Suivre/ne plus suivre un vendeur
+   */
+  const toggleFollow = async (vendorId) => {
+    try {
+      const response = await api.post(`/vendors/${vendorId}/follow`)
+
+      if (response.data.success) {
+        const index = vendors.value.findIndex(v => String(v.id) === String(vendorId))
+        if (index !== -1) {
+          vendors.value[index].followersCount = response.data.data.followersCount
+        }
+
+        if (currentVendor.value && String(currentVendor.value.id) === String(vendorId)) {
+          currentVendor.value.followersCount = response.data.data.followersCount
+        }
+
+        saveToStorage()
+        return response.data.data
+      }
+
+      return null
+    } catch (err) {
+      console.error('❌ Erreur toggleFollow:', err)
       return null
     }
   }
 
-  // Supprimer un vendeur
-  const deleteVendor = (id) => {
+  /**
+   * Récupère les produits d'un vendeur
+   */
+  const fetchVendorProducts = async (vendorId) => {
     try {
-      vendors.value = vendors.value.filter(v => String(v.id) !== String(id))
-      localStorage.setItem('vendors', JSON.stringify(vendors.value))
+      const response = await api.get(`/vendors/${vendorId}/products`)
 
-      if (currentVendor.value && String(currentVendor.value.id) === String(id)) {
-        currentVendor.value = null
+      if (response.data.success) {
+        return response.data.data.products || response.data.data
       }
 
-      return true
-    } catch (error) {
-      console.error('❌ Erreur suppression vendeur:', error)
-      return false
+      return []
+    } catch (err) {
+      console.error('❌ Erreur fetchVendorProducts:', err)
+      return []
     }
   }
 
-  // Initialiser: charger les vendeurs
-  fetchVendors()
+  /**
+   * Récupère les posts d'un vendeur
+   */
+  const fetchVendorPosts = async (vendorId) => {
+    try {
+      const response = await api.get(`/posts/vendor/${vendorId}`)
 
+      if (response.data.success) {
+        return response.data.data.posts || response.data.data
+      }
+
+      return []
+    } catch (err) {
+      console.error('❌ Erreur fetchVendorPosts:', err)
+      return []
+    }
+  }
+
+  /**
+   * Récupère les vendeurs populaires
+   */
+  const fetchTopVendors = async (limit = 5) => {
+    try {
+      const response = await api.get('/vendors/top', { params: { limit } })
+
+      if (response.data.success) {
+        return response.data.data.vendors || response.data.data
+      }
+
+      return []
+    } catch (err) {
+      console.error('❌ Erreur fetchTopVendors:', err)
+      return []
+    }
+  }
+
+  /**
+   * Vide le cache et recharge depuis l'API
+   */
+  const refreshVendors = async () => {
+    vendors.value = []
+    currentVendor.value = null
+    return fetchVendors()
+  }
+
+  /**
+   * Efface le store
+   */
+  const clearStore = () => {
+    vendors.value = []
+    currentVendor.value = null
+    error.value = null
+    loading.value = false
+    localStorage.removeItem('vendors')
+    localStorage.removeItem('currentVendor')
+  }
+
+  // ===== INITIALISATION =====
+  loadFromStorage()
+
+  // ===== RETURN =====
   return {
-    vendors: computed(() => vendors.value),
-    currentVendor: computed(() => currentVendor.value),
-    loading: computed(() => loading.value),
-    error: computed(() => error.value),
-    getVendorById,
+    // State
+    vendors,
+    currentVendor,
+    loading,
+    error,
+
+    // Getters
+    hasVendors,
+    isLoading,
+    hasError,
+    getCurrentVendor,
+    hasCurrentVendor, // AJOUT
+    totalPages,
+    currentPage,
+    totalCount,
+
+    // Méthodes CRUD
+    fetchVendors,
+    fetchVendorById,
+    fetchVendorByUserId, // AJOUT
     createVendor,
     updateVendor,
     deleteVendor,
-    fetchVendors,
+
+    // Méthodes spécifiques
+    toggleFollow,
+    fetchVendorProducts,
+    fetchVendorPosts,
+    fetchTopVendors,
+
+    // Utilitaires
+    refreshVendors,
+    clearStore,
     loadFromStorage
   }
 })

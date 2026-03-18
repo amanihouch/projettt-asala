@@ -261,10 +261,12 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '../stores/cart'
+import { useAuthStore } from '../stores/auth'
 import { tunisianGovernorates, getDelegationsByGovernorate } from '../data/tunisia'
 
 const router = useRouter()
 const cartStore = useCartStore()
+const authStore = useAuthStore()
 
 // ===== STATE =====
 const isSubmitting = ref(false)
@@ -277,14 +279,14 @@ const toast = ref({
 
 // ===== FORM DATA =====
 const form = reactive({
-  fullName: '',
-  email: '',
-  phone1: '',
+  fullName: authStore.userName || '',
+  email: authStore.userEmail || '',
+  phone1: authStore.userPhone || '',
   phone2: '',
   governorate: '',
   delegation: '',
   postalCode: '',
-  address: '',
+  address: authStore.userAddress || '',
   notes: '',
 })
 
@@ -292,31 +294,13 @@ const form = reactive({
 const shippingCost = computed(() => {
   // Calcul des frais de livraison selon la région
   const governoratePrices = {
-    tunis: 7,
-    ariana: 7,
-    ben_arous: 7,
-    manouba: 7,
-    sousse: 8,
-    sfax: 8,
-    nabeul: 8,
-    bizerte: 8,
-    monastir: 8,
-    mahdia: 9,
-    kairouan: 9,
-    kasserine: 10,
-    gafsa: 10,
-    tozeur: 12,
-    kebili: 12,
-    tataouine: 12,
-    medenine: 10,
-    gabes: 10,
-    beja: 9,
-    jendouba: 9,
-    kef: 9,
-    siliana: 9,
-    zaghouan: 8,
+    tunis: 7, ariana: 7, ben_arous: 7, manouba: 7,
+    sousse: 8, sfax: 8, nabeul: 8, bizerte: 8,
+    monastir: 8, mahdia: 9, kairouan: 9, kasserine: 10,
+    gafsa: 10, tozeur: 12, kebili: 12, tataouine: 12,
+    medenine: 10, gabes: 10, beja: 9, jendouba: 9,
+    kef: 9, siliana: 9, zaghouan: 8,
   }
-
   return governoratePrices[form.governorate] || 10
 })
 
@@ -351,11 +335,11 @@ const showNotification = (message, type = 'success') => {
 }
 
 const onGovernorateChange = () => {
-  form.delegation = '' // Reset delegation when governorate changes
+  form.delegation = ''
 }
 
 const validateForm = () => {
-  if (!form.fullName) {
+  if (!form.fullName.trim()) {
     showNotification('الرجاء إدخال الاسم الكامل', 'error')
     return false
   }
@@ -380,7 +364,7 @@ const validateForm = () => {
     return false
   }
 
-  if (!form.address) {
+  if (!form.address.trim()) {
     showNotification('الرجاء إدخال العنوان التفصيلي', 'error')
     return false
   }
@@ -396,60 +380,85 @@ const submitOrder = () => {
     return
   }
 
+  if (!authStore.isAuthenticated) {
+    showNotification('الرجاء تسجيل الدخول أولاً', 'error')
+    router.push('/login')
+    return
+  }
+
   isSubmitting.value = true
 
-  // Simuler l'envoi de la commande
+  // Préparer les données de la commande
+  const orderData = {
+    customer: {
+      id: authStore.userId,
+      name: form.fullName,
+      email: form.email,
+      phone1: form.phone1,
+      phone2: form.phone2 || null,
+    },
+    delivery: {
+      governorate: form.governorate,
+      delegation: form.delegation,
+      postalCode: form.postalCode,
+      address: form.address,
+    },
+    items: cartStore.items.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      image: item.image,
+      vendorName: item.vendorName
+    })),
+    subtotal: cartStore.totalPrice,
+    shipping: shippingCost.value,
+    total: cartStore.totalPrice + shippingCost.value,
+    paymentMethod: 'cash',
+    notes: form.notes,
+    status: 'pending'
+  }
+
+  console.log('📦 Création commande:', orderData)
+
+  // Simuler l'envoi au serveur
   setTimeout(() => {
-    const orderData = {
-      id: 'CMD' + Date.now(),
-      customer: {
-        fullName: form.fullName,
-        email: form.email,
-        phone1: form.phone1,
-        phone2: form.phone2 || null,
-      },
-      delivery: {
-        governorate: form.governorate,
-        delegation: form.delegation,
-        postalCode: form.postalCode,
-        address: form.address,
-      },
-      items: cartStore.items,
-      subtotal: cartStore.totalPrice,
-      shipping: shippingCost.value,
-      total: cartStore.totalPrice + shippingCost.value,
-      paymentMethod: 'cash',
-      notes: form.notes,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
+    // Sauvegarder dans le store
+    const result = cartStore.saveOrder(orderData)
+
+    if (result.success) {
+      showNotification('✅ تم تأكيد الطلب بنجاح')
+
+      // Vider le panier
+      cartStore.clearCart()
+
+      // Rediriger vers le profil (onglet commandes)
+      setTimeout(() => {
+        router.push('/profile?tab=orders')
+      }, 2000)
+    } else {
+      showNotification('❌ حدث خطأ أثناء إنشاء الطلب', 'error')
+      isSubmitting.value = false
     }
-
-    console.log('✅ Commande créée:', orderData)
-
-    // Sauvegarder la commande dans localStorage
-    const orders = JSON.parse(localStorage.getItem('orders') || '[]')
-    orders.push(orderData)
-    localStorage.setItem('orders', JSON.stringify(orders))
-
-    showNotification('✅ تم تأكيد الطلب بنجاح')
-
-    // Vider le panier
-    cartStore.clearCart()
-
-    // Rediriger vers la page de confirmation
-    setTimeout(() => {
-      router.push('/order-confirmation/' + orderData.id)
-    }, 2000)
   }, 1500)
 }
 
 // ===== LIFECYCLE =====
 onMounted(() => {
   cartStore.loadFromStorage()
+
+  // Remplir avec les infos de l'utilisateur si connecté
+  if (authStore.isAuthenticated) {
+    form.fullName = authStore.userName || form.fullName
+    form.email = authStore.userEmail || form.email
+    form.phone1 = authStore.userPhone || form.phone1
+    form.address = authStore.userAddress || form.address
+  }
 })
 </script>
 
 <style scoped>
+/* Styles identiques à votre code existant */
 * {
   margin: 0;
   padding: 0;

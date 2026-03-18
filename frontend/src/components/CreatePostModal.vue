@@ -33,13 +33,13 @@
         <div class="form-group">
           <label class="form-label">
             <span class="label-icon">🏷️</span>
-            titre de produit <span class="required">*</span>
+            عنوان المنتج <span class="required">*</span>
           </label>
           <input
             type="text"
             v-model="form.productName"
             class="form-input"
-            placeholder="Ex: طبق فخاري مزخرف"
+            placeholder="مثال: طبق فخاري مزخرف"
             required
           />
           <span v-if="errors.productName" class="error-message">{{ errors.productName }}</span>
@@ -49,13 +49,13 @@
         <div class="form-group">
           <label class="form-label">
             <span class="label-icon">📝</span>
-            Description
+            الوصف
           </label>
           <textarea
             v-model="form.description"
             class="form-textarea"
             rows="3"
-            placeholder="Écrivez une description détaillée du produit..."
+            placeholder="اكتب وصفاً مفصلاً للمنتج..."
           ></textarea>
         </div>
 
@@ -64,7 +64,7 @@
           <div class="form-group">
             <label class="form-label">
               <span class="label-icon">💰</span>
-              Prix actuel <span class="required">*</span>
+              السعر الحالي <span class="required">*</span>
             </label>
             <div class="price-input-wrapper">
               <input
@@ -84,7 +84,7 @@
           <div class="form-group">
             <label class="form-label">
               <span class="label-icon">🏷️</span>
-              Prix ancien
+              السعر القديم
             </label>
             <div class="price-input-wrapper">
               <input
@@ -102,14 +102,14 @@
 
         <!-- Validation prix -->
         <div v-if="form.oldPrice && form.price > form.oldPrice" class="validation-error">
-          ⚠️ Le prix actuel doit être inférieur au prix ancien
+          ⚠️ السعر الحالي يجب أن يكون أقل من السعر القديم
         </div>
 
         <!-- Couleurs disponibles -->
         <div class="form-group">
           <label class="form-label">
             <span class="label-icon">🎨</span>
-            Couleurs disponibles
+            الألوان المتاحة
           </label>
           <div class="colors-grid">
             <div
@@ -120,17 +120,17 @@
               @click="toggleColor(color.name)"
             >
               <span class="color-dot" :style="{ backgroundColor: color.code }"></span>
-              <span class="color-name">{{ color.name }}</span>
+              <span class="color-name">{{ getColorName(color.name) }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Quantité et Unité -->
+        <!-- Quantité و Unité -->
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">
               <span class="label-icon">📊</span>
-              Quantité
+              الكمية
             </label>
             <input
               type="number"
@@ -144,15 +144,15 @@
           <div class="form-group">
             <label class="form-label">
               <span class="label-icon">⚖️</span>
-              Unité
+              الوحدة
             </label>
             <select v-model="form.unit" class="form-select">
-              <option value="piece">Pièce</option>
-              <option value="set">Set</option>
-              <option value="kg">Kg</option>
-              <option value="gram">Gramme</option>
-              <option value="liter">Litre</option>
-              <option value="meter">Mètre</option>
+              <option value="piece">قطعة</option>
+              <option value="set">مجموعة</option>
+              <option value="kg">كيلوغرام</option>
+              <option value="gram">غرام</option>
+              <option value="liter">لتر</option>
+              <option value="meter">متر</option>
             </select>
           </div>
         </div>
@@ -161,7 +161,7 @@
         <div class="form-group">
           <label class="form-label">
             <span class="label-icon">📸</span>
-            Photos
+            الصور <span class="required">*</span>
           </label>
           <div class="image-upload-area" @click="triggerFileUpload">
             <input
@@ -174,15 +174,15 @@
             />
             <div class="upload-placeholder">
               <span class="upload-icon">📸</span>
-              <p>Cliquez pour ajouter des photos</p>
-              <span class="upload-hint">PNG, JPG - Max 5MB</span>
+              <p>انقر لإضافة الصور</p>
+              <span class="upload-hint">PNG, JPG - حجم أقصى 5MB</span>
             </div>
           </div>
           <span v-if="errors.images" class="error-message">{{ errors.images }}</span>
 
           <div v-if="form.images.length > 0" class="image-previews">
             <div v-for="(img, index) in form.images" :key="index" class="preview-item">
-              <img :src="img" alt="Preview" />
+              <img :src="img" alt="معاينة" />
               <button type="button" class="remove-image" @click="removeImage(index)">✕</button>
             </div>
           </div>
@@ -192,15 +192,15 @@
         <div class="form-checkbox">
           <label>
             <input type="checkbox" v-model="form.inStock" />
-            <span>Produit disponible en stock</span>
+            <span>المنتج متوفر في المخزون</span>
           </label>
         </div>
 
         <!-- Boutons -->
         <div class="form-actions">
-          <button type="button" class="btn-cancel" @click="closeModal">Annuler</button>
+          <button type="button" class="btn-cancel" @click="closeModal">إلغاء</button>
           <button type="submit" class="btn-submit" :disabled="isSubmitting">
-            <span v-if="!isSubmitting">Publier</span>
+            <span v-if="!isSubmitting">نشر</span>
             <span v-else class="loading-spinner"></span>
           </button>
         </div>
@@ -224,19 +224,21 @@ const emit = defineEmits(['close', 'post-created'])
 
 const authStore = useAuthStore()
 
+// الألوان المتاحة
 const availableColors = [
-  { name: 'Rouge', code: '#d40025' },
-  { name: 'Bleu', code: '#08717f' },
-  { name: 'Vert', code: '#10b981' },
-  { name: 'Jaune', code: '#fbbf24' },
-  { name: 'Violet', code: '#8b5cf6' },
-  { name: 'Rose', code: '#ec4899' },
-  { name: 'Marron', code: '#92400e' },
-  { name: 'Noir', code: '#1e293b' },
-  { name: 'Blanc', code: '#ffffff' },
-  { name: 'Gris', code: '#64748b' },
+  { name: 'red', code: '#d40025', ar: 'أحمر' },
+  { name: 'blue', code: '#08717f', ar: 'أزرق' },
+  { name: 'green', code: '#10b981', ar: 'أخضر' },
+  { name: 'yellow', code: '#fbbf24', ar: 'أصفر' },
+  { name: 'purple', code: '#8b5cf6', ar: 'بنفسجي' },
+  { name: 'pink', code: '#ec4899', ar: 'وردي' },
+  { name: 'brown', code: '#92400e', ar: 'بني' },
+  { name: 'black', code: '#1e293b', ar: 'أسود' },
+  { name: 'white', code: '#ffffff', ar: 'أبيض' },
+  { name: 'gray', code: '#64748b', ar: 'رمادي' },
 ]
 
+// الحالة
 const form = reactive({
   category: '',
   productName: '',
@@ -254,6 +256,13 @@ const errors = ref({})
 const fileInput = ref(null)
 const isSubmitting = ref(false)
 
+// دالة للحصول على اسم اللون بالعربية
+const getColorName = (colorName) => {
+  const color = availableColors.find(c => c.name === colorName)
+  return color ? color.ar : colorName
+}
+
+// رفع الصور
 const triggerFileUpload = () => {
   fileInput.value.click()
 }
@@ -263,7 +272,7 @@ const handleFileUpload = (event) => {
 
   files.forEach((file) => {
     if (file.size > 5 * 1024 * 1024) {
-      alert("La taille de l'image ne doit pas dépasser 5MB")
+      alert('حجم الصورة يجب أن لا يتجاوز 5MB')
       return
     }
 
@@ -279,6 +288,7 @@ const removeImage = (index) => {
   form.images.splice(index, 1)
 }
 
+// اختيار الألوان
 const toggleColor = (colorName) => {
   const index = form.colors.indexOf(colorName)
   if (index === -1) {
@@ -288,6 +298,7 @@ const toggleColor = (colorName) => {
   }
 }
 
+// التحقق من صحة النموذج
 const validateForm = () => {
   errors.value = {}
   let isValid = true
@@ -298,7 +309,7 @@ const validateForm = () => {
   }
 
   if (!form.productName) {
-    errors.value.productName = 'الرجاء إدخال اسم المنتج'
+    errors.value.productName = 'الرجاء إدخال عنوان المنتج'
     isValid = false
   }
 
@@ -320,7 +331,9 @@ const validateForm = () => {
   return isValid
 }
 
+// إغلاق النافذة
 const closeModal = () => {
+  // إعادة تعيين النموذج
   form.category = ''
   form.productName = ''
   form.description = ''
@@ -335,18 +348,32 @@ const closeModal = () => {
   emit('close')
 }
 
+// إرسال المنشور - النسخة المصححة
 const submitPost = () => {
-  console.log('📝 Formulaire soumis avec:', form)
+  console.log('📝 تم إرسال النموذج:', form)
 
   if (!validateForm()) {
-    console.log('❌ Validation échouée')
+    console.log('❌ فشل التحقق')
     return
   }
 
+  // ✅ التحقق من وجود vendorId
+  const vendorId = authStore.vendorId || localStorage.getItem('vendorId')
+
+  if (!vendorId) {
+    console.error('❌ vendorId غير موجود!')
+    alert('خطأ: لم يتم العثور على معرف المتجر')
+    isSubmitting.value = false
+    return
+  }
+
+  console.log('✅ vendorId المستخدم:', vendorId)
+
   isSubmitting.value = true
 
-  // ✅ Ajouter les informations du vendeur
+  // ✅ البيانات الصحيحة مع vendorId الحقيقي
   const postData = {
+    vendorId: vendorId, // ✅ هذا هو المفتاح الصحيح
     category: form.category,
     productName: form.productName,
     description: form.description,
@@ -356,14 +383,10 @@ const submitPost = () => {
     quantity: Number(form.quantity) || 1,
     unit: form.unit,
     images: [...form.images],
-    inStock: form.inStock,
-    vendorId: authStore.user?.id,
-    vendorName: authStore.user?.shopName || authStore.user?.name,
-    vendorAvatar: authStore.user?.avatar,
-    vendorVerified: authStore.user?.role === 'vendor' && false,
+    inStock: form.inStock
   }
 
-  console.log('✅ Données à émettre:', postData)
+  console.log('✅ البيانات المرسلة:', postData)
   emit('post-created', postData)
 
   setTimeout(() => {
@@ -374,6 +397,7 @@ const submitPost = () => {
 </script>
 
 <style scoped>
+/* جميع الأنماط تبقى كما هي */
 .modal-overlay {
   position: fixed;
   top: 0;

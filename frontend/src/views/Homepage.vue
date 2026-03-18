@@ -4,9 +4,9 @@
     <!-- HERO SECTION -->
     <section class="hero-section">
       <div class="video-background">
-        <video autoplay muted loop playsinline class="bg-video">
+         <video autoplay muted loop playsinline class="bg-video">
           <source
-            src="https://v1.pinimg.com/videos/mc/720p/86/64/68/8664683a894d0fbae34677dd78b8f862.mp4"
+            src="@/assets/nnnn.mp4"
             type="video/mp4"
           />
           <img
@@ -291,7 +291,7 @@
     </section>
 
     <!-- FOOTER -->
-    <Footer />
+
   </div>
 </template>
 
@@ -304,6 +304,8 @@ import { useCartStore } from '../stores/cart'
 import { useLikesStore } from '../stores/likes'
 import ProductCard from '../components/ProductCard.vue'
 import Footer from '../components/Footer.vue'
+
+
 
 const router = useRouter()
 const authStore = useAuthStore()

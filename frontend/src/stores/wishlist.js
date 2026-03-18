@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+import api from '../services/api'\r\nimport { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 export const useWishlistStore = defineStore('wishlist', () => {
@@ -35,3 +35,4 @@ export const useWishlistStore = defineStore('wishlist', () => {
     closeSidebar,
   }
 })
+

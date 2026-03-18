@@ -113,7 +113,7 @@
               v-for="page in visiblePages"
               :key="page"
               class="page-number"
-              :class="{ 
+              :class="{
                 active: page === currentPage,
                 dots: page === '...'
               }"
@@ -194,7 +194,7 @@ const filteredProducts = computed(() => {
   // Filter by search from URL
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    products = products.filter(p => 
+    products = products.filter(p =>
       p.productName.toLowerCase().includes(query) ||
       p.description.toLowerCase().includes(query) ||
       p.vendorName.toLowerCase().includes(query) ||
