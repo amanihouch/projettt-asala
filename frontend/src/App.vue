@@ -1,6 +1,6 @@
 <!-- src/App.vue -->
 <template>
-  <div id="app" dir="rtl">
+  <div id="app" :class="themeStore.themeClass" dir="rtl">
     <!-- En-tête -->
     <Header />
 
@@ -22,25 +22,32 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { onMounted, onUnmounted } from 'vue'
 import Header from './components/Header.vue'
 import Footer from './components/Footer.vue'
 import CartSidebar from './components/CartSidebar.vue'
 import WishlistSidebar from './components/WishlistSidebar.vue'
+import { useThemeStore } from './stores/theme'
 import './assets/admin.css'
+import './assets/theme.css'
 
-export default {
-  name: 'App',
-  components: {
-    Header,
-    Footer,
-    CartSidebar,
-    WishlistSidebar,
-  },
-  mounted() {
-    console.log('✅ App mounted successfully')
-  },
-}
+const themeStore = useThemeStore()
+
+onMounted(() => {
+  // Initialiser le thème
+  themeStore.initTheme()
+
+  // Écouter les changements de préférence système
+  const cleanup = themeStore.listenToSystemChanges()
+
+  console.log('✅ App mounted successfully')
+
+  // Nettoyage
+  onUnmounted(() => {
+    if (cleanup) cleanup()
+  })
+})
 </script>
 
 <style>
@@ -108,18 +115,20 @@ html {
 
 body {
   font-family: var(--font-primary);
-  background: var(--neutral-50);
-  color: var(--neutral-800);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
   line-height: 1.6;
   overflow-x: hidden;
   min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #app {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: var(--neutral-50);
+  background: var(--bg-primary);
+  transition: background-color 0.3s ease;
 }
 
 /* ===== MAIN CONTENT ===== */
@@ -300,6 +309,14 @@ body {
   background: var(--primary-teal-dark);
 }
 
+.dark-theme ::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+.dark-theme ::-webkit-scrollbar-thumb {
+  background: #ff6b6b;
+}
+
 /* ===== ACCESSIBILITY ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -313,7 +330,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--primary-teal);
+  outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
 

@@ -4,19 +4,21 @@ const router = express.Router();
 const postController = require('../controllers/postController');
 const { protect } = require('../middleware/auth');
 
-console.log('📦 postController chargé:', Object.keys(postController));
-
 // Routes publiques
 router.get('/feed', postController.getFeed);
-router.get('/vendor/:vendorId', postController.getVendorPosts);
+router.get('/vendor/:vendorId', postController.getPostsByVendor);
 router.get('/:id', postController.getPostById);
+router.get('/:id/comments', postController.getComments);
 
-// Routes protégées
+// Routes protégées (vendeur / admin)
 router.post('/', protect, postController.createPost);
 router.put('/:id', protect, postController.updatePost);
 router.delete('/:id', protect, postController.deletePost);
+router.patch('/:id/like', protect, postController.toggleLike);
 router.post('/:id/comments', protect, postController.addComment);
-router.delete('/comments/:commentId', protect, postController.deleteComment);
-router.post('/:id/like', protect, postController.toggleLike);
+
+// Routes admin uniquement
+router.patch('/:id/approve', protect, postController.approvePost);
+router.patch('/:id/reject', protect, postController.rejectPost);
 
 module.exports = router;

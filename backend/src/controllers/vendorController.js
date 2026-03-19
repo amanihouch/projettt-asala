@@ -1,16 +1,19 @@
 // backend/src/controllers/vendorController.js
 const Vendor = require('../models/Vendor');
 const User = require('../models/User');
-const Product = require('../models/Product');
 const db = require('../models/db');
 
 // ===== CRÉER UN VENDEUR =====
 exports.createVendor = async (req, res) => {
   try {
-    const { userId, shopName, specialty, description, location, coverImage, experience } = req.body;
+    const {
+      userId, shopName, specialty, description, location,
+      coverImage, experience
+    } = req.body;
 
-    console.log('📝 Création vendeur avec données:', { userId, shopName, specialty });
+    console.log('📝 Création profil vendeur:', { userId, shopName });
 
+    // Vérifier si l'utilisateur existe
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ 
@@ -19,6 +22,7 @@ exports.createVendor = async (req, res) => {
       });
     }
 
+    // Vérifier si un profil vendeur existe déjà
     const existingVendor = await Vendor.findByUserId(userId);
     if (existingVendor) {
       return res.status(400).json({ 
@@ -27,17 +31,23 @@ exports.createVendor = async (req, res) => {
       });
     }
 
-    const vendor = await Vendor.create({
+    // Créer le vendeur
+    const vendorData = {
       userId,
       shopName,
       specialty,
       description,
       location: location || 'تونس',
-      coverImage: coverImage || 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1200',
+      coverImage: coverImage || null,
       experience: experience || 0,
-      totalProducts: 0
-    });
+      verified: false,
+      rating: 0,
+      totalReviews: 0
+    };
 
+    const vendor = await Vendor.create(vendorData);
+
+    // Mettre à jour le rôle de l'utilisateur si nécessaire
     if (user.role !== 'vendor') {
       await User.update(userId, { role: 'vendor' });
     }
@@ -52,203 +62,41 @@ exports.createVendor = async (req, res) => {
     console.error('❌ Erreur createVendor:', error);
     res.status(500).json({ 
       success: false, 
-      message: error.message || 'Erreur lors de la création du vendeur' 
+      message: error.message 
     });
   }
 };
 
-// ===== GET ALL VENDORS =====
+// ===== RÉCUPÉRER TOUS LES VENDEURS =====
 exports.getAllVendors = async (req, res) => {
   try {
-    console.log('📦 Récupération de tous les vendeurs...');
-    const vendors = await Vendor.getAll({});
-    res.json({ 
-      success: true, 
-      data: { vendors: vendors.data },
-      pagination: vendors.pagination
-    });
-  } catch (error) {
-    console.error('❌ Erreur getAllVendors:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message || 'Erreur lors du chargement des vendeurs' 
-    });
-  }
-};
-
-// ===== GET VENDOR BY ID (CORRIGÉ AVEC FALLBACK) =====
-exports.getVendorById = async (req, res) => {
-  try {
-    const vendorId = req.params.id;
-    console.log('🔍 Recherche vendeur ID:', vendorId);
-
-    // 1️⃣ Chercher d'abord par vendor.id (cas normal)
-    let vendor = await Vendor.findById(vendorId);
-
-    // 2️⃣ Fallback : chercher par userId (cas où le header passe userId au lieu de vendor.id)
-    if (!vendor) {
-      console.log('⚠️ Vendeur non trouvé par ID, tentative par userId:', vendorId);
-      vendor = await Vendor.findByUserId(vendorId);
-      
-      if (vendor) {
-        console.log('✅ Vendeur trouvé par userId:', vendor);
-      }
-    }
-
-    if (!vendor) {
-      console.log('❌ Vendeur non trouvé avec ID:', vendorId);
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Vendeur non trouvé' 
-      });
-    }
-
-    // Récupérer les produits du vendeur
-    const products = await Vendor.getProducts(vendor.id, { page: 1, limit: 10 });
+    const { page = 1, limit = 20, search, specialty, verified } = req.query;
     
-    // Récupérer les posts du vendeur
-    const posts = await db.query(`
-      SELECT * FROM posts 
-      WHERE vendorId = ? AND status = 'approved' 
-      ORDER BY createdAt DESC 
-      LIMIT 5
-    `, [vendor.id]);
-
-    res.json({ 
-      success: true, 
-      data: { 
-        vendor,
-        products: products.data,
-        posts 
-      } 
-    });
-  } catch (error) {
-    console.error('❌ Erreur getVendorById:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message || 'Erreur lors du chargement du vendeur' 
-    });
-  }
-};
-
-// ===== GET VENDOR PRODUCTS =====
-exports.getVendorProducts = async (req, res) => {
-  try {
-    const { page = 1, limit = 20 } = req.query;
-    
-    const vendor = await Vendor.findById(req.params.id);
-    if (!vendor) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Vendeur non trouvé' 
-      });
-    }
-    
-    const products = await Vendor.getProducts(req.params.id, { page, limit });
-    
-    res.json({ 
-      success: true, 
-      data: products 
-    });
-  } catch (error) {
-    console.error('❌ Erreur getVendorProducts:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message || 'Erreur lors du chargement des produits' 
-    });
-  }
-};
-
-// ===== UPDATE VENDOR =====
-exports.updateVendor = async (req, res) => {
-  try {
-    const { shopName, specialty, description, location, coverImage } = req.body;
-    
-    const vendor = await Vendor.findById(req.params.id);
-    if (!vendor) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Vendeur non trouvé' 
-      });
-    }
-    
-    const updated = await Vendor.update(req.params.id, {
-      shopName,
+    const result = await Vendor.getAll({ 
+      page, 
+      limit, 
+      search, 
       specialty,
-      description,
-      location,
-      coverImage
+      verified: verified === 'true' ? true : verified === 'false' ? false : null
     });
-    
-    res.json({ 
-      success: true, 
-      message: 'Vendeur mis à jour avec succès',
-      data: { vendor: updated } 
-    });
-  } catch (error) {
-    console.error('❌ Erreur updateVendor:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message || 'Erreur lors de la mise à jour' 
-    });
-  }
-};
-
-// ===== DELETE VENDOR =====
-exports.deleteVendor = async (req, res) => {
-  try {
-    const vendor = await Vendor.findById(req.params.id);
-    if (!vendor) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Vendeur non trouvé' 
-      });
-    }
-    
-    await Vendor.delete(req.params.id);
-    
-    res.json({ 
-      success: true, 
-      message: 'Vendeur supprimé avec succès' 
-    });
-  } catch (error) {
-    console.error('❌ Erreur deleteVendor:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message || 'Erreur lors de la suppression' 
-    });
-  }
-};
-
-// ===== TOGGLE FOLLOW =====
-exports.toggleFollow = async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Vous devez être connecté' 
-      });
-    }
-    
-    const result = await Vendor.toggleFollow(req.user.id, req.params.id);
     
     res.json({ 
       success: true, 
       data: result 
     });
   } catch (error) {
-    console.error('❌ Erreur toggleFollow:', error);
+    console.error('❌ getAllVendors:', error);
     res.status(500).json({ 
       success: false, 
-      message: error.message || 'Erreur lors du follow/unfollow' 
+      message: error.message 
     });
   }
 };
 
-// ===== GET TOP VENDORS =====
+// ===== RÉCUPÉRER LES MEILLEURS VENDEURS =====
 exports.getTopVendors = async (req, res) => {
   try {
-    const limit = req.query.limit || 8;
+    const { limit = 8 } = req.query;
     
     const vendors = await db.query(`
       SELECT v.*, u.name, u.avatar as userAvatar,
@@ -260,18 +108,156 @@ exports.getTopVendors = async (req, res) => {
       ORDER BY v.rating DESC, followersCount DESC
       LIMIT ?
     `, [parseInt(limit)]);
-    
+
     res.json({ 
       success: true, 
       data: { vendors } 
     });
   } catch (error) {
-    console.error('❌ Erreur getTopVendors:', error);
+    console.error('❌ getTopVendors:', error);
     res.status(500).json({ 
       success: false, 
-      message: error.message || 'Erreur lors du chargement des meilleurs vendeurs' 
+      message: error.message 
     });
   }
 };
 
-module.exports = exports;
+// ===== RÉCUPÉRER UN VENDEUR PAR ID UTILISATEUR =====
+exports.getVendorByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const vendor = await Vendor.findByUserId(userId);
+    
+    if (!vendor) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Vendeur non trouvé pour cet utilisateur' 
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { vendor }
+    });
+  } catch (error) {
+    console.error('❌ getVendorByUserId:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+};
+
+// ===== RÉCUPÉRER UN VENDEUR PAR ID =====
+exports.getVendorById = async (req, res) => {
+  try {
+    const vendor = await Vendor.findById(req.params.id);
+    
+    if (!vendor) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Vendeur non trouvé' 
+      });
+    }
+
+    // Récupérer les produits
+    const products = await Vendor.getProducts(req.params.id, { page: 1, limit: 10 });
+    
+    // Récupérer les posts
+    const posts = await db.query(`
+      SELECT * FROM posts 
+      WHERE vendorId = ? AND status = 'approved' 
+      ORDER BY createdAt DESC 
+      LIMIT 5
+    `, [req.params.id]);
+
+    res.json({
+      success: true,
+      data: { 
+        vendor, 
+        products: products.data, 
+        posts 
+      }
+    });
+  } catch (error) {
+    console.error('❌ getVendorById:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+};
+
+// ===== RÉCUPÉRER LES PRODUITS D'UN VENDEUR =====
+exports.getVendorProducts = async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    
+    const result = await Vendor.getProducts(req.params.id, { page, limit });
+    
+    res.json({ 
+      success: true, 
+      data: result 
+    });
+  } catch (error) {
+    console.error('❌ getVendorProducts:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+};
+
+// ===== METTRE À JOUR UN VENDEUR =====
+exports.updateVendor = async (req, res) => {
+  try {
+    const vendorId = req.params.id;
+    const updates = req.body;
+    
+    // Vérifier si le vendeur existe
+    const existingVendor = await Vendor.findById(vendorId);
+    if (!existingVendor) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Vendeur non trouvé' 
+      });
+    }
+
+    // Mettre à jour
+    const updatedVendor = await Vendor.update(vendorId, updates);
+
+    res.json({
+      success: true,
+      message: 'Profil vendeur mis à jour avec succès',
+      data: { vendor: updatedVendor }
+    });
+  } catch (error) {
+    console.error('❌ updateVendor:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+};
+
+// ===== SUIVRE / NE PLUS SUIVRE UN VENDEUR =====
+exports.toggleFollow = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const vendorId = req.params.id;
+    
+    const result = await Vendor.toggleFollow(userId, vendorId);
+    
+    res.json({ 
+      success: true, 
+      data: result 
+    });
+  } catch (error) {
+    console.error('❌ toggleFollow:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+};

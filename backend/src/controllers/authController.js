@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const { sendResetPasswordEmail } = require('../services/email');
+const db = require('../models/db');
 
 const generateToken = (id) => {
   return jwt.sign(
@@ -150,7 +151,7 @@ exports.getMe = async (req, res) => {
   }
 };
 
-// ===== MOT DE PASSE OUBLIÉ =====
+// ===== MOT DE PASSE OUBLIÉ (VERSION CORRIGÉE) =====
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -174,18 +175,46 @@ exports.forgotPassword = async (req, res) => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
-    // Sauvegarder le code
-    const db = require('../models/db');
-    await db.query(
-      'INSERT INTO password_resets (email, code, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE code = ?, expires_at = ?',
-      [email, code, expiresAt, code, expiresAt]
-    );
+    console.log(`🔐 Code généré pour ${email}: ${code}`);
+    console.log(`⏰ Expire le: ${expiresAt}`);
+
+    // Vérifier si la table password_resets existe
+    try {
+      // Essayer d'insérer directement
+      await db.query(
+        'INSERT INTO password_resets (email, code, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE code = ?, expires_at = ?, used = FALSE',
+        [email, code, expiresAt, code, expiresAt]
+      );
+    } catch (tableError) {
+      console.log('⚠️ Table password_resets non trouvée, création...');
+      
+      // Créer la table si elle n'existe pas
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS password_resets (
+          id INT PRIMARY KEY AUTO_INCREMENT,
+          email VARCHAR(100) NOT NULL,
+          code VARCHAR(6) NOT NULL,
+          expires_at DATETIME NOT NULL,
+          used BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_email (email),
+          INDEX idx_code (code)
+        )
+      `);
+      
+      // Réessayer l'insertion
+      await db.query(
+        'INSERT INTO password_resets (email, code, expires_at) VALUES (?, ?, ?)',
+        [email, code, expiresAt]
+      );
+    }
 
     console.log(`🔐 Code pour ${email}: ${code}`);
 
     // Envoyer l'email
     try {
       await sendResetPasswordEmail(email, code, user.name);
+      console.log(`📧 Email envoyé à ${email}`);
     } catch (emailError) {
       console.error('❌ Erreur envoi email:', emailError);
     }
@@ -216,7 +245,6 @@ exports.verifyCode = async (req, res) => {
       });
     }
 
-    const db = require('../models/db');
     const reset = await db.getOne(
       'SELECT * FROM password_resets WHERE email = ? AND code = ? AND used = 0 AND expires_at > NOW()',
       [email, code]
@@ -262,7 +290,6 @@ exports.resetPassword = async (req, res) => {
       });
     }
 
-    const db = require('../models/db');
     const reset = await db.getOne(
       'SELECT * FROM password_resets WHERE email = ? AND code = ? AND used = 0 AND expires_at > NOW()',
       [email, code]

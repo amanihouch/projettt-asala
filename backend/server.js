@@ -29,6 +29,9 @@ const postRoutes = require('./src/routes/posts');
 const orderRoutes = require('./src/routes/orders');
 const userRoutes = require('./src/routes/users');
 
+// ✅ IMPORT NEWSLETTER ROUTES
+const newsletterRoutes = require('./src/routes/newsletter');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -78,6 +81,7 @@ app.get('/', (req, res) => {
       posts: '/api/v1/posts',
       orders: '/api/v1/orders',
       users: '/api/v1/users',
+      newsletter: '/api/v1/newsletter',
       health: '/health'
     }
   });
@@ -114,6 +118,9 @@ app.use('/api/v1/posts', postRoutes);
 app.use('/api/v1/orders', orderRoutes);
 app.use('/api/v1/users', userRoutes);
 
+// ✅ NEWSLETTER ROUTES
+app.use('/api/v1/newsletter', newsletterRoutes);
+
 // ===== 404 HANDLER =====
 app.use('*', (req, res) => {
   res.status(404).json({ 
@@ -132,6 +139,9 @@ app.use('*', (req, res) => {
       '/api/v1/posts',
       '/api/v1/orders',
       '/api/v1/users',
+      '/api/v1/newsletter',
+      '/api/v1/newsletter/subscribe',
+      '/api/v1/newsletter/unsubscribe/:email',
       '/api/v1/admin/dashboard',
       '/api/v1/admin/users',
       '/api/v1/admin/vendors',
@@ -223,6 +233,12 @@ const startServer = async () => {
       console.log(`   - GET  http://localhost:${PORT}/api/v1/posts/feed`);
       console.log(`   - GET  http://localhost:${PORT}/api/v1/orders/my-orders (token requis)`);
       console.log(`   - GET  http://localhost:${PORT}/api/v1/users/profile (token requis)\n`);
+      
+      console.log('   📌 Newsletter:');
+      console.log(`   - POST http://localhost:${PORT}/api/v1/newsletter/subscribe`);
+      console.log(`   - GET  http://localhost:${PORT}/api/v1/newsletter/unsubscribe/:email`);
+      console.log(`   - GET  http://localhost:${PORT}/api/v1/newsletter/subscribers (token admin requis)`);
+      console.log(`   - POST http://localhost:${PORT}/api/v1/newsletter/send (token admin requis)\n`);
       
       console.log('   📌 Admin:');
       console.log(`   - GET  http://localhost:${PORT}/api/v1/admin/dashboard (token admin requis)`);

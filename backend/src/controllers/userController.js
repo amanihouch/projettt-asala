@@ -1,259 +1,268 @@
-// backend/src/controllers/userController.js
 const User = require('../models/User');
 const db = require('../models/db');
 
-// @desc    Get current user profile
-// @route   GET /api/v1/users/profile
-// @access  Private
-exports.getProfile = async (req, res) => {
+// ===== PROFIL =====
+
+/**
+ * Récupérer le profil de l'utilisateur connecté
+ */
+const getProfile = async (req, res) => {
   try {
-    const user = await User.getUserWithStats(req.user.id);
+    // req.user est déjà disponible grâce au middleware protect
+    const user = req.user;
 
-    // Get user's wishlist (products liked)
-    const wishlist = await db.query(`
-      SELECT p.*, 
-             (SELECT imageUrl FROM product_images WHERE productId = p.id LIMIT 1) as mainImage
-      FROM likes l
-      JOIN products p ON l.productId = p.id
-      WHERE l.userId = ?
-      ORDER BY l.createdAt DESC
-    `, [req.user.id]);
-
-    // Get user's post likes
-    const postLikes = await db.query(`
-      SELECT p.*, 
-             v.shopName,
-             pl.createdAt as likedAt
-      FROM post_likes pl
-      JOIN posts p ON pl.postId = p.id
-      LEFT JOIN vendors v ON p.vendorId = v.id
-      WHERE pl.userId = ?
-      ORDER BY pl.createdAt DESC
-    `, [req.user.id]);
-
-    // Parse JSON fields for posts
-    postLikes.forEach(post => {
-      try { post.colors = JSON.parse(post.colors); } catch { post.colors = []; }
-      try { post.images = JSON.parse(post.images); } catch { post.images = []; }
-    });
-
-    res.json({
+    res.status(200).json({
       success: true,
       data: {
-        user,
-        wishlist,
-        postLikes
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          address: user.address,
+          avatar: user.avatar,
+          role: user.role,
+          isActive: user.isActive === 1,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        }
       }
     });
   } catch (error) {
     console.error('❌ Erreur getProfile:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors du chargement du profil',
-      error: error.message
+      message: 'Erreur serveur'
     });
   }
 };
 
-// @desc    Update user profile
-// @route   PUT /api/v1/users/profile
-// @access  Private
-exports.updateProfile = async (req, res) => {
+/**
+ * Mettre à jour le profil utilisateur
+ */
+const updateProfile = async (req, res) => {
   try {
-    const { name, phone, avatar } = req.body;
+    const { name, email, phone, address } = req.body;
+    const userId = req.user.id;
 
-    const updates = {
-      name,
-      phone,
-      avatar
-    };
+    // Vérifier si l'email est déjà utilisé par un autre utilisateur
+    if (email && email !== req.user.email) {
+      const existingUser = await User.findByEmail(email);
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cet email est déjà utilisé'
+        });
+      }
+    }
 
-    const user = await User.update(req.user.id, updates);
+    // Mettre à jour l'utilisateur
+    const updatedUser = await User.update(userId, {
+      name: name || req.user.name,
+      email: email || req.user.email,
+      phone: phone || req.user.phone,
+      address: address || req.user.address
+    });
 
-    res.json({
+    res.status(200).json({
       success: true,
-      message: 'Profil mis à jour avec succès',
-      data: { user }
+      data: {
+        user: updatedUser
+      },
+      message: 'Profil mis à jour avec succès'
     });
   } catch (error) {
     console.error('❌ Erreur updateProfile:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la mise à jour',
-      error: error.message
+      message: 'Erreur serveur'
     });
   }
 };
 
-// @desc    Change password
-// @route   POST /api/v1/users/change-password
-// @access  Private
-exports.changePassword = async (req, res) => {
+/**
+ * Changer le mot de passe
+ */
+const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
 
-    // Get user with password
+    // Validation
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Veuillez fournir l\'ancien et le nouveau mot de passe'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le nouveau mot de passe doit contenir au moins 6 caractères'
+      });
+    }
+
+    // Récupérer l'utilisateur avec son mot de passe
     const user = await User.findByEmailWithPassword(req.user.email);
 
-    // Verify current password
-    const isValid = await User.verifyPassword(user, currentPassword);
-    if (!isValid) {
+    // Vérifier l'ancien mot de passe
+    const isMatch = await User.verifyPassword(user, currentPassword);
+    if (!isMatch) {
       return res.status(401).json({
         success: false,
         message: 'Mot de passe actuel incorrect'
       });
     }
 
-    // Update password
-    await User.updatePassword(req.user.id, newPassword);
+    // Mettre à jour le mot de passe
+    await User.updatePassword(userId, newPassword);
 
-    res.json({
+    res.status(200).json({
       success: true,
-      message: 'Mot de passe changé avec succès'
+      message: 'Mot de passe modifié avec succès'
     });
   } catch (error) {
     console.error('❌ Erreur changePassword:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors du changement de mot de passe',
-      error: error.message
+      message: 'Erreur serveur'
     });
   }
 };
 
-// @desc    Get user wishlist (products)
-// @route   GET /api/v1/users/wishlist
-// @access  Private
-exports.getWishlist = async (req, res) => {
-  try {
-    const wishlist = await db.query(`
-      SELECT p.*, 
-             (SELECT imageUrl FROM product_images WHERE productId = p.id LIMIT 1) as mainImage,
-             l.createdAt as likedAt
-      FROM likes l
-      JOIN products p ON l.productId = p.id
-      WHERE l.userId = ?
-      ORDER BY l.createdAt DESC
-    `, [req.user.id]);
-
-    res.json({
-      success: true,
-      data: { wishlist }
-    });
-  } catch (error) {
-    console.error('❌ Erreur getWishlist:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors du chargement des favoris',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Get user's liked posts
-// @route   GET /api/v1/users/likes
-// @access  Private
-exports.getUserLikes = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    
-    const posts = await db.query(`
-      SELECT p.*, 
-             v.shopName,
-             pl.createdAt as likedAt
-      FROM post_likes pl
-      JOIN posts p ON pl.postId = p.id
-      LEFT JOIN vendors v ON p.vendorId = v.id
-      WHERE pl.userId = ?
-      ORDER BY pl.createdAt DESC
-    `, [userId]);
-
-    // Parser les JSON
-    posts.forEach(post => {
-      try { post.colors = JSON.parse(post.colors); } catch { post.colors = []; }
-      try { post.images = JSON.parse(post.images); } catch { post.images = []; }
-    });
-
-    res.json({
-      success: true,
-      data: { posts }
-    });
-  } catch (error) {
-    console.error('❌ Erreur getUserLikes:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-// @desc    Get user post likes
-// @route   GET /api/v1/users/post-likes
-// @access  Private
-exports.getPostLikes = async (req, res) => {
-  try {
-    const postLikes = await db.query(`
-      SELECT p.*, 
-             v.shopName,
-             u.name as vendorName,
-             pl.createdAt as likedAt
-      FROM post_likes pl
-      JOIN posts p ON pl.postId = p.id
-      LEFT JOIN vendors v ON p.vendorId = v.id
-      LEFT JOIN users u ON v.userId = u.id
-      WHERE pl.userId = ?
-      ORDER BY pl.createdAt DESC
-    `, [req.user.id]);
-
-    // Parse JSON fields
-    postLikes.forEach(post => {
-      try { post.colors = JSON.parse(post.colors); } catch { post.colors = []; }
-      try { post.images = JSON.parse(post.images); } catch { post.images = []; }
-    });
-
-    res.json({
-      success: true,
-      data: { postLikes }
-    });
-  } catch (error) {
-    console.error('❌ Erreur getPostLikes:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors du chargement des likes de posts',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Mettre à jour l'avatar de l'utilisateur
-// @route   POST /api/v1/users/avatar
-// @access  Private
-exports.updateAvatar = async (req, res) => {
+/**
+ * Mettre à jour l'avatar
+ */
+const updateAvatar = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Aucun fichier envoyé'
+        message: 'Veuillez fournir une image'
       });
     }
 
-    // Construire l'URL accessible publiquement
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    const userId = req.user.id;
+    
+    // Construire l'URL de l'avatar
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const avatarUrl = `${baseUrl}/uploads/avatars/${req.file.filename}`;
 
     // Mettre à jour l'utilisateur
-    const user = await User.update(req.user.id, { avatar: avatarUrl });
+    const updatedUser = await User.update(userId, { avatar: avatarUrl });
 
-    res.json({
+    res.status(200).json({
       success: true,
-      message: 'Avatar mis à jour avec succès',
-      data: { user }
+      data: {
+        user: updatedUser
+      },
+      message: 'Avatar mis à jour avec succès'
     });
   } catch (error) {
     console.error('❌ Erreur updateAvatar:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la mise à jour de l\'avatar',
-      error: error.message
+      message: 'Erreur serveur'
     });
   }
+};
+
+// ===== WISHLIST / LIKES =====
+
+/**
+ * Récupérer la wishlist de l'utilisateur
+ */
+const getWishlist = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const wishlist = await db.query(`
+      SELECT p.* FROM wishlist w
+      JOIN products p ON w.productId = p.id
+      WHERE w.userId = ?
+      ORDER BY w.createdAt DESC
+    `, [userId]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        wishlist: wishlist || []
+      }
+    });
+  } catch (error) {
+    console.error('❌ Erreur getWishlist:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
+  }
+};
+
+/**
+ * Récupérer les likes de l'utilisateur (produits)
+ */
+const getUserLikes = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const likes = await db.query(`
+      SELECT p.* FROM product_likes pl
+      JOIN products p ON pl.productId = p.id
+      WHERE pl.userId = ?
+      ORDER BY pl.createdAt DESC
+    `, [userId]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        likes: likes || []
+      }
+    });
+  } catch (error) {
+    console.error('❌ Erreur getUserLikes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
+  }
+};
+
+/**
+ * Récupérer les likes de l'utilisateur (posts)
+ */
+const getPostLikes = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const likedPosts = await db.query(`
+      SELECT p.* FROM post_likes pl
+      JOIN posts p ON pl.postId = p.id
+      WHERE pl.userId = ?
+      ORDER BY pl.createdAt DESC
+    `, [userId]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        likedPosts: likedPosts || []
+      }
+    });
+  } catch (error) {
+    console.error('❌ Erreur getPostLikes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur'
+    });
+  }
+};
+
+module.exports = {
+  getProfile,
+  updateProfile,
+  changePassword,
+  updateAvatar,
+  getWishlist,
+  getUserLikes,
+  getPostLikes
 };
