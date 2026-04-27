@@ -1,442 +1,298 @@
-// backend/src/models/Vendor.js
+// backend/src/models/Vendor.js - Version COMPLÈTE
 const db = require('./db');
 
-const Vendor = {
-  // ===== CRÉER UN VENDEUR =====
-  async create(vendorData) {
+class Vendor {
+  // ===== CRÉATION =====
+  static async create(vendorData) {
     const {
-      userId, shopName, description, specialty, location,
-      coverImage, experience, verified = false
+      userId, shopName, specialty, description,
+      location, coverImage, experience, verified, approved,
+      avatar, phone, email, website
     } = vendorData;
 
-    console.log('📝 Vendor.create avec données:', { 
-      userId, 
-      shopName, 
-      experience,
-      coverImageLength: coverImage ? coverImage.length : 0 
-    });
+    // Générer un slug unique
+    const slug = await this.createUniqueSlug(shopName);
 
-    // ✅ Vérifier que l'utilisateur existe
-    const userExists = await db.getOne('SELECT id FROM users WHERE id = ?', [userId]);
-    if (!userExists) {
-      const error = new Error(`Utilisateur avec ID ${userId} non trouvé`);
-      console.error('❌', error.message);
-      throw error;
+    const result = await db.query(
+      `INSERT INTO vendors 
+       (userId, shopName, slug, specialty, description, location, coverImage, 
+        experience, verified, approved, rating, totalReviews, createdAt,
+        avatar, phone, email, website, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, 'pending')`,
+      [userId, shopName, slug, specialty || null, description || null, location || null, 
+       coverImage || null, experience || 0, verified || 0, approved || 0, 0, 0,
+       avatar || null, phone || null, email || null, website || null]
+    );
+
+    return this.findById(result.insertId);
+  }
+
+  // ===== LECTURE =====
+  static async findById(id) {
+    const vendors = await db.query(
+      `SELECT v.*, u.name, u.email, u.phone, u.avatar as userAvatar, u.address
+       FROM vendors v
+       LEFT JOIN users u ON v.userId = u.id
+       WHERE v.id = ?`,
+      [id]
+    );
+    return vendors[0] || null;
+  }
+
+  static async findByUserId(userId) {
+    const vendors = await db.query(
+      `SELECT v.*, u.name, u.email, u.phone, u.avatar as userAvatar, u.address
+       FROM vendors v
+       LEFT JOIN users u ON v.userId = u.id
+       WHERE v.userId = ?`,
+      [userId]
+    );
+    return vendors[0] || null;
+  }
+
+  static async findBySlug(slug) {
+    const vendors = await db.query(
+      `SELECT v.*, u.name, u.email, u.phone, u.avatar as userAvatar, u.address
+       FROM vendors v
+       LEFT JOIN users u ON v.userId = u.id
+       WHERE v.slug = ?`,
+      [slug]
+    );
+    return vendors[0] || null;
+  }
+
+  static async findByIdOrSlug(identifier) {
+    if (!isNaN(identifier)) {
+      return this.findById(parseInt(identifier));
     }
+    return this.findBySlug(identifier);
+  }
 
-    // ✅ Vérifier que le vendeur n'existe pas déjà
-    const existingVendor = await this.findByUserId(userId);
-    if (existingVendor) {
-      const error = new Error(`Un vendeur existe déjà pour l'utilisateur ${userId}`);
-      console.error('❌', error.message);
-      throw error;
+  // ===== GESTION DES SLUGS =====
+  static generateSlug(shopName) {
+    if (!shopName) return '';
+    return shopName
+      .toLowerCase()
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  }
+
+  static async slugExists(slug, excludeId = null) {
+    let query = 'SELECT COUNT(*) as count FROM vendors WHERE slug = ?';
+    const params = [slug];
+    if (excludeId) {
+      query += ' AND id != ?';
+      params.push(excludeId);
     }
+    const result = await db.query(query, params);
+    return result[0]?.count > 0;
+  }
 
-    // ✅ Traitement de l'image de couverture
-    let coverImageUrl = coverImage || null;
+  static async createUniqueSlug(shopName, existingId = null) {
+    let slug = this.generateSlug(shopName);
+    if (!slug) slug = 'boutique';
     
-    // Si c'est une dataURL trop longue, on peut la logger
-    if (coverImageUrl && coverImageUrl.length > 1000) {
-      console.log(`⚠️ coverImage longue: ${coverImageUrl.length} caractères`);
-      
-      // Vérifier si c'est une dataURL (commence par data:image)
-      if (coverImageUrl.startsWith('data:image')) {
-        // Estimer la taille en KB
-        const sizeInKB = Math.round(coverImageUrl.length * 0.75 / 1024);
-        console.log(`📸 Taille estimée: ${sizeInKB}KB`);
-        
-        // Si trop grande, on peut la compresser côté backend (optionnel)
-        if (sizeInKB > 500) {
-          console.warn(`⚠️ Image très grande: ${sizeInKB}KB, risque d'erreur`);
-        }
+    let counter = 1;
+    let uniqueSlug = slug;
+    
+    while (await this.slugExists(uniqueSlug, existingId)) {
+      uniqueSlug = `${slug}-${counter}`;
+      counter++;
+    }
+    return uniqueSlug;
+  }
+
+  // ===== MISE À JOUR =====
+  static async update(id, updates) {
+    const fields = [];
+    const values = [];
+
+    const allowedFields = ['shopName', 'specialty', 'description', 'location', 
+                           'coverImage', 'experience', 'verified', 'approved', 
+                           'avatar', 'phone', 'website', 'status'];
+
+    for (const field of allowedFields) {
+      if (updates[field] !== undefined) {
+        fields.push(`${field} = ?`);
+        values.push(updates[field]);
       }
     }
 
-    const sql = `
-      INSERT INTO vendors
-      (userId, shopName, description, specialty, location,
-       coverImage, experience, verified, rating, totalReviews)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
-    `;
-
-    try {
-      const vendorId = await db.insert(sql, [
-        userId,
-        shopName,
-        description,
-        specialty,
-        location || 'تونس',
-        coverImageUrl,
-        experience || 0,
-        verified ? 1 : 0
-      ]);
-
-      console.log('✅ Vendeur créé avec ID:', vendorId);
-      return this.findById(vendorId);
-    } catch (error) {
-      console.error('❌ Erreur Vendor.create:', error);
-      console.log('📝 SQL:', sql);
-      console.log('📦 Données:', [
-        userId,
-        shopName,
-        description ? description.substring(0, 50) + '...' : null,
-        specialty,
-        location,
-        coverImageUrl ? coverImageUrl.substring(0, 50) + '...' : null,
-        experience,
-        verified ? 1 : 0
-      ]);
-      
-      // Gestion spécifique de l'erreur de taille
-      if (error.code === 'ER_DATA_TOO_LONG') {
-        console.error('💡 La colonne coverImage est trop petite. Exécutez cette commande SQL:');
-        console.error('   ALTER TABLE vendors MODIFY coverImage TEXT;');
+    if (updates.shopName) {
+      const currentVendor = await this.findById(id);
+      if (currentVendor && currentVendor.shopName !== updates.shopName) {
+        const newSlug = await this.createUniqueSlug(updates.shopName, id);
+        fields.push('slug = ?');
+        values.push(newSlug);
       }
-      
-      throw error;
     }
-  },
 
-  // ===== RECHERCHER PAR ID =====
-  async findById(id) {
-    const sql = `
-      SELECT v.*, 
-             u.name, u.email, u.phone, u.avatar as userAvatar,
-             (SELECT COUNT(*) FROM products WHERE vendorId = v.id) as productsCount,
-             (SELECT COUNT(*) FROM followers WHERE vendorId = v.id) as followersCount,
-             (SELECT COUNT(*) FROM posts WHERE vendorId = v.id AND status = 'approved') as postsCount,
-             (SELECT COUNT(*) FROM posts WHERE vendorId = v.id AND status = 'pending') as pendingPostsCount
-      FROM vendors v
-      JOIN users u ON v.userId = u.id
-      WHERE v.id = ?
-    `;
-    return db.getOne(sql, [id]);
-  },
+    if (fields.length === 0) return this.findById(id);
 
-  // ===== RECHERCHER PAR USER ID =====
-  async findByUserId(userId) {
-    const sql = 'SELECT * FROM vendors WHERE userId = ?';
-    return db.getOne(sql, [userId]);
-  },
+    values.push(id);
+    await db.query(`UPDATE vendors SET ${fields.join(', ')} WHERE id = ?`, values);
+    return this.findById(id);
+  }
 
-  // ===== RÉCUPÉRER TOUS LES VENDEURS =====
-  async getAll({ page = 1, limit = 20, search = null, specialty = null, verified = null }) {
+  // ===== LISTES =====
+  static async getAll({ page = 1, limit = 20, search = '', specialty = null, 
+                        verified = null, approved = true }) {
     try {
-      console.log('📦 getAll vendors called with:', { page, limit, search, specialty, verified });
-      
-      const pool = db.pool;
-      
-      // 1. REQUÊTE DE COMPTAGE
-      let countSql = `
-        SELECT COUNT(*) as total
-        FROM vendors v
-        JOIN users u ON v.userId = u.id
-        WHERE 1=1
-      `;
-      const countParams = [];
-
-      if (verified !== null && verified !== undefined) {
-        countSql += ' AND v.verified = ?';
-        countParams.push(verified ? 1 : 0);
-      }
-
-      if (specialty && specialty !== '') {
-        countSql += ' AND v.specialty = ?';
-        countParams.push(specialty);
-      }
-
-      if (search && search !== '') {
-        countSql += ' AND (v.shopName LIKE ? OR v.description LIKE ? OR u.name LIKE ?)';
-        const term = `%${search}%`;
-        countParams.push(term, term, term);
-      }
-
-      console.log('📝 Count SQL:', countSql);
-      console.log('📦 Count params:', countParams);
-
-      const [countRows] = await pool.query(countSql, countParams);
-      const total = countRows[0]?.total || 0;
-      console.log('✅ Total vendors:', total);
-
-      // 2. REQUÊTE PRINCIPALE
-      let dataSql = `
-        SELECT v.*, 
-               u.name, u.email, u.avatar as userAvatar,
-               (SELECT COUNT(*) FROM products WHERE vendorId = v.id) as productsCount,
-               (SELECT COUNT(*) FROM followers WHERE vendorId = v.id) as followersCount,
-               (SELECT COUNT(*) FROM posts WHERE vendorId = v.id AND status = 'approved') as postsCount
-        FROM vendors v
-        JOIN users u ON v.userId = u.id
-        WHERE 1=1
-      `;
-      const dataParams = [];
-
-      if (verified !== null && verified !== undefined) {
-        dataSql += ' AND v.verified = ?';
-        dataParams.push(verified ? 1 : 0);
-      }
-
-      if (specialty && specialty !== '') {
-        dataSql += ' AND v.specialty = ?';
-        dataParams.push(specialty);
-      }
-
-      if (search && search !== '') {
-        dataSql += ' AND (v.shopName LIKE ? OR v.description LIKE ? OR u.name LIKE ?)';
-        const term = `%${search}%`;
-        dataParams.push(term, term, term);
-      }
-
-      dataSql += ' ORDER BY v.createdAt DESC LIMIT ? OFFSET ?';
-      
       const offset = (parseInt(page) - 1) * parseInt(limit);
-      const limitNum = parseInt(limit);
-      dataParams.push(limitNum, offset);
+      let conditions = [];
+      let params = [];
 
-      console.log('📝 Data SQL:', dataSql);
-      console.log('📦 Data params (with pagination):', dataParams);
+      if (approved !== null) {
+        conditions.push('v.approved = ?');
+        params.push(approved ? 1 : 0);
+      }
 
-      const [vendors] = await pool.query(dataSql, dataParams);
-      console.log('✅ Vendors found:', vendors.length);
+      if (search) {
+        conditions.push('(v.shopName LIKE ? OR u.name LIKE ? OR v.slug LIKE ?)');
+        params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      }
+
+      if (specialty) {
+        conditions.push('v.specialty = ?');
+        params.push(specialty);
+      }
+
+      if (verified !== null) {
+        conditions.push('v.verified = ?');
+        params.push(verified ? 1 : 0);
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+      const countResult = await db.query(
+        `SELECT COUNT(*) as total FROM vendors v LEFT JOIN users u ON v.userId = u.id ${whereClause}`,
+        params
+      );
+      const total = countResult[0]?.total || 0;
+
+      const vendors = await db.query(
+        `SELECT v.*, u.name, u.email, u.phone, u.avatar as userAvatar,
+                (SELECT COUNT(*) FROM products WHERE vendorId = v.id) as productsCount,
+                (SELECT COUNT(*) FROM followers WHERE vendor_id = v.id) as followersCount
+         FROM vendors v
+         LEFT JOIN users u ON v.userId = u.id
+         ${whereClause}
+         ORDER BY v.createdAt DESC
+         LIMIT ${parseInt(limit)} OFFSET ${offset}`,
+        params
+      );
 
       return {
         data: vendors,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
-          total,
-          pages: Math.ceil(total / limit)
+          total: total,
+          pages: Math.ceil(total / parseInt(limit))
         }
       };
     } catch (error) {
-      console.error('❌ Erreur dans Vendor.getAll:', error);
+      console.error('❌ Erreur dans getAll:', error);
       throw error;
     }
-  },
+  }
 
-  // ===== METTRE À JOUR UN VENDEUR =====
-  async update(id, updates) {
-    const fields = [];
-    const values = [];
-    const allowedFields = [
-      'shopName', 'description', 'specialty', 'location',
-      'coverImage', 'experience', 'verified', 'rating', 'totalReviews'
-    ];
-
-    for (const key of allowedFields) {
-      if (updates[key] !== undefined) {
-        fields.push(`${key} = ?`);
-        values.push(updates[key]);
-      }
-    }
-
-    if (fields.length === 0) return null;
-
-    values.push(id);
-    const sql = `UPDATE vendors SET ${fields.join(', ')} WHERE id = ?`;
-    await db.query(sql, values);
-    
-    return this.findById(id);
-  },
-
-  // ===== METTRE À JOUR L'IMAGE DE COUVERTURE =====
-  async updateCoverImage(id, coverImageUrl) {
-    return this.update(id, { coverImage: coverImageUrl });
-  },
-
-  // ===== SUPPRIMER UN VENDEUR =====
-  async delete(id) {
-    const hasProducts = await db.exists('SELECT 1 FROM products WHERE vendorId = ?', [id]);
-    if (hasProducts) {
-      throw new Error('Impossible de supprimer un vendeur avec des produits');
-    }
-    
-    const hasPosts = await db.exists('SELECT 1 FROM posts WHERE vendorId = ?', [id]);
-    if (hasPosts) {
-      throw new Error('Impossible de supprimer un vendeur avec des posts');
-    }
-    
-    await db.query('DELETE FROM vendors WHERE id = ?', [id]);
-    return true;
-  },
-
-  // ===== RÉCUPÉRER LES PRODUITS D'UN VENDEUR =====
-  async getProducts(vendorId, { page = 1, limit = 10 }) {
+  static async getPending({ page = 1, limit = 20, search = '' }) {
     try {
-      const pool = db.pool;
-      
-      const [countRows] = await pool.query(
-        'SELECT COUNT(*) as total FROM products WHERE vendorId = ?',
-        [vendorId]
-      );
-      const total = countRows[0]?.total || 0;
-
       const offset = (parseInt(page) - 1) * parseInt(limit);
-      const limitNum = parseInt(limit);
-      
-      const sql = `
-        SELECT p.*
-        FROM products p
-        WHERE p.vendorId = ?
-        ORDER BY p.createdAt DESC
-        LIMIT ? OFFSET ?
-      `;
-      
-      const [products] = await pool.query(sql, [vendorId, limitNum, offset]);
+      let conditions = ['v.approved = 0'];
+      let params = [];
+
+      if (search) {
+        conditions.push('(v.shopName LIKE ? OR u.name LIKE ? OR u.email LIKE ? OR v.slug LIKE ?)');
+        params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+      }
+
+      const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+      const countResult = await db.query(
+        `SELECT COUNT(*) as total FROM vendors v LEFT JOIN users u ON v.userId = u.id ${whereClause}`,
+        params
+      );
+      const total = countResult[0]?.total || 0;
+
+      const vendors = await db.query(
+        `SELECT v.*, u.name, u.email, u.phone, u.avatar as userAvatar
+         FROM vendors v
+         LEFT JOIN users u ON v.userId = u.id
+         ${whereClause}
+         ORDER BY v.createdAt DESC
+         LIMIT ${parseInt(limit)} OFFSET ${offset}`,
+        params
+      );
 
       return {
-        data: products,
+        data: vendors,
         pagination: {
           page: parseInt(page),
           limit: parseInt(limit),
-          total,
-          pages: Math.ceil(total / limit)
+          total: total,
+          pages: Math.ceil(total / parseInt(limit))
         }
       };
     } catch (error) {
-      console.error('❌ Erreur dans Vendor.getProducts:', error);
+      console.error('❌ Erreur dans getPending:', error);
       throw error;
     }
-  },
+  }
 
-  // ===== RÉCUPÉRER LES POSTS D'UN VENDEUR =====
-  async getPosts(vendorId, { page = 1, limit = 10, status = null }) {
-    try {
-      const pool = db.pool;
-      
-      let countSql = 'SELECT COUNT(*) as total FROM posts WHERE vendorId = ?';
-      let sql = 'SELECT * FROM posts WHERE vendorId = ?';
-      const params = [vendorId];
-      
-      if (status) {
-        countSql += ' AND status = ?';
-        sql += ' AND status = ?';
-        params.push(status);
-      }
-      
-      const [countRows] = await pool.query(countSql, params);
-      const total = countRows[0]?.total || 0;
-
-      const offset = (parseInt(page) - 1) * parseInt(limit);
-      const limitNum = parseInt(limit);
-      
-      sql += ' ORDER BY createdAt DESC LIMIT ? OFFSET ?';
-      
-      const postsParams = status ? [vendorId, status, limitNum, offset] : [vendorId, limitNum, offset];
-      const [posts] = await pool.query(sql, postsParams);
-
-      return {
-        data: posts,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total,
-          pages: Math.ceil(total / limit)
-        }
-      };
-    } catch (error) {
-      console.error('❌ Erreur dans Vendor.getPosts:', error);
-      throw error;
-    }
-  },
-
-  // ===== SUIVRE / NE PLUS SUIVRE =====
-  async toggleFollow(followerId, vendorId) {
-    const exists = await db.exists(
-      'SELECT 1 FROM followers WHERE followerId = ? AND vendorId = ?',
-      [followerId, vendorId]
-    );
-    
-    if (exists) {
-      await db.query(
-        'DELETE FROM followers WHERE followerId = ? AND vendorId = ?', 
-        [followerId, vendorId]
-      );
-      
-      const count = await db.getOne(
-        'SELECT COUNT(*) as count FROM followers WHERE vendorId = ?',
-        [vendorId]
-      );
-      
-      return { 
-        following: false, 
-        followersCount: count?.count || 0 
-      };
-    } else {
-      await db.insert(
-        'INSERT INTO followers (followerId, vendorId) VALUES (?, ?)', 
-        [followerId, vendorId]
-      );
-      
-      const count = await db.getOne(
-        'SELECT COUNT(*) as count FROM followers WHERE vendorId = ?',
-        [vendorId]
-      );
-      
-      return { 
-        following: true, 
-        followersCount: count?.count || 0 
-      };
-    }
-  },
-
-  // ===== VÉRIFIER SI L'UTILISATEUR SUIT =====
-  async isFollowing(followerId, vendorId) {
-    return db.exists(
-      'SELECT 1 FROM followers WHERE followerId = ? AND vendorId = ?',
-      [followerId, vendorId]
-    );
-  },
-
-  // ===== RÉCUPÉRER LES VENDEURS RÉCENTS =====
-  async getRecent(limit = 4) {
-    const pool = db.pool;
-    const [vendors] = await pool.query(`
-      SELECT v.*, u.name, u.avatar as userAvatar,
-             (SELECT COUNT(*) FROM products WHERE vendorId = v.id) as productsCount,
-             (SELECT COUNT(*) FROM posts WHERE vendorId = v.id AND status = 'approved') as postsCount
-      FROM vendors v
-      JOIN users u ON v.userId = u.id
-      WHERE v.verified = 1
-      ORDER BY v.createdAt DESC
-      LIMIT ?
-    `, [parseInt(limit)]);
-    
-    return vendors;
-  },
-
-  // ===== RÉCUPÉRER LES MEILLEURS VENDEURS =====
-  async getTopVendors(limit = 8) {
-    const pool = db.pool;
-    const [vendors] = await pool.query(`
-      SELECT v.*, u.name, u.avatar as userAvatar,
-             (SELECT COUNT(*) FROM products WHERE vendorId = v.id) as productsCount,
-             (SELECT COUNT(*) FROM followers WHERE vendorId = v.id) as followersCount,
-             (SELECT COUNT(*) FROM posts WHERE vendorId = v.id AND status = 'approved') as postsCount
-      FROM vendors v
-      JOIN users u ON v.userId = u.id
-      WHERE v.verified = 1
-      ORDER BY v.rating DESC, followersCount DESC, productsCount DESC
-      LIMIT ?
-    `, [parseInt(limit)]);
-    
-    return vendors;
-  },
-
-  // ===== COMPTER LES VENDEURS =====
-  async count(verified = null) {
-    const pool = db.pool;
-    let sql = 'SELECT COUNT(*) as count FROM vendors';
-    const params = [];
-    
+  // ===== STATISTIQUES =====
+  static async count(verified = null) {
+    let query = 'SELECT COUNT(*) as count FROM vendors';
+    let params = [];
     if (verified !== null) {
-      sql += ' WHERE verified = ?';
+      query += ' WHERE verified = ?';
       params.push(verified ? 1 : 0);
     }
-    
-    const [rows] = await pool.query(sql, params);
-    return rows[0]?.count || 0;
+    const result = await db.query(query, params);
+    return result[0]?.count || 0;
   }
-};
+
+  static async countPending() {
+    const result = await db.query('SELECT COUNT(*) as count FROM vendors WHERE approved = 0 AND status = "pending"');
+    return result[0]?.count || 0;
+  }
+
+  static async countApproved() {
+    const result = await db.query('SELECT COUNT(*) as count FROM vendors WHERE approved = 1');
+    return result[0]?.count || 0;
+  }
+
+  static async countRejected() {
+    const result = await db.query('SELECT COUNT(*) as count FROM vendors WHERE status = "rejected"');
+    return result[0]?.count || 0;
+  }
+
+  // ===== FOLLOW =====
+  static async toggleFollow(userId, vendorId) {
+    const existing = await db.query(
+      'SELECT * FROM followers WHERE user_id = ? AND vendor_id = ?',
+      [userId, vendorId]
+    );
+
+    if (existing.length > 0) {
+      await db.query('DELETE FROM followers WHERE user_id = ? AND vendor_id = ?', [userId, vendorId]);
+      return { following: false };
+    } else {
+      await db.query('INSERT INTO followers (user_id, vendor_id, created_at) VALUES (?, ?, NOW())', 
+                     [userId, vendorId]);
+      return { following: true };
+    }
+  }
+
+  static async getFollowersCount(vendorId) {
+    const result = await db.query('SELECT COUNT(*) as count FROM followers WHERE vendor_id = ?', [vendorId]);
+    return result[0]?.count || 0;
+  }
+}
 
 module.exports = Vendor;

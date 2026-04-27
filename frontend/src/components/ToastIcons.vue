@@ -2,7 +2,11 @@
   <transition name="toast-slide">
     <div
       v-if="visible"
-      :class="['notification-toast', `toast-${type}`, { 'toast-with-action': actionText }]"
+      :class="[
+        'notification-toast',
+        `toast-${type}`,
+        { 'toast-with-action': actionText, 'toast-persistent': persistent, 'dark-mode': isDarkMode }
+      ]"
       role="alert"
       aria-live="assertive"
       aria-atomic="true"
@@ -46,7 +50,7 @@
         </button>
 
         <!-- Progress Bar -->
-        <div v-if="autoClose" class="toast-progress">
+        <div v-if="autoClose && !persistent" class="toast-progress">
           <div class="toast-progress-bar" :style="{ animationDuration: `${duration}ms` }"></div>
         </div>
       </div>
@@ -56,6 +60,11 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, defineExpose } from 'vue'
+import { useThemeStore } from '../stores/theme'
+
+// ===== DARK MODE - Synchronized with global theme store (header) =====
+const themeStore = useThemeStore()
+const isDarkMode = computed(() => themeStore.isDarkMode)
 
 const props = defineProps({
   // Message properties
@@ -123,11 +132,11 @@ const emit = defineEmits(['close', 'action'])
 const visible = ref(true)
 let timeoutId = null
 
-// Icônes SVG en ligne
+// Icônes SVG en ligne avec support dark mode
 const icons = {
   success: {
     template: `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="toast-icon-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
         <polyline points="22 4 12 14.01 9 11.01"></polyline>
       </svg>
@@ -135,7 +144,7 @@ const icons = {
   },
   error: {
     template: `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="toast-icon-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"></circle>
         <line x1="15" y1="9" x2="9" y2="15"></line>
         <line x1="9" y1="9" x2="15" y2="15"></line>
@@ -144,7 +153,7 @@ const icons = {
   },
   warning: {
     template: `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="toast-icon-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
         <line x1="12" y1="9" x2="12" y2="13"></line>
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -153,7 +162,7 @@ const icons = {
   },
   info: {
     template: `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="toast-icon-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"></circle>
         <line x1="12" y1="16" x2="12" y2="12"></line>
         <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -162,7 +171,7 @@ const icons = {
   },
   cart: {
     template: `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="toast-icon-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="9" cy="21" r="1"></circle>
         <circle cx="20" cy="21" r="1"></circle>
         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
@@ -171,14 +180,14 @@ const icons = {
   },
   wishlist: {
     template: `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="toast-icon-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
       </svg>
     `,
   },
   order: {
     template: `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="toast-icon-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="1" y="3" width="15" height="13"></rect>
         <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
         <circle cx="5.5" cy="18.5" r="2.5"></circle>
@@ -188,7 +197,7 @@ const icons = {
   },
   default: {
     template: `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="toast-icon-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
         <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
       </svg>
@@ -243,6 +252,17 @@ const handleKeydown = (event) => {
   }
 }
 
+// Pause auto-close on hover
+const pauseAutoClose = () => {
+  clearAutoClose()
+}
+
+const resumeAutoClose = () => {
+  if (props.autoClose && !props.persistent) {
+    startAutoClose()
+  }
+}
+
 // Lifecycle hooks
 onMounted(() => {
   startAutoClose()
@@ -273,13 +293,24 @@ defineExpose({
   z-index: 99999;
   max-width: 400px;
   min-width: 300px;
-  background: var(--neutral-white);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-2xl);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  border: 1px solid var(--neutral-gray-200);
-  font-family: var(--font-family);
-  animation: slideIn 0.3s ease forwards;
+  border: 1px solid #e2e8f0;
+  font-family: 'Cairo', sans-serif;
+  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  transition: all 0.3s ease;
+}
+
+/* Dark mode - via class */
+.notification-toast.dark-mode {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(51, 65, 85, 0.8);
+  box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(51, 65, 85, 0.3);
+  backdrop-filter: blur(12px);
 }
 
 /* Position classes */
@@ -337,34 +368,74 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
+  animation: iconPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes iconPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .toast-success .toast-icon {
   color: #10b981;
 }
 
+.notification-toast.dark-mode .toast-success .toast-icon {
+  color: #34d399;
+}
+
 .toast-error .toast-icon {
   color: #ef4444;
+}
+
+.notification-toast.dark-mode .toast-error .toast-icon {
+  color: #f87171;
 }
 
 .toast-warning .toast-icon {
   color: #f59e0b;
 }
 
+.notification-toast.dark-mode .toast-warning .toast-icon {
+  color: #fbbf24;
+}
+
 .toast-info .toast-icon {
   color: #3b82f6;
+}
+
+.notification-toast.dark-mode .toast-info .toast-icon {
+  color: #60a5fa;
 }
 
 .toast-cart .toast-icon {
   color: #06b6d4;
 }
 
+.notification-toast.dark-mode .toast-cart .toast-icon {
+  color: #22d3ee;
+}
+
 .toast-wishlist .toast-icon {
   color: #ec4899;
 }
 
+.notification-toast.dark-mode .toast-wishlist .toast-icon {
+  color: #f472b6;
+}
+
 .toast-order .toast-icon {
   color: #1e3a8a;
+}
+
+.notification-toast.dark-mode .toast-order .toast-icon {
+  color: #3b82f6;
 }
 
 /* Content styling */
@@ -380,15 +451,23 @@ defineExpose({
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--neutral-gray-900);
+  color: #1e293b;
   line-height: 1.4;
+}
+
+.notification-toast.dark-mode .toast-title {
+  color: #f1f5f9;
 }
 
 .toast-message {
   margin: 0;
   font-size: 0.9rem;
-  color: var(--neutral-gray-700);
+  color: #475569;
   line-height: 1.5;
+}
+
+.notification-toast.dark-mode .toast-message {
+  color: #cbd5e1;
 }
 
 /* Close button */
@@ -403,16 +482,22 @@ defineExpose({
   justify-content: center;
   background: transparent;
   border: none;
-  border-radius: var(--border-radius-sm);
+  border-radius: 8px;
   cursor: pointer;
-  color: var(--neutral-gray-400);
+  color: #94a3b8;
   transition: all 0.2s ease;
   padding: 0;
 }
 
 .toast-close-btn:hover {
-  color: var(--neutral-gray-700);
-  background: var(--neutral-gray-100);
+  color: #475569;
+  background: #f1f5f9;
+  transform: rotate(90deg);
+}
+
+.notification-toast.dark-mode .toast-close-btn:hover {
+  background: rgba(51, 65, 85, 0.8);
+  color: #e2e8f0;
 }
 
 .toast-close-btn svg {
@@ -424,25 +509,41 @@ defineExpose({
 .toast-action-btn {
   align-self: flex-start;
   margin-top: 0.5rem;
-  padding: 0.375rem 0.75rem;
-  background: var(--neutral-gray-100);
-  border: 1px solid var(--neutral-gray-300);
-  border-radius: var(--border-radius);
+  padding: 0.5rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--neutral-gray-700);
+  color: #475569;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-family: inherit;
+  position: relative;
+  overflow: hidden;
 }
 
 .toast-action-btn:hover {
-  background: var(--neutral-gray-200);
-  color: var(--neutral-gray-900);
-  transform: translateY(-1px);
+  background: #e2e8f0;
+  color: #1e293b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.notification-toast.dark-mode .toast-action-btn {
+  background: #334155;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+.notification-toast.dark-mode .toast-action-btn:hover {
+  background: #475569;
+  color: #f1f5f9;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .toast-with-action .toast-container {
-  padding-bottom: 3rem;
+  padding-bottom: 1rem;
 }
 
 /* Progress bar */
@@ -452,8 +553,12 @@ defineExpose({
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--neutral-gray-200);
+  background: rgba(0, 0, 0, 0.1);
   overflow: hidden;
+}
+
+.notification-toast.dark-mode .toast-progress {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .toast-progress-bar {
@@ -463,33 +568,22 @@ defineExpose({
   transform-origin: left;
 }
 
-.toast-success .toast-progress-bar {
-  background: #10b981;
-}
+.toast-success .toast-progress-bar { background: #10b981; }
+.toast-error .toast-progress-bar { background: #ef4444; }
+.toast-warning .toast-progress-bar { background: #f59e0b; }
+.toast-info .toast-progress-bar { background: #3b82f6; }
+.toast-cart .toast-progress-bar { background: #06b6d4; }
+.toast-wishlist .toast-progress-bar { background: #ec4899; }
+.toast-order .toast-progress-bar { background: #1e3a8a; }
 
-.toast-error .toast-progress-bar {
-  background: #ef4444;
-}
-
-.toast-warning .toast-progress-bar {
-  background: #f59e0b;
-}
-
-.toast-info .toast-progress-bar {
-  background: #3b82f6;
-}
-
-.toast-cart .toast-progress-bar {
-  background: #06b6d4;
-}
-
-.toast-wishlist .toast-progress-bar {
-  background: #ec4899;
-}
-
-.toast-order .toast-progress-bar {
-  background: #1e3a8a;
-}
+/* Border accent */
+.toast-success { border-right: 4px solid #10b981; }
+.toast-error { border-right: 4px solid #ef4444; }
+.toast-warning { border-right: 4px solid #f59e0b; }
+.toast-info { border-right: 4px solid #3b82f6; }
+.toast-cart { border-right: 4px solid #06b6d4; }
+.toast-wishlist { border-right: 4px solid #ec4899; }
+.toast-order { border-right: 4px solid #1e3a8a; }
 
 /* Animations */
 @keyframes slideInRight {
@@ -581,44 +675,8 @@ defineExpose({
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .notification-toast {
-    background: #1f2937;
-    border-color: #374151;
-  }
-
-  .toast-title {
-    color: #f9fafb;
-  }
-
-  .toast-message {
-    color: #d1d5db;
-  }
-
-  .toast-close-btn:hover {
-    background: #374151;
-    color: #e5e7eb;
-  }
-
-  .toast-action-btn {
-    background: #374151;
-    border-color: #4b5563;
-    color: #e5e7eb;
-  }
-
-  .toast-action-btn:hover {
-    background: #4b5563;
-    color: #f9fafb;
-  }
-
-  .toast-progress {
-    background: #374151;
-  }
-}
-
 /* Accessibility improvements */
-.notification-toast:focus {
+.notification-toast:focus-visible {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
@@ -632,8 +690,13 @@ defineExpose({
 
 /* Hover effects */
 .notification-toast:hover {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.25);
   transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+.notification-toast.dark-mode:hover {
+  box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.5);
 }
 
 /* Ripple effect for action button */
@@ -649,7 +712,7 @@ defineExpose({
   left: 50%;
   width: 5px;
   height: 5px;
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(8, 113, 127, 0.3);
   opacity: 0;
   border-radius: 100%;
   transform: scale(1, 1) translate(-50%, -50%);
@@ -675,38 +738,13 @@ defineExpose({
   }
 }
 
-/* Success toast specific styles */
-.toast-success {
-  border-left: 4px solid #10b981;
+/* Multiple toasts stacking */
+.notification-toast + .notification-toast {
+  margin-top: 12px;
 }
 
-/* Error toast specific styles */
-.toast-error {
-  border-left: 4px solid #ef4444;
-}
-
-/* Warning toast specific styles */
-.toast-warning {
-  border-left: 4px solid #f59e0b;
-}
-
-/* Info toast specific styles */
-.toast-info {
-  border-left: 4px solid #3b82f6;
-}
-
-/* Cart toast specific styles */
-.toast-cart {
-  border-left: 4px solid #06b6d4;
-}
-
-/* Wishlist toast specific styles */
-.toast-wishlist {
-  border-left: 4px solid #ec4899;
-}
-
-/* Order toast specific styles */
-.toast-order {
-  border-left: 4px solid #1e3a8a;
+/* Pause animation on hover */
+.notification-toast:hover .toast-progress-bar {
+  animation-play-state: paused;
 }
 </style>

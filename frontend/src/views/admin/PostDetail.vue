@@ -1,6 +1,6 @@
 <!-- src/views/admin/PostDetail.vue -->
 <template>
-  <div class="admin-page">
+  <div class="admin-page" :class="{ 'dark-mode': isDarkMode }">
     <div class="page-header">
       <button class="back-btn" @click="goBack">
         <span class="back-icon">→</span>
@@ -144,7 +144,7 @@
     <!-- Modal de rejet -->
     <transition name="modal">
       <div v-if="showRejectModal" class="modal-overlay" @click.self="closeRejectModal">
-        <div class="modal-content">
+        <div class="modal-content" :class="{ 'dark-mode': isDarkMode }">
           <div class="modal-header">
             <h3>رفض المنشور</h3>
             <button class="close-btn" @click="closeRejectModal">✕</button>
@@ -180,7 +180,7 @@
 
     <!-- Toast -->
     <transition name="toast">
-      <div v-if="toast.show" class="toast-notification" :class="toast.type">
+      <div v-if="toast.show" class="toast-notification" :class="[toast.type, { 'dark-mode': isDarkMode }]">
         <span class="toast-icon">{{ toast.icon }}</span>
         <span class="toast-message">{{ toast.message }}</span>
       </div>
@@ -189,14 +189,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../../stores/auth'
+import { useThemeStore } from '../../stores/theme'
 import { usePostStore } from '../../stores/postStore'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
+const themeStore = useThemeStore()
 const postStore = usePostStore()
 
+// ===== DARK MODE - Synchronized with global theme store =====
+const isDarkMode = computed(() => themeStore.isDarkMode)
+
+// ===== STATE =====
 const loading = ref(true)
 const post = ref(null)
 const showRejectModal = ref(false)
@@ -205,6 +213,7 @@ const selectedImage = ref('')
 const rejectReason = ref('')
 const toast = ref({ show: false, message: '', type: 'success', icon: '✅' })
 
+// ===== UTILS =====
 const showToast = (message, type = 'success') => {
   const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' }
   toast.value = { show: true, message, type, icon: icons[type] }
@@ -227,7 +236,7 @@ const getCategoryName = (cat) => {
     textiles: 'أقمشة وسجادات',
     pottery: 'أواني',
     beauty: 'عناية وتجميل',
-    food: 'أغدية',
+    food: 'أغذية',
     other: 'أخرى',
   }
   return categories[cat] || cat
@@ -282,6 +291,7 @@ const approvePost = async () => {
       post.value.status = 'approved'
       setTimeout(() => router.push('/admin/pending-posts'), 1500)
     } catch (error) {
+      console.error('❌ Erreur approbation:', error)
       showToast('❌ حدث خطأ', 'error')
     }
   }
@@ -307,6 +317,7 @@ const confirmReject = async () => {
     post.value.adminNotes = rejectReason.value
     setTimeout(() => router.push('/admin/pending-posts'), 1500)
   } catch (error) {
+    console.error('❌ Erreur rejet:', error)
     showToast('❌ حدث خطأ', 'error')
   }
 }
@@ -318,6 +329,7 @@ const deletePost = async () => {
       showToast('🗑️ تم حذف المنشور')
       setTimeout(() => router.push('/admin/pending-posts'), 1500)
     } catch (error) {
+      console.error('❌ Erreur suppression:', error)
       showToast('❌ حدث خطأ', 'error')
     }
   }
@@ -333,13 +345,32 @@ const closeImageModal = () => {
   selectedImage.value = ''
 }
 
+// ===== WATCHERS =====
+watch(isDarkMode, (newValue) => {
+  if (newValue) {
+    document.documentElement.classList.add('dark-mode')
+    document.body.classList.add('dark-mode')
+  } else {
+    document.documentElement.classList.remove('dark-mode')
+    document.body.classList.remove('dark-mode')
+  }
+}, { immediate: true })
+
+// ===== LIFECYCLE =====
 onMounted(async () => {
+  // Check authentication
+  if (!authStore.isAuthenticated || authStore.userRole !== 'admin') {
+    router.push('/login')
+    return
+  }
+
   const postId = route.params.id
   try {
     const data = await postStore.fetchPostById(postId)
     post.value = data
   } catch (error) {
-    console.error(error)
+    console.error('❌ Erreur chargement post:', error)
+    showToast('❌ حدث خطأ في تحميل المنشور', 'error')
   } finally {
     loading.value = false
   }
@@ -347,12 +378,20 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
 .admin-page {
   padding: 30px;
   background: #f8fafc;
   min-height: 100vh;
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Amiri', 'Cairo', serif;
   direction: rtl;
+  transition: all 0.3s ease;
+}
+
+/* Dark mode styles */
+.admin-page.dark-mode {
+  background: #0f172a;
 }
 
 .page-header {
@@ -360,6 +399,7 @@ onMounted(async () => {
   align-items: center;
   gap: 20px;
   margin-bottom: 30px;
+  position: relative;
 }
 
 .back-btn {
@@ -375,6 +415,12 @@ onMounted(async () => {
   color: #475569;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.dark-mode .back-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
 }
 
 .back-btn:hover {
@@ -393,6 +439,10 @@ onMounted(async () => {
   margin: 0;
 }
 
+.dark-mode .page-title {
+  color: #f1f5f9;
+}
+
 /* Loading */
 .loading-state {
   text-align: center;
@@ -409,10 +459,23 @@ onMounted(async () => {
   margin: 0 auto 20px;
 }
 
+.dark-mode .spinner {
+  border-color: #334155;
+  border-top-color: #08717f;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
+}
+
+.loading-state p {
+  color: #64748b;
+}
+
+.dark-mode .loading-state p {
+  color: #94a3b8;
 }
 
 /* Post Card */
@@ -423,6 +486,12 @@ onMounted(async () => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   max-width: 900px;
   margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+.dark-mode .post-card {
+  background: #1e293b;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .post-header {
@@ -432,6 +501,10 @@ onMounted(async () => {
   margin-bottom: 25px;
   padding-bottom: 20px;
   border-bottom: 2px solid #f1f5f9;
+}
+
+.dark-mode .post-header {
+  border-bottom-color: #334155;
 }
 
 .vendor-info {
@@ -449,6 +522,10 @@ onMounted(async () => {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+.dark-mode .vendor-avatar {
+  border-color: #1e293b;
+}
+
 .vendor-name {
   font-size: 1.2rem;
   color: #1e293b;
@@ -456,9 +533,17 @@ onMounted(async () => {
   font-weight: 700;
 }
 
+.dark-mode .vendor-name {
+  color: #f1f5f9;
+}
+
 .post-date {
   color: #64748b;
   font-size: 0.85rem;
+}
+
+.dark-mode .post-date {
+  color: #94a3b8;
 }
 
 .status-badge {
@@ -473,14 +558,29 @@ onMounted(async () => {
   color: #856404;
 }
 
+.dark-mode .status-badge.pending {
+  background: rgba(255, 243, 205, 0.2);
+  color: #ffd966;
+}
+
 .status-badge.approved {
   background: #d4edda;
   color: #155724;
 }
 
+.dark-mode .status-badge.approved {
+  background: rgba(212, 237, 218, 0.2);
+  color: #6fbf4c;
+}
+
 .status-badge.rejected {
   background: #f8d7da;
   color: #721c24;
+}
+
+.dark-mode .status-badge.rejected {
+  background: rgba(248, 215, 218, 0.2);
+  color: #ff6b6b;
 }
 
 /* Product Section */
@@ -494,6 +594,10 @@ onMounted(async () => {
   margin-bottom: 20px;
 }
 
+.dark-mode .product-title {
+  color: #f1f5f9;
+}
+
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -501,6 +605,10 @@ onMounted(async () => {
   background: #f8fafc;
   padding: 20px;
   border-radius: 12px;
+}
+
+.dark-mode .info-grid {
+  background: #0f172a;
 }
 
 .info-item {
@@ -516,15 +624,27 @@ onMounted(async () => {
   letter-spacing: 0.5px;
 }
 
+.dark-mode .info-label {
+  color: #94a3b8;
+}
+
 .info-value {
   font-size: 1.2rem;
   font-weight: 700;
   color: #1e293b;
 }
 
+.dark-mode .info-value {
+  color: #f1f5f9;
+}
+
 .info-value.price {
   color: #d40025;
   font-size: 1.4rem;
+}
+
+.dark-mode .info-value.price {
+  color: #ff6b6b;
 }
 
 .info-value.old-price {
@@ -548,6 +668,11 @@ onMounted(async () => {
   border-bottom: 2px solid #f1f5f9;
 }
 
+.dark-mode .section-title {
+  color: #f1f5f9;
+  border-bottom-color: #334155;
+}
+
 /* Description */
 .description-section {
   margin-bottom: 25px;
@@ -558,6 +683,10 @@ onMounted(async () => {
   line-height: 1.8;
   padding: 0 10px;
   font-size: 1rem;
+}
+
+.dark-mode .description-text {
+  color: #cbd5e1;
 }
 
 /* Colors */
@@ -580,9 +709,17 @@ onMounted(async () => {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+.dark-mode .color-dot {
+  border-color: #1e293b;
+}
+
 .color-names {
   color: #64748b;
   font-size: 0.95rem;
+}
+
+.dark-mode .color-names {
+  color: #94a3b8;
 }
 
 /* Images */
@@ -603,6 +740,10 @@ onMounted(async () => {
   border: 2px solid #e2e8f0;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.dark-mode .image-item {
+  border-color: #334155;
 }
 
 .image-item:hover {
@@ -626,11 +767,20 @@ onMounted(async () => {
   border-right: 4px solid #dc2626;
 }
 
+.dark-mode .rejection-reason {
+  background: rgba(220, 38, 38, 0.1);
+  border-right-color: #ef4444;
+}
+
 .rejection-reason p {
   color: #991b1b;
   line-height: 1.7;
   font-size: 1rem;
   margin: 0;
+}
+
+.dark-mode .rejection-reason p {
+  color: #ff6b6b;
 }
 
 /* Admin Actions */
@@ -641,6 +791,10 @@ onMounted(async () => {
   margin-top: 30px;
   padding-top: 25px;
   border-top: 2px solid #f1f5f9;
+}
+
+.dark-mode .admin-actions {
+  border-top-color: #334155;
 }
 
 .action-btn {
@@ -662,15 +816,29 @@ onMounted(async () => {
   color: #155724;
 }
 
+.dark-mode .action-btn.approve {
+  background: rgba(212, 237, 218, 0.2);
+  color: #6fbf4c;
+}
+
 .action-btn.approve:hover {
   background: #c3e6cb;
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(21, 87, 36, 0.2);
 }
 
+.dark-mode .action-btn.approve:hover {
+  background: rgba(212, 237, 218, 0.3);
+}
+
 .action-btn.reject {
   background: #f8d7da;
   color: #721c24;
+}
+
+.dark-mode .action-btn.reject {
+  background: rgba(248, 215, 218, 0.2);
+  color: #ff6b6b;
 }
 
 .action-btn.reject:hover {
@@ -679,9 +847,18 @@ onMounted(async () => {
   box-shadow: 0 5px 15px rgba(114, 28, 36, 0.2);
 }
 
+.dark-mode .action-btn.reject:hover {
+  background: rgba(248, 215, 218, 0.3);
+}
+
 .action-btn.edit {
   background: #cce5ff;
   color: #004085;
+}
+
+.dark-mode .action-btn.edit {
+  background: rgba(204, 229, 255, 0.2);
+  color: #6ea8fe;
 }
 
 .action-btn.edit:hover {
@@ -690,15 +867,28 @@ onMounted(async () => {
   box-shadow: 0 5px 15px rgba(0, 64, 133, 0.2);
 }
 
+.dark-mode .action-btn.edit:hover {
+  background: rgba(204, 229, 255, 0.3);
+}
+
 .action-btn.delete {
   background: #f8d7da;
   color: #721c24;
+}
+
+.dark-mode .action-btn.delete {
+  background: rgba(248, 215, 218, 0.2);
+  color: #ff6b6b;
 }
 
 .action-btn.delete:hover {
   background: #f5c6cb;
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(114, 28, 36, 0.2);
+}
+
+.dark-mode .action-btn.delete:hover {
+  background: rgba(248, 215, 218, 0.3);
 }
 
 .btn-icon {
@@ -715,9 +905,17 @@ onMounted(async () => {
   margin: 0 auto;
 }
 
+.dark-mode .not-found {
+  background: #1e293b;
+}
+
 .not-found h2 {
   color: #1e293b;
   margin-bottom: 20px;
+}
+
+.dark-mode .not-found h2 {
+  color: #f1f5f9;
 }
 
 /* Modal */
@@ -741,6 +939,10 @@ onMounted(async () => {
   width: 90%;
   max-width: 450px;
   animation: slideUp 0.3s ease;
+}
+
+.modal-content.dark-mode {
+  background: #1e293b;
 }
 
 .image-modal-content {
@@ -774,9 +976,17 @@ onMounted(async () => {
   border-bottom: 1px solid #e2e8f0;
 }
 
+.dark-mode .modal-header {
+  border-bottom-color: #334155;
+}
+
 .modal-header h3 {
   font-size: 1.2rem;
   color: #1e293b;
+}
+
+.dark-mode .modal-header h3 {
+  color: #f1f5f9;
 }
 
 .close-btn {
@@ -790,6 +1000,11 @@ onMounted(async () => {
   transition: all 0.3s ease;
 }
 
+.dark-mode .close-btn {
+  background: #334155;
+  color: #f1f5f9;
+}
+
 .close-btn:hover {
   background: #d40025;
   color: white;
@@ -799,9 +1014,13 @@ onMounted(async () => {
   padding: 25px;
 }
 
-.modal-description {
+.modal-body p {
   color: #1e293b;
   margin-bottom: 15px;
+}
+
+.dark-mode .modal-body p {
+  color: #f1f5f9;
 }
 
 .reject-textarea {
@@ -813,12 +1032,19 @@ onMounted(async () => {
   margin: 15px 0;
   resize: vertical;
   font-family: inherit;
+  background: white;
+  color: #1e293b;
+}
+
+.dark-mode .reject-textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f1f5f9;
 }
 
 .reject-textarea:focus {
   outline: none;
-  border-color: #d40025;
-  box-shadow: 0 0 0 3px rgba(212, 0, 37, 0.1);
+  border-color: #08717f;
 }
 
 .modal-actions {
@@ -844,8 +1070,17 @@ onMounted(async () => {
   color: #64748b;
 }
 
+.dark-mode .btn-cancel {
+  background: #334155;
+  color: #cbd5e1;
+}
+
 .btn-cancel:hover {
   background: #e2e8f0;
+}
+
+.dark-mode .btn-cancel:hover {
+  background: #475569;
 }
 
 .btn-reject {
@@ -882,12 +1117,29 @@ onMounted(async () => {
   animation: slideInRight 0.3s ease;
 }
 
+.toast-notification.dark-mode {
+  background: #1e293b;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
 .toast-notification.success {
   border-right-color: #10b981;
 }
 
 .toast-notification.error {
   border-right-color: #ef4444;
+}
+
+.toast-notification.info {
+  border-right-color: #08717f;
+}
+
+.toast-notification.warning {
+  border-right-color: #f59e0b;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9;
 }
 
 @keyframes slideInRight {

@@ -1,80 +1,70 @@
-<!-- frontend/src/components/Footer.vue -->
+<!-- frontend/src/components/Footer.vue - DESIGN PREMIUM AVEC AMIRI -->
 <template>
-  <footer class="footer">
-    <!-- Theme Toggle Button (global) -->
-    <ThemeToggle :compact="true" class="footer-theme-toggle" />
-
+  <footer class="footer" :class="{ 'dark-mode': isDarkMode }">
     <!-- Wave decoration -->
     <div class="footer-wave">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
-        <path fill="#08717f" fill-opacity="0.1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,170.7C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 80" preserveAspectRatio="none">
+        <path fill="currentColor" fill-opacity="0.08" d="M0,32L48,37.3C96,43,192,53,288,53.3C384,53,480,43,576,37.3C672,32,768,32,864,37.3C960,43,1056,53,1152,53.3C1248,53,1344,43,1392,37.3L1440,32L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path>
       </svg>
     </div>
 
     <div class="footer-content">
       <div class="container">
-        <!-- Main Footer -->
+        <!-- Footer Main -->
         <div class="footer-main">
-          <!-- Logo & Info -->
+          <!-- Brand Section -->
           <div class="footer-section brand-section">
-            <router-link to="/" class="footer-logo">
-              <div class="logo-icon">
-                <img src="@/assets/asala logo.svg" alt="أصالة" class="logo-svg" />
-              </div>
-              <span class="logo-text">أصالة</span>
-            </router-link>
+            <div class="logo-wrapper">
+              <img src="/src/assets/asala logo.svg" alt="ASALA" class="footer-logo" />
+            </div>
             <p class="footer-description">
-              منصة الحرف اليدوية التونسية الأصيلة، حيث تلتقي أصالة الماضي بإبداع الحاضر
+              منصة الحرف اليدوية التونسية الأصيلة، حيث تلتقي أصالة الماضي بإبداع الحاضر.
+              نقدم لكم أفضل المنتجات التقليدية المصنوعة بأيدي حرفيين ماهرين.
             </p>
 
-            <!-- Social Media avec animations -->
-            <div class="social-wrapper">
-              <h4 class="social-title">تواصل معنا</h4>
-              <div class="social-grid">
-                <a href="https://facebook.com" target="_blank" class="social-btn facebook" title="فيسبوك">
-                  <svg viewBox="0 0 24 24" width="20" height="20">
-                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" fill="currentColor"/>
-                  </svg>
-                </a>
-                <a href="https://instagram.com" target="_blank" class="social-btn instagram" title="انستغرام">
-                  <svg viewBox="0 0 24 24" width="20" height="20">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2"/>
-                    <circle cx="12" cy="12" r="4" fill="currentColor"/>
-                    <circle cx="18" cy="6" r="1.5" fill="currentColor"/>
-                  </svg>
-                </a>
-                <a href="https://youtube.com" target="_blank" class="social-btn youtube" title="يوتيوب">
-                  <svg viewBox="0 0 24 24" width="20" height="20">
-                    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" fill="currentColor"/>
-                    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="white"/>
-                  </svg>
-                </a>
-                <a href="https://twitter.com" target="_blank" class="social-btn twitter" title="تويتر">
-                  <svg viewBox="0 0 24 24" width="20" height="20">
-                    <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z" fill="currentColor"/>
-                  </svg>
-                </a>
-                <a href="https://pinterest.com" target="_blank" class="social-btn pinterest" title="بينتريست">
-                  <svg viewBox="0 0 24 24" width="20" height="20">
-                    <path d="M12 0a12 12 0 0 0-4.5 23.1 10 10 0 0 1 .1-3.2l1.4-5.5a4 4 0 0 1-.4-1.7c0-1.6.9-2.8 2.1-2.8 1 0 1.5.7 1.5 1.6 0 1-.6 2.5-.9 3.9a1.7 1.7 0 0 0 1.7 2.1c2.1 0 3.7-2.2 3.7-5.4 0-2.8-2-4.8-5-4.8a5.2 5.2 0 0 0-5.4 5.2 4.7 4.7 0 0 0 .9 2.8.4.4 0 0 1 .1.4c0 .2-.1.5-.2.6-.1.2-.2.2-.4.1-1.4-.6-2.3-2.5-2.3-4.2 0-3.4 2.5-6.6 7.2-6.6 3.8 0 6.7 2.7 6.7 6.3 0 3.8-2.4 6.8-5.7 6.8a3 3 0 0 1-2.6-1.3l-.7 2.7a11 11 0 0 1-1.3 2.7A12 12 0 1 0 12 0z" fill="currentColor"/>
-                  </svg>
-                </a>
-              </div>
+            <!-- Social Media - Facebook et Instagram uniquement -->
+            <div class="social-links">
+              <a href="https://facebook.com" target="_blank" class="social-link" title="فيسبوك">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" fill="currentColor"/>
+                </svg>
+              </a>
+              <a href="https://instagram.com" target="_blank" class="social-link" title="انستغرام">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2"/>
+                  <circle cx="12" cy="12" r="4" fill="currentColor"/>
+                  <circle cx="18" cy="6" r="1.5" fill="currentColor"/>
+                </svg>
+              </a>
             </div>
 
             <!-- Contact Info -->
             <div class="contact-info">
               <div class="contact-item">
-                <span class="contact-emoji">📞</span>
+                <span class="contact-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M22 16.92v3a1.999 1.999 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.574 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                </span>
                 <a href="tel:+21612345678">+216 12 345 678</a>
               </div>
               <div class="contact-item">
-                <span class="contact-emoji">✉️</span>
-                <a href="mailto:contact@asala.tn">contact@asala.tn</a>
+                <span class="contact-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                </span>
+                <a href="mailto:infinity.tunisia@gmail.com">infinity.tunisia@gmail.com</a>
               </div>
               <div class="contact-item">
-                <span class="contact-emoji">📍</span>
-                <span>تونس العاصمة</span>
+                <span class="contact-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                </span>
+                <span>تونس العاصمة، تونس</span>
               </div>
             </div>
           </div>
@@ -82,103 +72,86 @@
           <!-- Quick Links -->
           <div class="footer-section">
             <h3 class="footer-title">
-              <span class="title-icon">🔗</span>
+              <span class="title-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+              </span>
               روابط سريعة
             </h3>
             <ul class="footer-links">
-              <li><router-link to="/products" class="red-hover">المنتجات</router-link></li>
-              <li><router-link to="/artisans" class="green-hover">الحرفيون</router-link></li>
-              <li><router-link to="/about" class="red-hover">من نحن</router-link></li>
-              <li><router-link to="/contact" class="green-hover">اتصل بنا</router-link></li>
-              <li><router-link to="/blog" class="red-hover">المدونة</router-link></li>
+              <li><router-link to="/products">المنتجات</router-link></li>
+              <li><router-link to="/artisans">الحرفيون</router-link></li>
+              <li><router-link to="/about">من نحن</router-link></li>
+              <li><router-link to="/contact">اتصل بنا</router-link></li>
             </ul>
           </div>
 
           <!-- Categories -->
           <div class="footer-section">
             <h3 class="footer-title">
-              <span class="title-icon">🏷️</span>
+              <span class="title-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <rect x="3" y="3" width="7" height="7" rx="1"/>
+                  <rect x="14" y="3" width="7" height="7" rx="1"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1"/>
+                  <rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+              </span>
               التصنيفات
             </h3>
-            <div class="categories-grid">
-              <router-link to="/products?category=textiles" class="category-chip red-chip">
-                <span>🧵</span>
-                <span>سجاد</span>
+            <div class="categories-list">
+              <router-link to="/products?category=textiles">
+                <span class="cat-dot"></span>
+                سجاد ومنسوجات
               </router-link>
-              <router-link to="/products?category=pottery" class="category-chip green-chip">
-                <span>🏺</span>
-                <span>فخار</span>
+              <router-link to="/products?category=pottery">
+                <span class="cat-dot"></span>
+                فخار وخزف
               </router-link>
-              <router-link to="/products?category=jewelry" class="category-chip red-chip">
-                <span>💍</span>
-                <span>مجوهرات</span>
+              <router-link to="/products?category=jewelry">
+                <span class="cat-dot"></span>
+                مجوهرات وحلي
               </router-link>
-              <router-link to="/products?category=clothing" class="category-chip green-chip">
-                <span>👗</span>
-                <span>ملابس</span>
+              <router-link to="/products?category=clothing">
+                <span class="cat-dot"></span>
+                ملابس تقليدية
               </router-link>
-              <router-link to="/products?category=woodwork" class="category-chip red-chip">
-                <span>🪵</span>
-                <span>خشب</span>
+              <router-link to="/products?category=woodwork">
+                <span class="cat-dot"></span>
+                أشغال خشبية
               </router-link>
-              <router-link to="/products?category=metalwork" class="category-chip green-chip">
-                <span>⚒️</span>
-                <span>نحاس</span>
-              </router-link>
-              <router-link to="/products?category=perfumes" class="category-chip red-chip">
-                <span>🌸</span>
-                <span>عطور</span>
-              </router-link>
-              <router-link to="/products?category=decoration" class="category-chip green-chip">
-                <span>✨</span>
-                <span>ديكور</span>
+              <router-link to="/products?category=metalwork">
+                <span class="cat-dot"></span>
+                مشغولات نحاسية
               </router-link>
             </div>
           </div>
 
-          <!-- Newsletter -->
-          <div class="footer-section newsletter-section">
+          <!-- Opening Hours -->
+          <div class="footer-section">
             <h3 class="footer-title">
-              <span class="title-icon">📧</span>
-              النشرة البريدية
+              <span class="title-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </span>
+              ساعات العمل
             </h3>
-            <p class="newsletter-text">
-              اشترك لتصلك أحدث العروض والمنتجات الحرفية
-            </p>
-
-            <!-- Message de notification -->
-            <div v-if="message" class="newsletter-message" :class="messageType">
-              {{ message }}
-            </div>
-
-            <form @submit.prevent="subscribeNewsletter" class="newsletter-form-enhanced">
-              <div class="input-group">
-                <input
-                  type="email"
-                  v-model="email"
-                  placeholder="بريدك الإلكتروني"
-                  :disabled="loading"
-                  required
-                />
-                <button type="submit" :disabled="loading" class="red-gradient-btn">
-                  <span v-if="!loading">اشترك</span>
-                  <span v-else class="loading-spinner-small"></span>
-                </button>
+            <div class="hours-list">
+              <div class="hour-item">
+                <span class="day">الإثنين - الجمعة</span>
+                <span class="time">09:00 - 18:00</span>
               </div>
-            </form>
-
-            <div class="newsletter-features">
-              <div class="feature red-feature">
-                <span class="feature-icon">🎁</span>
-                <span class="feature-text">عروض حصرية</span>
+              <div class="hour-item">
+                <span class="day">السبت</span>
+                <span class="time">10:00 - 14:00</span>
               </div>
-              <div class="feature green-feature">
-                <span class="feature-icon">📦</span>
-                <span class="feature-text">منتجات جديدة</span>
-              </div>
-              <div class="feature red-feature">
-                <span class="feature-icon">💝</span>
-                <span class="feature-text">هدايا مجانية</span>
+              <div class="hour-item">
+                <span class="day">الأحد</span>
+                <span class="time">مغلق</span>
               </div>
             </div>
           </div>
@@ -186,17 +159,20 @@
 
         <!-- Footer Bottom -->
         <div class="footer-bottom">
-          <div class="copyright">
-            <p>© 2026 أصالة - جميع الحقوق محفوظة</p>
-          </div>
+          <p class="copyright">© 2026 أصالة - جميع الحقوق محفوظة</p>
           <div class="footer-bottom-links">
-            <router-link to="/privacy" class="red-link">سياسة الخصوصية</router-link>
-            <span class="dot">•</span>
-            <router-link to="/terms" class="green-link">الشروط والأحكام</router-link>
-            <span class="dot">•</span>
-            <router-link to="/shipping" class="red-link">الشحن والتوصيل</router-link>
-            <span class="dot">•</span>
-            <router-link to="/faq" class="green-link">الأسئلة الشائعة</router-link>
+            <router-link to="/privacy">سياسة الخصوصية</router-link>
+            <span class="separator">•</span>
+            <router-link to="/terms">الشروط والأحكام</router-link>
+            <span class="separator">•</span>
+            <router-link to="/shipping">الشحن والتوصيل</router-link>
+            <span class="separator">•</span>
+            <router-link to="/faq">الأسئلة الشائعة</router-link>
+          </div>
+          <div class="back-to-top" @click="scrollToTop">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 19V5M5 12l7-7 7 7"/>
+            </svg>
           </div>
         </div>
       </div>
@@ -205,82 +181,39 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import api from '../services/api'
-import ThemeToggle from './ThemeToggle.vue'
+import { computed, onMounted } from 'vue'
+import { useThemeStore } from '../stores/theme'
 
-const email = ref('')
-const loading = ref(false)
-const message = ref('')
-const messageType = ref('')
+const themeStore = useThemeStore()
+const isDarkMode = computed(() => themeStore.isDarkMode)
 
-const subscribeNewsletter = async () => {
-  if (!email.value) {
-    showMessage('الرجاء إدخال البريد الإلكتروني', 'error')
-    return
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(email.value)) {
-    showMessage('بريد إلكتروني غير صحيح', 'error')
-    return
-  }
-
-  loading.value = true
-  console.log('📧 Abonnement newsletter:', email.value)
-
-  try {
-    const response = await api.post('/newsletter/subscribe', {
-      email: email.value
-    })
-
-    console.log('📦 Réponse newsletter:', response.data)
-
-    if (response.data.success) {
-      showMessage(response.data.message, 'success')
-      email.value = ''
-    } else {
-      showMessage(response.data.message, 'error')
-    }
-  } catch (error) {
-    console.error('❌ Erreur newsletter:', error)
-    showMessage(error.response?.data?.message || 'حدث خطأ', 'error')
-  } finally {
-    loading.value = false
-  }
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-const showMessage = (msg, type) => {
-  message.value = msg
-  messageType.value = type
-  setTimeout(() => {
-    message.value = ''
-  }, 5000)
-}
+onMounted(() => {
+  console.log('Footer mounted, dark mode:', isDarkMode.value)
+})
 </script>
 
 <style scoped>
+/* ===== IMPORT POLICE AMIRI ===== */
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
 .footer {
   position: relative;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  color: #334155;
-  font-family: 'Cairo', sans-serif;
-  direction: rtl;
   border-top: 1px solid rgba(8, 113, 127, 0.1);
+  margin-top: 3rem;
   transition: all 0.3s ease;
+  font-family: 'Amiri', 'Cairo', serif;
 }
 
-/* Styles pour le bouton ThemeToggle dans le footer */
-.footer-theme-toggle {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 10;
-  background: var(--bg-tertiary, #f1f5f9);
-  border-color: var(--border-color, #e2e8f0);
+.footer.dark-mode {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-top-color: rgba(8, 113, 127, 0.2);
 }
 
-/* Wave decoration */
 .footer-wave {
   position: absolute;
   top: -1px;
@@ -288,19 +221,28 @@ const showMessage = (msg, type) => {
   width: 100%;
   overflow: hidden;
   line-height: 0;
-  transform: rotate(180deg);
 }
 
 .footer-wave svg {
   position: relative;
   display: block;
   width: calc(100% + 1.3px);
-  height: 60px;
+  height: 50px;
+  color: #08717f;
+  animation: waveMove 10s ease-in-out infinite;
 }
 
-.dark-theme .footer-wave svg path {
-  fill: #1a1a1a;
-  fill-opacity: 0.3;
+@keyframes waveMove {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-20px);
+  }
+}
+
+.footer.dark-mode .footer-wave svg {
+  color: rgba(8, 113, 127, 0.3);
 }
 
 .footer-content {
@@ -315,168 +257,144 @@ const showMessage = (msg, type) => {
   padding: 0 20px;
 }
 
-/* Main Footer Grid */
 .footer-main {
   display: grid;
-  grid-template-columns: 2fr 1fr 2fr 2fr;
+  grid-template-columns: 2fr 1fr 1.5fr 1.2fr;
   gap: 2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
-/* Logo Section - Agrandi */
-.footer-logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.8rem;
-  text-decoration: none;
-  margin-bottom: 1.5rem;
-}
-
-.logo-icon {
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #08717f, #d40025);
-  border-radius: 18px;
+.brand-section {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: rotate(-5deg);
-  transition: all 0.3s ease;
-  box-shadow: 0 10px 20px rgba(212, 0, 37, 0.2);
+  flex-direction: column;
+  gap: 1.2rem;
 }
 
-.logo-icon:hover {
-  transform: rotate(0deg) scale(1.15);
-  box-shadow: 0 15px 30px rgba(8, 113, 127, 0.3);
+.logo-wrapper {
+  animation: fadeInUp 0.6s ease;
 }
 
-.logo-svg {
-  width: 45px;
+.footer-logo {
   height: 45px;
-  filter: brightness(0) invert(1);
-  animation: bounce 2s infinite;
+  width: auto;
+  transition: transform 0.3s ease;
 }
 
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-
-.logo-text {
-  font-size: 2rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #08717f, #d40025);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.footer-logo:hover {
+  transform: scale(1.05);
 }
 
 .footer-description {
   color: #64748b;
   line-height: 1.7;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  margin: 0;
+  max-width: 350px;
   transition: color 0.3s ease;
+  animation: fadeInUp 0.6s ease 0.1s both;
 }
 
-/* Social Section */
-.social-wrapper {
-  margin-bottom: 1.5rem;
+.footer.dark-mode .footer-description {
+  color: #94a3b8;
 }
 
-.social-title {
-  font-size: 0.9rem;
-  color: #1e293b;
-  margin-bottom: 0.8rem;
-  font-weight: 600;
-  transition: color 0.3s ease;
-}
-
-.social-grid {
+.social-links {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.8rem;
   flex-wrap: wrap;
+  animation: fadeInUp 0.6s ease 0.2s both;
 }
 
-.social-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+.social-link {
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: #f1f5f9;
+  border-radius: 10px;
+  color: #475569;
+  transition: all 0.3s ease;
+  text-decoration: none;
   position: relative;
   overflow: hidden;
 }
 
-.social-btn::before {
+.social-link::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(8, 113, 127, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.social-link:hover::before {
   width: 100%;
   height: 100%;
-  background: inherit;
-  opacity: 0;
-  transition: opacity 0.3s ease;
 }
 
-.social-btn:hover {
-  transform: translateY(-5px) scale(1.1);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+.footer.dark-mode .social-link {
+  background: #1e293b;
+  color: #94a3b8;
 }
 
-.social-btn.facebook {
-  background: #1877f2;
+.social-link:hover {
+  background: linear-gradient(135deg, #08717f, #065a69);
   color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(8, 113, 127, 0.3);
 }
 
-.social-btn.instagram {
-  background: linear-gradient(45deg, #f09433, #d62976, #962fbf);
-  color: white;
-}
-
-.social-btn.youtube {
-  background: #ff0000;
-  color: white;
-}
-
-.social-btn.twitter {
-  background: #1da1f2;
-  color: white;
-}
-
-.social-btn.pinterest {
-  background: #e60023;
-  color: white;
-}
-
-/* Contact Info */
 .contact-info {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.8rem;
+  animation: fadeInUp 0.6s ease 0.3s both;
 }
 
 .contact-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.8rem;
   color: #475569;
   font-size: 0.85rem;
-  transition: color 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
-.contact-emoji {
-  font-size: 1rem;
-  width: 24px;
-  height: 24px;
-  background: #f1f5f9;
-  border-radius: 6px;
+.contact-item:hover {
+  transform: translateX(-5px);
+}
+
+.footer.dark-mode .contact-item {
+  color: #94a3b8;
+}
+
+.contact-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #08717f, #d40025);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
   transition: all 0.3s ease;
+}
+
+.contact-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: white;
+}
+
+.contact-item:hover .contact-icon {
+  transform: scale(1.1);
+  box-shadow: 0 3px 10px rgba(8, 113, 127, 0.3);
 }
 
 .contact-item a {
@@ -485,35 +403,57 @@ const showMessage = (msg, type) => {
   transition: color 0.3s ease;
 }
 
+.footer.dark-mode .contact-item a {
+  color: #94a3b8;
+}
+
 .contact-item a:hover {
   color: #08717f;
 }
 
-/* Footer Titles */
 .footer-title {
   font-size: 1rem;
   font-weight: 700;
   color: #1e293b;
   margin-bottom: 1.2rem;
-  display: flex;
+  position: relative;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   transition: color 0.3s ease;
+  font-family: 'Amiri', serif;
+}
+
+.footer.dark-mode .footer-title {
+  color: #f1f5f9;
 }
 
 .title-icon {
-  font-size: 1.1rem;
-  background: #f1f5f9;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
+  opacity: 0.8;
 }
 
-/* Links avec couleurs */
+.title-icon svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+}
+
+.footer-title::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  right: 0;
+  width: 40px;
+  height: 3px;
+  background: linear-gradient(135deg, #08717f, #d40025);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.footer-section:hover .footer-title::after {
+  width: 60px;
+}
+
 .footer-links {
   list-style: none;
   padding: 0;
@@ -521,319 +461,182 @@ const showMessage = (msg, type) => {
 }
 
 .footer-links li {
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.7rem;
+  animation: fadeInUp 0.4s ease both;
 }
 
-.footer-links a {
+.footer-links li:nth-child(1) { animation-delay: 0.1s; }
+.footer-links li:nth-child(2) { animation-delay: 0.15s; }
+.footer-links li:nth-child(3) { animation-delay: 0.2s; }
+.footer-links li:nth-child(4) { animation-delay: 0.25s; }
+
+.footer-links a,
+.categories-list a {
   text-decoration: none;
-  font-size: 0.85rem;
-  transition: all 0.3s ease;
-  display: inline-block;
-  position: relative;
-  padding-right: 0;
-}
-
-.footer-links a::before {
-  content: '←';
-  position: absolute;
-  right: -15px;
-  opacity: 0;
-  transition: all 0.3s ease;
-}
-
-.footer-links a:hover {
-  transform: translateX(-5px);
-  padding-right: 5px;
-}
-
-.footer-links a:hover::before {
-  opacity: 1;
-}
-
-/* Couleurs rouges et vertes pour les liens */
-.red-hover {
-  color: #d40025;
-}
-
-.red-hover::before {
-  color: #d40025;
-}
-
-.red-hover:hover {
-  color: #a0001c;
-}
-
-.green-hover {
-  color: #2e7d32;
-}
-
-.green-hover::before {
-  color: #2e7d32;
-}
-
-.green-hover:hover {
-  color: #1b5e20;
-}
-
-/* Categories Grid */
-.categories-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
-}
-
-.category-chip {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 30px;
-  text-decoration: none;
-  font-size: 0.75rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.category-chip span:first-child {
-  font-size: 0.9rem;
-}
-
-/* Chips rouges */
-.red-chip {
-  color: #d40025;
-  border-color: #ffcdd2;
-}
-
-.red-chip:hover {
-  background: linear-gradient(135deg, #d40025, #a0001c);
-  color: white;
-  border-color: transparent;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(212, 0, 37, 0.2);
-}
-
-/* Chips vertes */
-.green-chip {
-  color: #2e7d32;
-  border-color: #c8e6c9;
-}
-
-.green-chip:hover {
-  background: linear-gradient(135deg, #2e7d32, #1b5e20);
-  color: white;
-  border-color: transparent;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(46, 125, 50, 0.2);
-}
-
-/* Newsletter Section */
-.newsletter-section {
-  background: rgba(8, 113, 127, 0.03);
-  padding: 1.5rem;
-  border-radius: 20px;
-  border: 1px solid rgba(8, 113, 127, 0.1);
-  transition: all 0.3s ease;
-}
-
-.newsletter-text {
   color: #64748b;
   font-size: 0.85rem;
-  margin-bottom: 1rem;
-  line-height: 1.5;
-  transition: color 0.3s ease;
-}
-
-.newsletter-form-enhanced {
-  margin-bottom: 1rem;
-}
-
-.input-group {
-  display: flex;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
   gap: 0.5rem;
-  background: white;
-  padding: 0.3rem;
-  border-radius: 50px;
-  border: 2px solid #e2e8f0;
-  transition: all 0.3s ease;
 }
 
-.input-group:focus-within {
-  border-color: #d40025;
-  box-shadow: 0 0 0 3px rgba(212, 0, 37, 0.1);
-}
-
-.input-group input {
-  flex: 1;
-  padding: 0.6rem 1rem;
-  border: none;
-  background: transparent;
-  font-size: 0.85rem;
-  outline: none;
-  color: #1e293b;
-}
-
-.input-group input::placeholder {
+.footer.dark-mode .footer-links a,
+.footer.dark-mode .categories-list a {
   color: #94a3b8;
-  font-size: 0.8rem;
 }
 
-/* Bouton avec dégradé rouge */
-.red-gradient-btn {
-  padding: 0.6rem 1.2rem;
-  background: linear-gradient(135deg, #d40025, #a0001c);
-  color: white;
-  border: none;
-  border-radius: 30px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
+.footer-links a:hover,
+.categories-list a:hover {
+  color: #08717f;
+  transform: translateX(-5px);
 }
 
-.red-gradient-btn:hover:not(:disabled) {
-  transform: translateX(-2px);
-  box-shadow: 0 5px 15px rgba(212, 0, 37, 0.3);
-}
-
-.red-gradient-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  background: linear-gradient(135deg, #d40025, #a0001c);
-}
-
-.loading-spinner-small {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid white;
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Newsletter Features avec couleurs */
-.newsletter-features {
-  display: flex;
-  gap: 0.8rem;
-  justify-content: space-around;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px dashed #e2e8f0;
-}
-
-.feature {
+.categories-list {
   display: flex;
   flex-direction: column;
+  gap: 0.7rem;
+}
+
+.categories-list a {
+  font-size: 0.85rem;
+}
+
+.cat-dot {
+  width: 6px;
+  height: 6px;
+  background: #08717f;
+  border-radius: 50%;
+  display: inline-block;
+  transition: all 0.3s ease;
+  opacity: 0;
+}
+
+.categories-list a:hover .cat-dot {
+  opacity: 1;
+  transform: scale(1.5);
+}
+
+.hours-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.hour-item {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.2rem;
+  font-size: 0.85rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px dashed rgba(8, 113, 127, 0.1);
+  transition: all 0.3s ease;
 }
 
-.feature-icon {
-  font-size: 1.1rem;
-  animation: pulse 2s infinite;
+.hour-item:hover {
+  transform: translateX(-5px);
+  border-bottom-color: #08717f;
 }
 
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+.day {
+  color: #1e293b;
+  font-weight: 600;
 }
 
-.feature-text {
-  font-size: 0.65rem;
+.footer.dark-mode .day {
+  color: #f1f5f9;
+}
+
+.time {
+  color: #08717f;
   font-weight: 500;
 }
 
-.red-feature .feature-text {
-  color: #d40025;
+.footer.dark-mode .time {
+  color: #2dd4bf;
 }
 
-.green-feature .feature-text {
-  color: #2e7d32;
-}
-
-.red-feature .feature-icon {
-  color: #d40025;
-}
-
-.green-feature .feature-icon {
-  color: #2e7d32;
-}
-
-/* Footer Bottom avec couleurs */
 .footer-bottom {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding-top: 1.5rem;
-  border-top: 2px solid rgba(8, 113, 127, 0.1);
+  border-top: 1px solid #e2e8f0;
   font-size: 0.75rem;
-  transition: border-color 0.3s ease;
+  position: relative;
 }
 
-.copyright p {
-  color: #64748b;
+.footer.dark-mode .footer-bottom {
+  border-top-color: #334155;
+}
+
+.copyright {
+  color: #94a3b8;
   margin: 0;
   transition: color 0.3s ease;
 }
 
+.footer.dark-mode .copyright {
+  color: #64748b;
+}
+
 .footer-bottom-links {
   display: flex;
-  gap: 0.8rem;
+  gap: 1rem;
   align-items: center;
   flex-wrap: wrap;
 }
 
 .footer-bottom-links a {
   text-decoration: none;
-  transition: color 0.3s ease;
-  font-size: 0.75rem;
+  color: #64748b;
+  transition: all 0.3s ease;
 }
 
-.red-link {
-  color: #d40025;
+.footer.dark-mode .footer-bottom-links a {
+  color: #94a3b8;
 }
 
-.red-link:hover {
-  color: #a0001c;
-  text-decoration: underline;
+.footer-bottom-links a:hover {
+  color: #08717f;
+  transform: translateY(-2px);
 }
 
-.green-link {
-  color: #2e7d32;
-}
-
-.green-link:hover {
-  color: #1b5e20;
-  text-decoration: underline;
-}
-
-.dot {
+.separator {
   color: #cbd5e1;
   font-size: 0.5rem;
-  transition: color 0.3s ease;
 }
 
-/* Newsletter Message */
-.newsletter-message {
-  font-size: 0.8rem;
-  padding: 0.5rem;
-  border-radius: 8px;
-  margin-bottom: 0.8rem;
-  text-align: center;
-  animation: slideDown 0.3s ease;
+.footer.dark-mode .separator {
+  color: #334155;
 }
 
-@keyframes slideDown {
+.back-to-top {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #08717f, #065a69);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.back-to-top:hover {
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 5px 15px rgba(8, 113, 127, 0.4);
+}
+
+@keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -841,122 +644,122 @@ const showMessage = (msg, type) => {
   }
 }
 
-.newsletter-message.success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.newsletter-message.error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-/* Responsive */
 @media (max-width: 1024px) {
   .footer-main {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
+    gap: 1.8rem;
   }
 }
 
 @media (max-width: 768px) {
   .footer-content {
-    padding: 2rem 0 1rem;
+    padding: 2rem 0 1.5rem;
   }
 
   .footer-main {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 1.8rem;
   }
 
   .brand-section {
     text-align: center;
+    align-items: center;
   }
 
-  .footer-logo {
+  .footer-description {
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .social-links {
     justify-content: center;
   }
 
-  .social-grid {
-    justify-content: center;
-  }
-
-  .contact-item {
-    justify-content: center;
+  .contact-info {
+    align-items: center;
   }
 
   .footer-title {
+    display: inline-flex;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .footer-title::after {
+    right: 50%;
+    transform: translateX(50%);
+  }
+
+  .footer-links,
+  .categories-list {
+    text-align: center;
+  }
+
+  .footer-links a,
+  .categories-list a {
     justify-content: center;
   }
 
-  .footer-links a:hover {
+  .footer-links a:hover,
+  .categories-list a:hover {
     transform: translateX(0);
-    padding-right: 0;
   }
 
-  .footer-links a::before {
-    display: none;
-  }
-
-  .categories-grid {
-    grid-template-columns: repeat(3, 1fr);
+  .hour-item {
+    justify-content: center;
+    gap: 1rem;
   }
 
   .footer-bottom {
     flex-direction: column;
     gap: 1rem;
     text-align: center;
+    padding-bottom: 1rem;
   }
 
   .footer-bottom-links {
     justify-content: center;
   }
 
-  .footer-theme-toggle {
-    top: 10px;
-    left: 10px;
+  .back-to-top {
+    position: static;
+    transform: translateY(0);
+    margin-top: 0.5rem;
+  }
+
+  .back-to-top:hover {
+    transform: scale(1.1);
   }
 }
 
 @media (max-width: 480px) {
-  .categories-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .newsletter-section {
-    padding: 1rem;
-  }
-
-  .input-group {
-    flex-direction: column;
-    background: transparent;
-    border: none;
-    padding: 0;
-  }
-
-  .input-group input {
-    border: 2px solid #e2e8f0;
-    border-radius: 30px;
-    padding: 0.8rem 1rem;
-  }
-
-  .input-group button {
-    width: 100%;
-    padding: 0.8rem;
-  }
-
-  .newsletter-features {
-    flex-wrap: wrap;
-  }
-
   .footer-bottom-links {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .separator {
+    display: none;
+  }
+
+  .hour-item {
     flex-direction: column;
     gap: 0.3rem;
   }
+}
 
-  .dot {
+@media (prefers-reduced-motion: reduce) {
+  .footer,
+  .social-link,
+  .footer-links a,
+  .categories-list a,
+  .back-to-top,
+  .footer-wave svg {
+    transition: none;
+    animation: none;
+  }
+
+  .social-link::before {
     display: none;
   }
 }

@@ -1,0 +1,13 @@
+{
+  "accuracy": 0.761,
+  "model_name": "Random Forest",
+  "features": [
+    "pages_vues",
+    "temps_passe",
+    "ajout_panier",
+    "montant_total",
+    "engagement_score"
+  ],
+  "training_samples": 4000,
+  "test_samples": 1000
+}

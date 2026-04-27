@@ -1,25 +1,34 @@
+// backend/src/routes/admin/index.js
 const express = require('express');
 const router = express.Router();
+const { protect, adminOnly } = require('../../middleware/auth');
 
-// Import des sous-routes
+// Sous-routes
 const userRoutes = require('./users');
 const vendorRoutes = require('./vendors');
 const productRoutes = require('./products');
 const orderRoutes = require('./orders');
-const postRoutes = require('./posts');    // <- doit être présent
+const postRoutes = require('./posts');
 const categoryRoutes = require('./categories');
 
-// Montage des routes
+// Dashboard
+router.get('/dashboard', protect, adminOnly, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      message: 'Admin dashboard'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Monter les sous-routes
 router.use('/users', userRoutes);
 router.use('/vendors', vendorRoutes);
 router.use('/products', productRoutes);
 router.use('/orders', orderRoutes);
-router.use('/posts', postRoutes);         // <- doit être présent
+router.use('/posts', postRoutes);
 router.use('/categories', categoryRoutes);
-
-// Route dashboard (optionnelle)
-router.get('/dashboard', (req, res) => {
-  res.json({ success: true, data: { message: 'Admin dashboard' } });
-});
 
 module.exports = router;

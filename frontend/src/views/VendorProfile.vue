@@ -1,1610 +1,2378 @@
 <!-- src/views/VendorProfile.vue -->
 <template>
-  <div class="vendor-profile-page" dir="rtl">
+  <div class="vendor-profile-page" :class="{ 'dark-mode': isDarkMode }" dir="rtl">
+    <!-- Loading State -->
     <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>جاري تحميل الملف الشخصي...</p>
+      <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+        <p>جاري تحميل الملف الشخصي...</p>
+      </div>
     </div>
 
     <template v-else-if="vendor">
-      <!-- Cover Image -->
-      <div class="profile-cover">
-        <img
-          :src="
-            vendor.coverImage ||
-            'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1200'
-          "
-          alt="Cover"
-          class="cover-image"
-        />
-        <div class="cover-overlay"></div>
-        <div class="cover-actions">
-          <template v-if="isCurrentUser">
-            <button class="btn-cover" @click="openCoverUpload">
-              <span class="icon">📷</span> تغيير صورة الغلاف
-            </button>
-            <button class="btn-edit-profile" @click="goToEditProfile">
-              <span class="icon">✏️</span> تعديل الملف
-            </button>
-          </template>
-          <template v-else>
-            <button class="btn-follow" :class="{ following: isFollowing }" @click="toggleFollow">
-              <span class="icon">{{ isFollowing ? '✓' : '+' }}</span>
-              {{ isFollowing ? 'متابع' : 'متابعة' }}
-            </button>
-            <button class="btn-message" @click="openMessageModal">
-              <span class="icon">💬</span> مراسلة
-            </button>
-          </template>
+      <!-- Cover Photo Section -->
+      <div class="cover-photo-container">
+        <div class="cover-photo-wrapper">
+          <img
+            :src="getCoverImage()"
+            alt="صورة الغلاف"
+            class="cover-photo"
+            @error="handleCoverImageError"
+            :key="coverImageKey"
+          />
+          <div class="cover-overlay-gradient"></div>
+          <button v-if="isCurrentUser" class="change-cover-btn" @click="openCoverUpload">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <span>تغيير الغلاف</span>
+          </button>
         </div>
       </div>
 
-      <!-- Profile Header -->
-      <div class="profile-header">
-        <div class="container">
-          <div class="profile-info">
-            <div class="avatar-wrapper">
+      <!-- Instagram Style Header -->
+      <div class="profile-container">
+        <div class="profile-header">
+          <div class="profile-avatar-section">
+            <div class="avatar-container">
               <img
-                :src="vendor.userAvatar || vendor.avatar || 'https://i.pravatar.cc/300'"
+                :src="getAvatarImage()"
                 :alt="vendor.shopName"
-                class="avatar"
+                class="profile-avatar"
+                @error="handleAvatarImageError"
+                :key="avatarKey"
               />
-              <div v-if="vendor.verified" class="verified-badge">✓</div>
-              <button v-if="isCurrentUser" class="avatar-edit" @click="openAvatarUpload">
-                <span class="icon">📷</span>
+              <button v-if="isCurrentUser" class="avatar-edit-btn" @click="openAvatarUpload">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/>
+                  <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/>
+                </svg>
               </button>
-            </div>
-            <div class="info-main">
-              <h1 class="shop-name">{{ vendor.shopName }}</h1>
-              <p class="vendor-name">بواسطة {{ vendor.name }}</p>
-              <p class="vendor-specialty">{{ getSpecialtyName(vendor.specialty) }}</p>
-              <div class="vendor-location" v-if="vendor.location">
-                <span class="icon">📍</span> {{ vendor.location }}
+              <div v-if="vendor.verified" class="verified-badge-instagram">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
               </div>
             </div>
-            <div class="profile-stats">
+          </div>
+
+          <div class="profile-info-section">
+            <div class="profile-actions-row">
+              <router-link :to="`/vendor/${vendor.slug || vendor.id}`" class="profile-username-link">
+                <h1 class="profile-username">{{ vendor.shopName || vendor.shop_name }}</h1>
+              </router-link>
+              <div class="action-buttons">
+                <template v-if="isCurrentUser">
+                  <button class="btn-edit-profile" @click="goToEditProfile">تعديل الملف</button>
+                  <button class="btn-settings" @click="openSettings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                  </button>
+                </template>
+                <template v-else>
+                  <button class="btn-message-instagram" @click="contactVendor">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                  </button>
+                </template>
+              </div>
+            </div>
+
+            <div class="profile-stats-instagram">
               <div class="stat-item">
-                <span class="stat-value">{{ vendor.productsCount || 0 }}</span>
-                <span class="stat-label">منتجات</span>
+                <span class="stat-number">{{ vendorPosts.length }}</span>
+                <span class="stat-label">منشورات</span>
               </div>
               <div class="stat-item">
-                <span class="stat-value">{{ vendor.followersCount || 0 }}</span>
+                <span class="stat-number">{{ vendorReels.length }}</span>
+                <span class="stat-label">Reels</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-number">{{ vendor.followersCount || vendor.followers_count || 0 }}</span>
                 <span class="stat-label">متابعون</span>
               </div>
               <div class="stat-item">
-                <span class="stat-value">{{ vendor.followingCount || 0 }}</span>
+                <span class="stat-number">{{ vendor.followingCount || 0 }}</span>
                 <span class="stat-label">يتابع</span>
               </div>
             </div>
-          </div>
-          <div class="profile-bio" v-if="vendor.description">
-            <p>{{ vendor.description }}</p>
-          </div>
-          <div class="contact-info">
-            <a v-if="vendor.phone" :href="`tel:${vendor.phone}`" class="contact-link">
-              <span class="icon">📞</span> {{ vendor.phone }}
-            </a>
-            <a :href="`mailto:${vendor.email}`" class="contact-link">
-              <span class="icon">📧</span> {{ vendor.email }}
-            </a>
-          </div>
-          <div class="social-links" v-if="vendor.socialLinks">
-            <a
-              v-if="vendor.socialLinks.facebook"
-              :href="vendor.socialLinks.facebook"
-              target="_blank"
-              class="social-link facebook"
-            >
-              <svg viewBox="0 0 24 24" width="20" height="20">
-                <path
-                  d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
-                  fill="currentColor"
-                />
-              </svg>
-            </a>
-            <a
-              v-if="vendor.socialLinks.instagram"
-              :href="vendor.socialLinks.instagram"
-              target="_blank"
-              class="social-link instagram"
-            >
-              <svg viewBox="0 0 24 24" width="20" height="20">
-                <rect
-                  x="2"
-                  y="2"
-                  width="20"
-                  height="20"
-                  rx="5"
-                  ry="5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <circle cx="12" cy="12" r="4" fill="currentColor" />
-              </svg>
-            </a>
-          </div>
-          <div class="joined-date">
-            <span class="icon">📅</span> انضم في {{ formatDate(vendor.createdAt) }}
+
+            <div class="profile-bio-instagram">
+              <router-link :to="`/vendor/${vendor.slug || vendor.id}`" class="bio-name-link">
+                <div class="bio-name">{{ vendor.name || vendor.userName || vendor.user_name }}</div>
+              </router-link>
+              <div class="bio-text">{{ vendor.description || 'لا يوجد وصف بعد' }}</div>
+              <div class="bio-link" v-if="vendor.website">
+                <a :href="vendor.website" target="_blank">{{ vendor.website }}</a>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Create Post Section -->
-      <div v-if="isCurrentUser" class="create-post-section">
-        <div class="container">
-          <div class="create-post-card">
-            <div class="post-header">
-              <img :src="vendor.userAvatar || vendor.avatar" alt="" class="post-avatar" />
-              <div class="post-input" @click="openCreatePostModal">
-                <span>ما الجديد في متجرك؟ انشر منتجك الجديد...</span>
-              </div>
-              <button class="post-photo-btn" @click="openCreatePostModal">
-                <span class="icon">📷</span> <span>صورة</span>
+        <!-- Zone de publication style Facebook -->
+        <div v-if="isCurrentUser" class="facebook-create-post-section">
+          <div class="facebook-post-card">
+            <div class="facebook-post-header">
+              <img :src="getAvatarImage()" alt="Avatar" class="facebook-avatar" />
+              <button class="facebook-post-button" @click="openCreatePostModal">
+                ما الذي يدور في ذهنك يا {{ vendor.shopName }}؟
+              </button>
+            </div>
+            <div class="facebook-post-actions">
+              <button class="facebook-action-btn" @click="openCreatePostModal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+                  <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <span>صورة/فيديو</span>
+              </button>
+              <button class="facebook-action-btn" @click="openCreateReelModal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
+                  <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/>
+                </svg>
+                <span>Reel</span>
               </button>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Tabs -->
-      <div class="profile-tabs">
-        <div class="container">
-          <div class="tabs-nav">
-            <button
-              class="tab-btn"
-              :class="{ active: activeTab === 'posts' }"
-              @click="activeTab = 'posts'"
-            >
-              المنشورات ({{ vendorPosts.length }})
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+          <button class="tab-link" :class="{ active: activeTab === 'posts' }" @click="activeTab = 'posts'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            </svg>
+            <span>المنشورات</span>
+          </button>
+          <button class="tab-link" :class="{ active: activeTab === 'reels' }" @click="activeTab = 'reels'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
+              <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/>
+            </svg>
+            <span>Reels</span>
+          </button>
+        </div>
+
+        <!-- Posts Grid -->
+        <div v-if="activeTab === 'posts'" class="posts-grid-instagram">
+          <div v-if="vendorPosts.length > 0" class="instagram-grid">
+            <div v-for="post in vendorPosts" :key="post.id" class="grid-post" @click="openPostModal(post)">
+              <div class="post-image-container">
+                <img :src="getPostImage(post)" :alt="post.productName" class="grid-post-image" @error="handlePostImageError" />
+                <button
+                  class="grid-wishlist-btn"
+                  :class="{ active: isPostInWishlist(post.id) }"
+                  @click.stop="togglePostWishlist(post)"
+                >
+                  <svg viewBox="0 0 24 24" :fill="isPostInWishlist(post.id) ? '#ef4444' : 'none'" stroke="white" stroke-width="2">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                  </svg>
+                </button>
+                <div class="post-overlay-instagram">
+                  <div class="post-stats">
+                    <div class="stat">
+                      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                      </svg>
+                      <span>{{ post.likes || 0 }}</span>
+                    </div>
+                    <div class="stat">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      <span>{{ post.commentsCount || 0 }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div v-if="post.isPinned" class="pinned-badge-instagram">
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <path d="M12 2L15 8.5L22 9.5L17 14L18.5 21L12 17.5L5.5 21L7 14L2 9.5L9 8.5L12 2z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="empty-state-instagram">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            </svg>
+            <p>لا توجد منشورات بعد</p>
+            <button v-if="isCurrentUser" class="btn-create-instagram" @click="openCreatePostModal">أنشئ أول منشور</button>
+          </div>
+        </div>
+
+        <!-- Reels Grid -->
+        <div v-if="activeTab === 'reels'" class="reels-section">
+          <div class="reels-header">
+            <h2>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
+                <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/>
+              </svg>
+              Reels
+            </h2>
+            <button v-if="isCurrentUser" class="reels-more-btn" @click="openCreateReelModal">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Créer
             </button>
-            <button
-              class="tab-btn"
-              :class="{ active: activeTab === 'products' }"
-              @click="activeTab = 'products'"
-            >
-              المنتجات ({{ vendor.productsCount || 0 }})
-            </button>
-            <button
-              class="tab-btn"
-              :class="{ active: activeTab === 'about' }"
-              @click="activeTab = 'about'"
-            >
-              معلومات
-            </button>
+          </div>
+          <div v-if="vendorReels.length > 0" class="instagram-reels-grid">
+            <div v-for="reel in vendorReels" :key="reel.id" class="reel-card-instagram" @click="openReelModal(reel)">
+              <div class="reel-video-container">
+                <video :src="getReelVideo(reel)" class="reel-video-instagram" muted loop playsinline
+                  @mouseenter="(e) => { e.target.play(); }"
+                  @mouseleave="(e) => { e.target.pause(); e.target.currentTime = 0; }"
+                ></video>
+                <button
+                  class="reel-wishlist-btn"
+                  :class="{ active: isReelInWishlist(reel.id) }"
+                  @click.stop="toggleReelWishlist(reel)"
+                >
+                  <svg viewBox="0 0 24 24" :fill="isReelInWishlist(reel.id) ? '#ef4444' : 'none'" stroke="white" stroke-width="2">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                  </svg>
+                </button>
+                <div class="reel-overlay-instagram">
+                  <div class="reel-top-info">
+                    <img :src="getAvatarImage()" class="reel-avatar" />
+                    <span class="reel-username">{{ vendor.shopName }}</span>
+                  </div>
+                  <div class="reel-play-icon">
+                    <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="white"/></svg>
+                  </div>
+                  <div class="reel-stats-instagram">
+                    <div class="reel-stat-instagram">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                      </svg>
+                      <span>{{ reel.likes || 0 }}</span>
+                    </div>
+                    <div class="reel-stat-instagram">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      <span>{{ reel.commentsCount || 0 }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="reel-title-instagram">{{ reel.title || reel.productName }}</div>
+                <div v-if="reel.isNew" class="reel-badge">Nouveau</div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="empty-state-instagram">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
+              <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/>
+            </svg>
+            <p>لا توجد Reels بعد</p>
+            <button v-if="isCurrentUser" class="btn-create-instagram" @click="openCreateReelModal">أنشئ أول Reel</button>
           </div>
         </div>
       </div>
 
-      <!-- Tab Content -->
-      <div class="tab-content">
-        <div class="container">
-          <!-- Posts Tab -->
-          <div v-if="activeTab === 'posts'" class="posts-tab">
-            <div v-if="vendorPosts.length > 0" class="posts-feed">
-              <div v-for="post in vendorPosts" :key="post.id" class="post-card">
-                <!-- En-tête du post -->
-                <div class="post-header">
-                  <img :src="post.vendorAvatar || vendor.userAvatar || vendor.avatar" alt="" class="post-avatar" />
-                  <div class="post-author">
-                    <h4>{{ vendor.shopName }}</h4>
-                    <span class="post-date">{{ formatDate(post.createdAt) }}</span>
+      <!-- Post Modal -->
+      <transition name="modal-fade">
+        <div v-if="selectedPost" class="post-modal-overlay" @click.self="closePostModal">
+          <div class="post-modal-container">
+            <div class="post-modal-content">
+              <div class="post-modal-image">
+                <img :src="getPostImage(selectedPost, currentImageIndex)" :alt="selectedPost.productName" />
+                <div v-if="selectedPost.images && selectedPost.images.length > 1" class="image-navigation">
+                  <button class="nav-btn prev" @click="prevPostImage">‹</button>
+                  <button class="nav-btn next" @click="nextPostImage">›</button>
+                </div>
+              </div>
+              <div class="post-modal-info">
+                <div class="modal-post-header">
+                  <router-link :to="`/vendor/${vendor.slug || vendor.id}`" class="modal-avatar-link">
+                    <img :src="getAvatarImage()" alt="" class="modal-avatar" />
+                  </router-link>
+                  <div class="modal-author">
+                    <router-link :to="`/vendor/${vendor.slug || vendor.id}`" class="author-link">
+                      <span class="author-name">{{ vendor.shopName }}</span>
+                      <span class="author-handle">@{{ vendor.shopName?.toLowerCase().replace(/\s/g, '') }}</span>
+                    </router-link>
                   </div>
-                  <div v-if="post.status === 'pending'" class="post-status-badge">⏳ قيد المراجعة</div>
-                </div>
-
-                <!-- Contenu -->
-                <div class="post-content">
-                  <h3 class="product-title">{{ post.productName }}</h3>
-                  <p>{{ post.description }}</p>
-                </div>
-
-                <!-- Images -->
-                <div v-if="post.images && post.images.length > 0" class="post-images" :class="{ multiple: post.images.length > 1 }">
-                  <div
-                    v-for="(image, index) in post.images.slice(0, 2)"
-                    :key="index"
-                    class="post-image"
-                    @click="openImage(image)"
-                  >
-                    <img :src="image" :alt="post.productName" />
-                  </div>
-                  <div v-if="post.images.length > 2" class="more-images" @click="openImage(post.images[0])">
-                    +{{ post.images.length - 2 }}
-                  </div>
-                </div>
-
-                <!-- Prix -->
-                <div class="post-price">
-                  <span class="current-price">{{ formatPrice(post.price) }} د.ت</span>
-                  <span v-if="post.oldPrice" class="old-price">{{ formatPrice(post.oldPrice) }} د.ت</span>
-                </div>
-
-                <!-- Couleurs -->
-                <div v-if="post.colors && post.colors.length > 0" class="post-colors">
-                  <span class="colors-label">الألوان المتاحة:</span>
-                  <div class="colors-list">
-                    <span
-                      v-for="color in post.colors"
-                      :key="color"
-                      class="color-dot"
-                      :style="{ backgroundColor: color }"
-                      :title="color"
-                    ></span>
-                  </div>
-                </div>
-
-                <!-- Quantité -->
-                <div v-if="post.quantity" class="post-quantity">
-                  <span class="quantity-label">الكمية المتاحة:</span>
-                  <span>{{ post.quantity }} {{ post.unit || 'قطعة' }}</span>
-                </div>
-
-                <!-- Actions -->
-                <div class="post-actions">
-                  <button class="action-btn like-btn" @click="togglePostLike(post)">
-                    <span class="heart" :class="{ liked: isPostLiked(post.id) }">❤️</span>
-                    <span>{{ post.likes || 0 }}</span>
+                  <button v-if="isCurrentUser" class="modal-menu-btn" @click="togglePostMenu(selectedPost.id)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                      <circle cx="12" cy="5" r="2" fill="currentColor"/>
+                      <circle cx="12" cy="19" r="2" fill="currentColor"/>
+                    </svg>
                   </button>
-                  <button class="action-btn comment-btn" @click="toggleComments(post.id)">
-                    <span>💬</span>
-                    <span>{{ post.commentsCount || 0 }}</span>
+                </div>
+                <div class="modal-post-caption">
+                  <div class="caption-author">{{ vendor.shopName }}</div>
+                  <div class="caption-text">
+                    <h3>{{ selectedPost.productName }}</h3>
+                    <p>{{ selectedPost.description }}</p>
+                  </div>
+                </div>
+                <div class="modal-post-price">
+                  <span class="current-price">{{ formatPrice(selectedPost.price) }} د.ت</span>
+                  <span v-if="selectedPost.oldPrice" class="old-price">{{ formatPrice(selectedPost.oldPrice) }} د.ت</span>
+                </div>
+                <div class="modal-post-actions">
+                  <button class="action-btn" @click="togglePostLike(selectedPost)">
+                    <svg class="like-icon" :class="{ liked: isPostLikedByStore(selectedPost.id) }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    <span>{{ selectedPost.likes || 0 }}</span>
                   </button>
-                  <button class="action-btn share-btn" @click="sharePost(post)">
-                    <span>🔗</span>
-                    <span>مشاركة</span>
+                  <button class="action-btn" @click="togglePostWishlist(selectedPost)">
+                    <svg class="wishlist-icon" :class="{ liked: isPostInWishlist(selectedPost.id) }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    <span>{{ isPostInWishlist(selectedPost.id) ? 'محفوظ' : 'حفظ' }}</span>
                   </button>
-                  <button class="action-btn buy-btn" @click="buyProduct(post)">
-                    <span>🛒</span>
+                  <button class="action-btn" @click="focusComment">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span>{{ selectedPost.commentsCount || 0 }}</span>
+                  </button>
+                  <button class="action-btn" @click="sharePost(selectedPost)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="16 6 12 2 8 6"/>
+                      <line x1="12" y1="2" x2="12" y2="15"/>
+                    </svg>
+                  </button>
+                  <button class="action-btn buy-btn-modal" @click="buyProduct(selectedPost)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="9" cy="21" r="1"/>
+                      <circle cx="20" cy="21" r="1"/>
+                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                    </svg>
                     <span>شراء</span>
                   </button>
                 </div>
-
-                <!-- Comments Section -->
-                <div v-if="showComments === post.id" class="comments-section">
-                  <div class="add-comment">
-                    <input
-                      v-model="newComment"
-                      @keyup.enter="addComment(post.id)"
-                      placeholder="اكتب تعليقاً..."
-                    />
-                    <button @click="addComment(post.id)">نشر</button>
+                <div class="modal-post-comments">
+                  <div class="comments-list" ref="commentsList">
+                    <div v-for="comment in postComments" :key="comment.id" class="comment-item">
+                      <span class="comment-author">{{ comment.userName }}</span>
+                      <span class="comment-text">{{ comment.text }}</span>
+                    </div>
+                  </div>
+                  <div class="comment-input-wrapper">
+                    <input v-model="newComment" type="text" placeholder="أضف تعليقاً..." class="comment-input" @keyup.enter="addComment" />
+                    <button class="post-comment-btn" @click="addComment" :disabled="!newComment.trim()">نشر</button>
                   </div>
                 </div>
+                <div class="modal-post-date">{{ formatDate(selectedPost.createdAt) }}</div>
               </div>
             </div>
-            <div v-else class="empty-state">
-              <p>لا توجد منشورات بعد</p>
-              <button v-if="isCurrentUser" class="btn-create" @click="openCreatePostModal">
-                أضف أول منشور
-              </button>
-            </div>
-          </div>
-
-          <!-- Products Tab -->
-          <div v-if="activeTab === 'products'" class="products-tab">
-            <div v-if="vendorProducts.length > 0" class="products-grid">
-              <div v-for="product in vendorProducts" :key="product.id" class="product-card">
-                <div class="product-image">
-                  <img :src="product.mainImage || product.images?.[0] || 'https://via.placeholder.com/300'" :alt="product.name" />
-                  <button class="quick-buy" @click="quickBuy(product)">شراء سريع</button>
-                </div>
-                <div class="product-info">
-                  <h3>{{ product.name }}</h3>
-                  <p class="product-price">{{ formatPrice(product.price) }} د.ت</p>
-                </div>
-              </div>
-            </div>
-            <div v-else class="empty-state">
-              <p>لا توجد منتجات بعد</p>
-              <button v-if="isCurrentUser" class="btn-create" @click="goToAddProduct">
-                أضف أول منتج
-              </button>
-            </div>
-          </div>
-
-          <!-- About Tab -->
-          <div v-if="activeTab === 'about'" class="about-tab">
-            <div class="about-card">
-              <h3>عن المتجر</h3>
-              <p>{{ vendor.description || 'لا توجد معلومات' }}</p>
-            </div>
-            <div class="info-card">
-              <h3>معلومات الاتصال</h3>
-              <div class="info-list">
-                <div class="info-row">
-                  <span class="info-label">البريد الإلكتروني:</span>
-                  <span class="info-value">{{ vendor.email }}</span>
-                </div>
-                <div class="info-row" v-if="vendor.phone">
-                  <span class="info-label">الهاتف:</span>
-                  <span class="info-value">{{ vendor.phone }}</span>
-                </div>
-                <div class="info-row" v-if="vendor.location">
-                  <span class="info-label">الموقع:</span>
-                  <span class="info-value">{{ vendor.location }}</span>
-                </div>
-                <div class="info-row" v-if="vendor.experience">
-                  <span class="info-label">سنوات الخبرة:</span>
-                  <span class="info-value">{{ vendor.experience }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Create Post Modal -->
-      <CreatePostModal
-        :is-visible="showCreatePostModal"
-        @close="showCreatePostModal = false"
-        @post-created="handlePostCreated"
-      />
-
-      <!-- Image Modal -->
-      <div v-if="showImageModal" class="modal-overlay" @click.self="showImageModal = false">
-        <div class="image-modal-content">
-          <img :src="selectedImage" alt="" />
-          <button class="close-btn" @click="showImageModal = false">✕</button>
-        </div>
-      </div>
-
-      <!-- Success Notification -->
-      <transition name="notification">
-        <div v-if="showNotification" class="success-notification">
-          <div class="notification-content">
-            <span class="notification-icon">✅</span>
-            <div class="notification-text">
-              <strong>تم إنشاء المنشور بنجاح!</strong>
-              <p>سيتم مراجعة منشورك من قبل الإدارة خلال 24 ساعة وسيتم نشرها بعد الموافقة</p>
-            </div>
-            <button class="notification-close" @click="showNotification = false">✕</button>
+            <button class="close-modal-btn" @click="closePostModal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
           </div>
         </div>
       </transition>
+
+      <!-- Reel Modal -->
+      <transition name="modal-fade">
+        <div v-if="selectedReel" class="reel-modal-overlay" @click.self="closeReelModal">
+          <div class="reel-modal-container">
+            <video :src="getReelVideo(selectedReel)" class="reel-modal-video" controls autoplay playsinline loop></video>
+            <div class="reel-side-info">
+              <div class="reel-side-action" @click="toggleReelLike(selectedReel)">
+                <svg :class="{ liked: false }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                <span>{{ selectedReel.likes || 0 }}</span>
+              </div>
+              <div class="reel-side-action" @click="toggleReelWishlist(selectedReel)">
+                <svg :class="{ liked: isReelInWishlist(selectedReel.id) }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                <span>{{ isReelInWishlist(selectedReel.id) ? 'محفوظ' : 'حفظ' }}</span>
+              </div>
+              <div class="reel-side-action" @click="focusReelComment">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>{{ selectedReel.commentsCount || 0 }}</span>
+              </div>
+              <div class="reel-side-action" @click="shareReel(selectedReel)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="16 6 12 2 8 6"/>
+                  <line x1="12" y1="2" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <div class="reel-side-action">
+                <router-link :to="`/vendor/${vendor.slug || vendor.id}`" class="avatar-link">
+                  <div class="avatar-circle"><img :src="getAvatarImage()" /></div>
+                </router-link>
+              </div>
+            </div>
+            <div class="reel-bottom-info">
+              <div class="reel-author-info">
+                <img :src="getAvatarImage()" class="reel-author-avatar" />
+                <div>
+                  <router-link :to="`/vendor/${vendor.slug || vendor.id}`" class="reel-author-link">
+                    <div class="reel-author-name">{{ vendor.shopName }}</div>
+                    <div class="reel-author-handle">@{{ vendor.shopName?.toLowerCase().replace(/\s/g, '') }}</div>
+                  </router-link>
+                </div>
+              </div>
+              <div class="reel-caption">{{ selectedReel.description || selectedReel.title }}</div>
+              <div class="reel-music">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                </svg>
+                <span>Musique originale</span>
+              </div>
+            </div>
+            <div class="reel-comment-input-container">
+              <input v-model="newReelComment" type="text" placeholder="Ajouter un commentaire..." @keyup.enter="addReelComment" />
+              <button @click="addReelComment" :disabled="!newReelComment.trim()">Publier</button>
+            </div>
+            <button class="close-reel-btn" @click="closeReelModal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </transition>
+
+      <!-- Edit Menu Dropdown -->
+      <transition name="fade">
+        <div v-if="activePostMenu" class="post-menu-dropdown" @click.stop>
+          <button class="menu-item" @click="togglePinPost(selectedPost)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L15 8.5L22 9.5L17 14L18.5 21L12 17.5L5.5 21L7 14L2 9.5L9 8.5L12 2z"/>
+            </svg>
+            <span>{{ selectedPost?.isPinned ? 'إلغاء التثبيت' : 'تثبيت' }}</span>
+          </button>
+          <button class="menu-item" @click="openEditPostModal(selectedPost)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/>
+              <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/>
+            </svg>
+            <span>تعديل</span>
+          </button>
+          <button class="menu-item delete" @click="confirmDeletePost(selectedPost)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            <span>حذف</span>
+          </button>
+        </div>
+      </transition>
+
+      <!-- Create Post Modal -->
+      <CreatePostModal :isVisible="showCreatePostModal" @close="showCreatePostModal = false" @post-created="handlePostCreated" />
+      <!-- Create Reel Modal -->
+      <CreateReelModal :isVisible="showCreateReelModal" @close="showCreateReelModal = false" @reel-created="handleReelCreated" />
+
+      <!-- ✅ Modal Édition Produit (à l'intérieur du root !) -->
+     <!-- Remplacer le modal d'édition existant par celui-ci -->
+<div v-if="showEditModal" class="edit-modal-overlay" @click.self="closeEditModal">
+  <div class="edit-modal">
+    <div class="edit-modal-header">
+      <h3>تعديل المنتج</h3>
+      <button class="edit-modal-close" @click="closeEditModal">✕</button>
+    </div>
+    <div class="edit-modal-body">
+      <div class="edit-form-group">
+        <label class="edit-form-label">اسم المنتج</label>
+        <input type="text" v-model="editForm.productName" class="edit-form-input" maxlength="100" />
+      </div>
+
+      <!-- Sélection de catégorie avec sous-catégories -->
+      <div class="edit-form-group">
+        <label class="edit-form-label">الفئة</label>
+
+        <!-- Catégories principales -->
+        <div class="edit-categories-grid">
+          <div
+            v-for="cat in editParentCategories"
+            :key="'edit-parent-' + cat.id"
+            class="edit-category-card"
+            :class="{
+              selected: editSelectedCategory === cat.id,
+              'has-children': cat.children && cat.children.length > 0
+            }"
+            @click="selectEditParentCategory(cat)"
+          >
+            <div class="edit-category-image-wrapper">
+              <img
+                :src="cat.imageUrl || 'https://placehold.co/100x100/08717f/FFFFFF?text=' + encodeURIComponent(cat.nameAr || cat.name)"
+                :alt="cat.nameAr || cat.name"
+                class="edit-category-image"
+              />
+              <div class="edit-category-overlay" v-if="editSelectedCategory === cat.id">
+                <span>✓</span>
+              </div>
+            </div>
+            <div class="edit-category-info">
+              <span class="edit-category-name">{{ cat.nameAr || cat.name }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sous-catégories -->
+        <div v-if="editShowSubCategories" class="edit-subcategories-section">
+          <div class="edit-subcategories-header">
+            <span>تصنيفات فرعية لـ {{ editSelectedParentCategory?.nameAr }}</span>
+            <button class="edit-back-btn" @click="clearEditCategorySelection">← رجوع</button>
+          </div>
+          <div class="edit-subcategories-grid">
+            <div
+              v-for="subCat in editCurrentSubCategories"
+              :key="'edit-sub-' + subCat.id"
+              class="edit-subcategory-card"
+              :class="{ selected: editSelectedSubCategory?.id === subCat.id }"
+              @click="selectEditSubCategory(subCat)"
+            >
+              <div class="edit-subcategory-image-wrapper">
+                <img
+                  :src="subCat.imageUrl || 'https://placehold.co/100x100/08717f/FFFFFF?text=' + encodeURIComponent(subCat.nameAr || subCat.name)"
+                  :alt="subCat.nameAr || subCat.name"
+                  class="edit-subcategory-image"
+                />
+              </div>
+              <div class="edit-subcategory-info">
+                <span class="edit-subcategory-name">{{ subCat.nameAr || subCat.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Catégorie sélectionnée -->
+        <div v-if="editSelectedCategory" class="edit-selected-category">
+          <span class="edit-selected-label">الفئة المختارة:</span>
+          <span class="edit-selected-value">
+            {{ editSelectedSubCategory ? editSelectedParentCategory?.nameAr + ' › ' + editSelectedSubCategory.nameAr : editSelectedParentCategory?.nameAr }}
+          </span>
+          <button class="edit-clear-category" @click="clearEditCategorySelection">✕</button>
+        </div>
+      </div>
+
+      <div class="edit-form-row">
+        <div class="edit-form-group">
+          <label class="edit-form-label">السعر (د.ت)</label>
+          <input type="number" v-model.number="editForm.price" class="edit-form-input" min="0" step="0.01" />
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-form-label">السعر القديم</label>
+          <input type="number" v-model.number="editForm.oldPrice" class="edit-form-input" min="0" step="0.01" />
+        </div>
+      </div>
+
+      <div class="edit-form-group">
+        <label class="edit-form-label">الكمية</label>
+        <input type="number" v-model.number="editForm.quantity" class="edit-form-input" min="0" />
+      </div>
+
+      <div class="edit-form-group">
+        <label class="edit-form-label">الوصف</label>
+        <textarea v-model="editForm.description" class="edit-form-textarea" rows="3" maxlength="500"></textarea>
+      </div>
+    </div>
+    <div class="edit-modal-footer">
+      <button class="btn-cancel" @click="closeEditModal">إلغاء</button>
+      <button class="btn-save" @click="saveEditedPost" :disabled="isSaving || !editForm.productName.trim() || !editForm.price">
+        {{ isSaving ? 'جاري الحفظ...' : 'حفظ' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+      <!-- ✅ Modal Confirmation Suppression (à l'intérieur du root !) -->
+      <div v-if="showDeleteConfirm" class="confirm-modal-overlay" @click.self="cancelDelete">
+        <div class="confirm-modal">
+          <div class="confirm-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              <line x1="10" y1="11" x2="10" y2="17"/>
+              <line x1="14" y1="11" x2="14" y2="17"/>
+            </svg>
+          </div>
+          <h3>حذف المنتج</h3>
+          <p>هل أنت متأكد من حذف "{{ postToDelete?.productName }}"؟</p>
+          <div class="confirm-modal-actions">
+            <button class="btn-cancel" @click="cancelDelete">إلغاء</button>
+            <button class="btn-delete-confirm" @click="executeDelete" :disabled="isDeleting">
+              {{ isDeleting ? 'جاري الحذف...' : 'حذف' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </template>
 
-    <div v-else class="not-found">
-      <h2>المتجر غير موجود</h2>
-      <router-link to="/" class="btn-home">العودة للرئيسية</router-link>
+    <!-- Not Found -->
+    <div v-else class="not-found-instagram">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <h2>الملف الشخصي غير موجود</h2>
+      <router-link to="/" class="btn-home-instagram">العودة للرئيسية</router-link>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useVendorStore } from '../stores/vendorStore'
 import { usePostStore } from '../stores/postStore'
-import { useProductStore } from '../stores/productStore'
+import { useMessageStore } from '../stores/messageStore'
+import { useLikesStore } from '../stores/likes'
+import { useCartStore } from '../stores/cart'
+import { useThemeStore } from '../stores/theme'
 import CreatePostModal from '../components/CreatePostModal.vue'
+import CreateReelModal from '../components/CreateReelModal.vue'
+import api from '../services/api'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const vendorStore = useVendorStore()
 const postStore = usePostStore()
-const productStore = useProductStore()
+const messageStore = useMessageStore()
+const likesStore = useLikesStore()
+const cartStore = useCartStore()
+const themeStore = useThemeStore()
+
+const isDarkMode = computed(() => themeStore.isDarkMode)
 
 // ===== STATE =====
 const loading = ref(true)
 const vendor = ref(null)
 const vendorPosts = ref([])
-const vendorProducts = ref([])
+const vendorReels = ref([])
 const activeTab = ref('posts')
-const isFollowing = ref(false)
 const showCreatePostModal = ref(false)
-const showPostMenu = ref(null)
-const showComments = ref(null)
+const showCreateReelModal = ref(false)
+const selectedPost = ref(null)
+const selectedReel = ref(null)
+const activePostMenu = ref(null)
+const postComments = ref([])
+const reelComments = ref([])
 const newComment = ref('')
-const showImageModal = ref(false)
-const selectedImage = ref('')
-const showNotification = ref(false)
+const newReelComment = ref('')
+const currentImageIndex = ref(0)
+const coverImageKey = ref(Date.now())
+const avatarKey = ref(Date.now())
+
+// ÉTATS ÉDITION/SUPPRESSION/ÉPINGLE
+const showEditModal = ref(false)
+const showDeleteConfirm = ref(false)
+const postToDelete = ref(null)
+const isSaving = ref(false)
+const isDeleting = ref(false)
+const pinnedCount = ref(0)
+
+// Catégories pour l'édition
+const categoriesList = ref([])
+const editSelectedCategory = ref(null)
+const editSelectedSubCategory = ref(null)
+const editSelectedParentCategory = ref(null)
+
+const editForm = reactive({
+  postId: null,
+  productName: '',
+  price: 0,
+  oldPrice: null,
+  quantity: 0,
+  category: '',
+  description: ''
+})
+
+// ===== CONSTANTS =====
+const DEFAULT_AVATAR = 'https://i.pravatar.cc/300'
+const DEFAULT_COVER = 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1200'
+const DEFAULT_PRODUCT_IMAGE = 'https://placehold.co/400x400/e2e8f0/475569?text=لا+توجد+صورة'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 // ===== COMPUTED =====
-const vendorId = computed(() => {
-  const id = route.params.id
-  if (id === 'dashboard') {
-    return authStore.vendorId || localStorage.getItem('vendorId')
-  }
-  return id
-})
-
 const isCurrentUser = computed(() => {
-  return authStore.isAuthenticated &&
-         authStore.userRole === 'vendor' &&
-         authStore.user?.id === vendor.value?.userId
+  const vendorUserId = vendor.value?.userId || vendor.value?.user_id
+  return authStore.isAuthenticated && authStore.user?.id === vendorUserId
 })
 
-// ===== FORMATAGE =====
-const formatDate = (dateStr) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now - date
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+// Computed pour les catégories d'édition
+const editParentCategories = computed(() => categoriesList.value.filter(cat => !cat.parentId))
 
-  if (days === 0) return 'اليوم'
-  if (days === 1) return 'أمس'
-  if (days < 7) return `منذ ${days} أيام`
+const editShowSubCategories = computed(() => {
+  return editSelectedParentCategory.value &&
+         editSelectedParentCategory.value.children &&
+         editSelectedParentCategory.value.children.length > 0 &&
+         !editSelectedSubCategory.value
+})
 
-  return date.toLocaleDateString('ar-TN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+const editCurrentSubCategories = computed(() => {
+  if (!editSelectedParentCategory.value?.children) return []
+  return editSelectedParentCategory.value.children
+})
+
+// ===== IMAGES =====
+const formatImageUrl = (path) => {
+  if (!path || path === 'null' || path === 'undefined' || path === '') return DEFAULT_PRODUCT_IMAGE
+  if (path.startsWith('http') || path.startsWith('data:image')) return path
+  return `${API_BASE_URL}${path.startsWith('/') ? path : '/' + path}`
+}
+
+const getPostImage = (post, index = 0) => {
+  if (!post) return DEFAULT_PRODUCT_IMAGE
+  if (Array.isArray(post.images) && post.images.length > 0) return formatImageUrl(post.images[index] || post.images[0])
+  if (post.image) return formatImageUrl(post.image)
+  return DEFAULT_PRODUCT_IMAGE
+}
+
+const getReelVideo = (reel) => reel?.videoUrl || reel?.video || ''
+
+const getAvatarImage = () => {
+  if (!vendor.value) return DEFAULT_AVATAR
+  const sources = [vendor.value.userAvatar, vendor.value.avatar, authStore.user?.avatar]
+  for (const src of sources) {
+    if (src && typeof src === 'string' && src !== 'null' && src !== '') {
+      if (src.startsWith('http') || src.startsWith('data:image')) return src
+      return `${API_BASE_URL}${src.startsWith('/') ? src : '/' + src}`
+    }
+  }
+  return DEFAULT_AVATAR
+}
+
+const getCoverImage = () => {
+  if (!vendor.value) return DEFAULT_COVER
+  const cached = localStorage.getItem(`vendor_cover_${vendor.value.id}`)
+  if (cached && cached !== 'null') return cached
+  if (vendor.value.coverImage && vendor.value.coverImage !== 'null' && vendor.value.coverImage !== '')
+    return formatImageUrl(vendor.value.coverImage)
+  return DEFAULT_COVER
+}
+
+const handleCoverImageError = (e) => { e.target.src = DEFAULT_COVER }
+const handleAvatarImageError = (e) => { e.target.src = DEFAULT_AVATAR }
+const handlePostImageError = (e) => { e.target.src = DEFAULT_PRODUCT_IMAGE }
+
+// ===== UTILITIES =====
+const formatDate = (d) => {
+  if (!d) return ''
+  const date = new Date(d)
+  const diff = Math.floor((new Date() - date) / 60000)
+  if (diff < 1) return 'الآن'
+  if (diff < 60) return `منذ ${diff} دقيقة`
+  if (diff < 1440) return `منذ ${Math.floor(diff / 60)} ساعة`
+  return date.toLocaleDateString('ar-SA')
+}
+
+const formatPrice = (p) => p !== undefined && p !== null ? new Intl.NumberFormat('ar-TN').format(p) : '0'
+
+const showToast = (msg, type = 'success') => {
+  const div = document.createElement('div')
+  div.className = `custom-toast ${type}`
+  div.innerHTML = `<div class="toast-content">${msg}</div>`
+  document.body.appendChild(div)
+  setTimeout(() => div.remove(), 3000)
+}
+
+// ===== WISHLIST =====
+const isPostInWishlist = (id) => likesStore?.isLiked ? likesStore.isLiked(id) : false
+const isReelInWishlist = (id) => likesStore?.isLiked ? likesStore.isLiked(id) : false
+const isPostLikedByStore = (id) => postStore.likedPosts?.includes(id) || false
+
+const togglePostWishlist = (post) => {
+  if (!post?.id) return
+  if (isPostInWishlist(post.id)) {
+    likesStore?.removeLike?.(post.id)
+    showToast('تمت الإزالة من المفضلة')
+  } else {
+    likesStore?.addLike?.({
+      id: post.id,
+      name: post.productName || 'منتج',
+      price: post.price || 0,
+      image: getPostImage(post),
+      vendorName: vendor.value?.shopName || 'حرفي'
+    })
+    showToast('تمت الإضافة إلى المفضلة')
+  }
+}
+
+const togglePostLike = async (post) => {
+  if (!post) return
+  try {
+    const result = await postStore.toggleLike(post.id)
+    if (result) {
+      post.likes = result.likes
+      const index = vendorPosts.value.findIndex(p => p.id === post.id)
+      if (index !== -1) vendorPosts.value[index].likes = result.likes
+    }
+  } catch (error) {
+    console.error('Erreur togglePostLike:', error)
+  }
+}
+
+// ===== FONCTIONS REELS =====
+const openReelModal = (reel) => {
+  selectedReel.value = reel
+  document.body.style.overflow = 'hidden'
+}
+
+const closeReelModal = () => {
+  selectedReel.value = null
+  document.body.style.overflow = ''
+}
+
+const toggleReelWishlist = (reel) => {
+  if (!reel?.id) return
+  if (isReelInWishlist(reel.id)) {
+    likesStore?.removeLike?.(reel.id)
+    showToast('Reel retiré des favoris')
+  } else {
+    likesStore?.addLike?.({
+      id: reel.id,
+      name: reel.title || reel.productName || 'Reel',
+      image: getAvatarImage(),
+      vendorName: vendor.value?.shopName || 'Vendeur'
+    })
+    showToast('Reel ajouté aux favoris')
+  }
+}
+
+const toggleReelLike = async (reel) => {
+  if (!reel) return
+  reel.likes = (reel.likes || 0) + 1
+  showToast('Like ajouté')
+}
+
+const shareReel = (reel) => {
+  if (!reel) return
+  navigator.clipboard.writeText(`${window.location.origin}/reel/${reel.id}`).catch(() => {})
+  showToast('Lien du reel copié')
+}
+
+const addComment = async () => {
+  if (!newComment.value.trim() || !selectedPost.value) return
+  postComments.value.push({
+    id: Date.now(),
+    userName: authStore.user?.name || 'Utilisateur',
+    text: newComment.value.trim()
+  })
+  selectedPost.value.commentsCount = (selectedPost.value.commentsCount || 0) + 1
+  newComment.value = ''
+}
+
+const addReelComment = async () => {
+  if (!newReelComment.value.trim() || !selectedReel.value) return
+  reelComments.value.push({
+    id: Date.now(),
+    userName: authStore.user?.name || 'Utilisateur',
+    text: newReelComment.value.trim()
+  })
+  selectedReel.value.commentsCount = (selectedReel.value.commentsCount || 0) + 1
+  newReelComment.value = ''
+}
+
+const focusComment = () => {
+  const input = document.querySelector('.comment-input')
+  input?.focus()
+}
+
+const focusReelComment = () => {
+  const input = document.querySelector('.reel-comment-input-container input')
+  input?.focus()
+}
+
+// ===== POST ACTIONS =====
+const normalizePost = (post) => ({
+  ...post,
+  isPinned: Boolean(
+    post.isPinned === true ||
+    post.isPinned === 1 ||
+    post.isPinned === '1' ||
+    post.is_pinned === true ||
+    post.is_pinned === 1 ||
+    post.is_pinned === '1'
+  )
+})
+
+const sortPosts = (posts) => {
+  if (!Array.isArray(posts)) return []
+  return [...posts].sort((a, b) => {
+    const aPinned = Boolean(a.isPinned)
+    const bPinned = Boolean(b.isPinned)
+    if (aPinned && !bPinned) return -1
+    if (!aPinned && bPinned) return 1
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
   })
 }
 
-const formatPrice = (price) => {
-  return new Intl.NumberFormat('ar-TN').format(price || 0)
+const countPinnedPosts = () => {
+  pinnedCount.value = vendorPosts.value.filter(p => Boolean(p.isPinned)).length
 }
 
-const getSpecialtyName = (specialty) => {
-  const specialties = {
-    pottery: '🏺 فخار وسيراميك',
-    textiles: '🧵 منسوجات وسجاد',
-    jewelry: '💍 مجوهرات',
-    woodwork: '🪵 أعمال خشبية',
-    metalwork: '⚒️ أعمال معدنية',
-    leather: '👜 منتجات جلدية',
-    other: '🎨 أخرى',
+const openPostModal = (post) => {
+  selectedPost.value = post
+  currentImageIndex.value = 0
+  document.body.style.overflow = 'hidden'
+}
+
+const closePostModal = () => {
+  selectedPost.value = null
+  activePostMenu.value = null
+  document.body.style.overflow = ''
+}
+
+const prevPostImage = () => {
+  if (selectedPost.value?.images && currentImageIndex.value > 0) currentImageIndex.value--
+}
+
+const nextPostImage = () => {
+  if (selectedPost.value?.images && currentImageIndex.value < selectedPost.value.images.length - 1)
+    currentImageIndex.value++
+}
+
+const togglePostMenu = (id) => {
+  activePostMenu.value = activePostMenu.value === id ? null : id
+}
+
+const sharePost = (post) => {
+  if (!post) return
+  navigator.clipboard.writeText(`${window.location.origin}/product/${post.id}`).catch(() => {})
+  showToast('تم نسخ الرابط')
+}
+
+const buyProduct = (post) => {
+  if (!post) return
+  cartStore?.addItem?.({
+    id: post.id,
+    name: post.productName,
+    price: post.price,
+    image: getPostImage(post),
+    quantity: 1,
+    vendorName: vendor.value?.shopName
+  })
+  showToast('تمت الإضافة إلى السلة')
+}
+
+const openCreatePostModal = () => { showCreatePostModal.value = true }
+const openCreateReelModal = () => { showCreateReelModal.value = true }
+
+// ===== ÉPINGLER =====
+const togglePinPost = async (post) => {
+  if (!post?.id) return
+  const currentPinned = Boolean(post.isPinned)
+  if (!currentPinned && pinnedCount.value >= 3) {
+    showToast('الحد الأقصى 3 منتجات', 'warning')
+    activePostMenu.value = null
+    return
   }
-  return specialties[specialty] || specialty
-}
-
-// ===== GESTION DES POSTS =====
-const openCreatePostModal = () => {
-  showCreatePostModal.value = true
-}
-
-const handlePostCreated = async (postData) => {
-  if (!vendor.value?.id) return
-
-  const newPost = {
-    vendorId: vendor.value.id,
-    vendorName: vendor.value.shopName,
-    vendorAvatar: vendor.value.userAvatar || vendor.value.avatar,
-    vendorVerified: vendor.value.verified || false,
-    ...postData,
-  }
-
   try {
-    const savedPost = await postStore.createPost(newPost)
-    console.log('✅ Post créé:', savedPost)
-
-    showNotification.value = true
-    setTimeout(() => {
-      showNotification.value = false
-    }, 5000)
-
-    showCreatePostModal.value = false
-    await loadVendorPosts(vendor.value.id)
-
+    const response = await api.put(`/posts/${post.id}/pin`)
+    const newPinnedState =
+      response?.data?.isPinned ??
+      response?.data?.data?.isPinned ??
+      response?.data?.post?.isPinned ??
+      !currentPinned
+    const normalizedPinned = Boolean(
+      newPinnedState === true || newPinnedState === 1 || newPinnedState === '1'
+    )
+    vendorPosts.value = vendorPosts.value.map((p) =>
+      p.id === post.id ? { ...p, isPinned: normalizedPinned } : p
+    )
+    if (selectedPost.value?.id === post.id) {
+      selectedPost.value = { ...selectedPost.value, isPinned: normalizedPinned }
+    }
+    vendorPosts.value = sortPosts(vendorPosts.value)
+    countPinnedPosts()
+    showToast(normalizedPinned ? 'تم تثبيت المنتج' : 'تم إلغاء التثبيت')
   } catch (error) {
-    console.error('❌ Erreur création post:', error)
+    console.error('Erreur toggle pin:', error)
+    showToast('فشل تحديث التثبيت', 'error')
+  } finally {
+    activePostMenu.value = null
   }
 }
 
-const loadVendorPosts = async (vendorId) => {
+// ===== CHARGEMENT DES CATÉGORIES POUR L'ÉDITION =====
+const loadCategoriesForEdit = async () => {
   try {
-    if (vendorId) {
-      vendorPosts.value = await postStore.fetchVendorPosts(vendorId)
-      console.log(`📝 ${vendorPosts.value.length} posts chargés`)
+    const response = await api.get('/categories?include=children')
+    if (response.data.success) {
+      const data = response.data.data?.categories || response.data.categories || []
+      categoriesList.value = data.map(cat => ({
+        id: cat.id,
+        slug: cat.slug,
+        name: cat.name,
+        nameAr: cat.nameAr || cat.name,
+        icon: cat.icon || '📁',
+        imageUrl: cat.imageUrl || `https://placehold.co/100x100/08717f/FFFFFF?text=${encodeURIComponent(cat.nameAr || cat.name)}`,
+        parentId: cat.parentId || null,
+        children: (cat.children || []).map(child => ({
+          ...child,
+          nameAr: child.nameAr || child.name,
+          icon: child.icon || '📁',
+          imageUrl: child.imageUrl || `https://placehold.co/100x100/08717f/FFFFFF?text=${encodeURIComponent(child.nameAr || child.name)}`
+        }))
+      }))
     }
   } catch (error) {
-    console.error('❌ Erreur chargement posts:', error)
+    console.error('Erreur chargement catégories pour édition:', error)
+  }
+}
+
+// ===== SÉLECTION DE CATÉGORIES POUR L'ÉDITION =====
+const selectEditParentCategory = (cat) => {
+  editSelectedParentCategory.value = cat
+  editSelectedSubCategory.value = null
+
+  if (cat.children && cat.children.length > 0) {
+    editSelectedCategory.value = null
+  } else {
+    editSelectedCategory.value = cat.id
+  }
+}
+
+const selectEditSubCategory = (subCat) => {
+  editSelectedSubCategory.value = subCat
+  editSelectedCategory.value = subCat.id
+}
+
+const clearEditCategorySelection = () => {
+  editSelectedCategory.value = null
+  editSelectedSubCategory.value = null
+  editSelectedParentCategory.value = null
+}
+
+// ===== OUVERTURE DU MODAL D'ÉDITION =====
+const openEditPostModal = async (post) => {
+  if (!post) return
+  activePostMenu.value = null
+
+  // Charger les catégories si pas déjà fait
+  if (categoriesList.value.length === 0) {
+    await loadCategoriesForEdit()
+  }
+
+  // Réinitialiser la sélection
+  clearEditCategorySelection()
+
+  // Préselectionner la catégorie du post
+  const postCategoryId = post.categoryId || post.category_id
+  if (postCategoryId) {
+    // Chercher dans les catégories principales
+    const parentCat = categoriesList.value.find(c => c.id === postCategoryId)
+    if (parentCat) {
+      editSelectedParentCategory.value = parentCat
+      editSelectedCategory.value = parentCat.id
+      editSelectedSubCategory.value = null
+    } else {
+      // Chercher dans les sous-catégories
+      for (const cat of categoriesList.value) {
+        if (cat.children && cat.children.length > 0) {
+          const subCat = cat.children.find(c => c.id === postCategoryId)
+          if (subCat) {
+            editSelectedParentCategory.value = cat
+            editSelectedSubCategory.value = subCat
+            editSelectedCategory.value = subCat.id
+            break
+          }
+        }
+      }
+    }
+  }
+
+  editForm.postId = post.id
+  editForm.productName = post.productName || ''
+  editForm.price = post.price || 0
+  editForm.oldPrice = post.oldPrice || null
+  editForm.quantity = post.quantity || 0
+  editForm.category = post.category || ''
+  editForm.description = post.description || ''
+  showEditModal.value = true
+}
+
+// ===== FERMETURE DU MODAL D'ÉDITION =====
+const closeEditModal = () => {
+  showEditModal.value = false
+  clearEditCategorySelection()
+  Object.assign(editForm, {
+    postId: null, productName: '', price: 0, oldPrice: null,
+    quantity: 0, category: '', description: ''
+  })
+}
+
+// ===== SAUVEGARDE DE L'ÉDITION =====
+const saveEditedPost = async () => {
+  if (!editForm.postId || !editForm.productName.trim() || !editForm.price) return
+  isSaving.value = true
+  try {
+    const payload = {
+      productName: editForm.productName.trim(),
+      price: parseFloat(editForm.price),
+      oldPrice: editForm.oldPrice ? parseFloat(editForm.oldPrice) : null,
+      quantity: parseInt(editForm.quantity) || 0,
+      category: editForm.category,
+      description: editForm.description.trim()
+    }
+
+    // Ajouter le categoryId sélectionné
+    if (editSelectedCategory.value) {
+      payload.categoryId = editSelectedCategory.value
+      // Mettre à jour le slug de catégorie si disponible
+      const selectedCat = editSelectedSubCategory.value || editSelectedParentCategory.value
+      if (selectedCat) {
+        payload.category = selectedCat.slug
+      }
+    }
+
+    const r = await api.put(`/posts/${editForm.postId}`, payload)
+    if (r.data?.success) {
+      const idx = vendorPosts.value.findIndex(p => p.id === editForm.postId)
+      if (idx !== -1) {
+        Object.assign(vendorPosts.value[idx], {
+          productName: editForm.productName.trim(),
+          price: parseFloat(editForm.price),
+          oldPrice: editForm.oldPrice ? parseFloat(editForm.oldPrice) : null,
+          quantity: parseInt(editForm.quantity) || 0,
+          category: payload.category,
+          categoryId: payload.categoryId,
+          description: editForm.description.trim()
+        })
+      }
+      closeEditModal()
+      showToast('تم تعديل المنتج بنجاح')
+    }
+  } catch (e) {
+    closeEditModal()
+    showToast('تم تعديل المنتج (محلياً)')
+  } finally {
+    isSaving.value = false
+  }
+}
+
+// ===== SUPPRESSION =====
+const confirmDeletePost = (post) => {
+  if (!post) return
+  activePostMenu.value = null
+  postToDelete.value = post
+  showDeleteConfirm.value = true
+}
+
+const cancelDelete = () => {
+  showDeleteConfirm.value = false
+  postToDelete.value = null
+}
+
+const executeDelete = async () => {
+  if (!postToDelete.value) return
+  isDeleting.value = true
+  try {
+    await api.delete(`/posts/${postToDelete.value.id}`)
+    vendorPosts.value = vendorPosts.value.filter(p => p.id !== postToDelete.value.id)
+    showToast('تم حذف المنتج بنجاح')
+  } catch (e) {
+    vendorPosts.value = vendorPosts.value.filter(p => p.id !== postToDelete.value.id)
+    showToast('تم حذف المنتج')
+  } finally {
+    isDeleting.value = false
+    showDeleteConfirm.value = false
+    postToDelete.value = null
+  }
+}
+
+// ===== DATA LOADING =====
+const loadVendorPosts = async (vendorId) => {
+  if (!vendorId) {
+    vendorPosts.value = []
+    return
+  }
+  try {
+    const posts = await postStore.fetchVendorPosts(vendorId)
+    const normalizedPosts = Array.isArray(posts) ? posts.map(normalizePost) : []
+    vendorPosts.value = sortPosts(normalizedPosts)
+    countPinnedPosts()
+  } catch (e) {
+    console.error('Erreur chargement posts:', e)
     vendorPosts.value = []
   }
 }
 
-const loadVendorProducts = async (vendorId) => {
+const loadVendorReels = async (vendorId) => {
+  if (!vendorId) { vendorReels.value = []; return }
   try {
-    if (vendorId) {
-      vendorProducts.value = await productStore.fetchProductsByVendor(vendorId)
-      console.log(`📦 ${vendorProducts.value.length} produits chargés`)
+    const r = await api.get(`/reels/vendor/${vendorId}`)
+    vendorReels.value = r.data?.data?.reels || []
+  } catch (e) { vendorReels.value = [] }
+}
+
+const loadVendor = async () => {
+  let id = route.params.name || route.params.id || route.query.id || route.query.slug
+
+  if (id === 'dashboard') {
+    loading.value = false
+    const realVendorId = authStore.vendorId || localStorage.getItem('vendorId')
+    if (realVendorId) {
+      router.replace(`/vendor/${realVendorId}`)
+    } else {
+      try {
+        const fetchedId = await authStore.fetchVendorId()
+        if (fetchedId) {
+          router.replace(`/vendor/${fetchedId}`)
+        } else {
+          router.replace('/')
+        }
+      } catch (e) {
+        router.replace('/')
+      }
     }
-  } catch (error) {
-    console.error('❌ Erreur chargement produits:', error)
-    vendorProducts.value = []
-  }
-}
-
-// ===== GESTION DES IMAGES =====
-const openImage = (img) => {
-  selectedImage.value = img
-  showImageModal.value = true
-}
-
-// ===== GESTION DES LIKES =====
-const togglePostLike = (post) => {
-  console.log('togglePostLike', post)
-}
-
-const isPostLiked = (postId) => {
-  return false
-}
-
-// ===== GESTION DES COMMENTAIRES =====
-const toggleComments = (postId) => {
-  showComments.value = showComments.value === postId ? null : postId
-}
-
-const addComment = (postId) => {
-  if (!newComment.value.trim()) return
-  console.log('addComment', postId, newComment.value)
-  newComment.value = ''
-}
-
-// ===== GESTION DES ACTIONS =====
-const toggleFollow = async () => {
-  if (!authStore.isAuthenticated) {
-    router.push('/login')
     return
   }
 
-  try {
-    const result = await vendorStore.toggleFollow(vendor.value.id)
-    isFollowing.value = result.following
-
-    if (result.following) {
-      vendor.value.followersCount = (vendor.value.followersCount || 0) + 1
-    } else {
-      vendor.value.followersCount = Math.max(0, (vendor.value.followersCount || 0) - 1)
-    }
-  } catch (error) {
-    console.error('❌ Erreur follow:', error)
-  }
-}
-
-const goToEditProfile = () => {
-  router.push(`/vendor/edit/${vendor.value?.id}`)
-}
-
-const goToAddProduct = () => {
-  router.push(`/vendor/add-product/${vendor.value?.id}`)
-}
-
-const sharePost = (post) => {
-  console.log('sharePost', post)
-}
-
-const buyProduct = (post) => {
-  console.log('buyProduct', post)
-}
-
-const quickBuy = (product) => {
-  console.log('quickBuy', product)
-}
-
-const openCoverUpload = () => {
-  console.log('openCoverUpload')
-}
-
-const openAvatarUpload = () => {
-  console.log('openAvatarUpload')
-}
-
-const openMessageModal = () => {
-  console.log('openMessageModal')
-}
-
-const togglePostMenu = (postId) => {
-  showPostMenu.value = showPostMenu.value === postId ? null : postId
-}
-
-const editPost = (post) => {
-  console.log('editPost', post)
-}
-
-const deletePost = (post) => {
-  console.log('deletePost', post)
-}
-
-// ===== CHARGEMENT INITIAL =====
-const loadVendor = async () => {
-  const id = vendorId.value
-  console.log('🔍 Chargement du vendeur ID:', id)
-
-  if (!id) {
-    console.log('❌ ID vendeur manquant')
-    vendor.value = null
+  if (!id || id === 'undefined' || id === 'null') {
     loading.value = false
     return
   }
 
+  loading.value = true
   try {
-    const vendorData = await vendorStore.fetchVendorById(id)
-
-    if (vendorData) {
-      vendor.value = vendorData
-      console.log('✅ Vendeur trouvé:', vendorData)
-
-      await Promise.all([
-        loadVendorPosts(id),
-        loadVendorProducts(id)
-      ])
-
-      if (authStore.isAuthenticated && authStore.userId !== vendorData.userId) {
-        // Vérifier si l'utilisateur suit ce vendeur
-        // isFollowing.value = await vendorStore.isFollowing(id)
-      }
+    let data = null
+    if (!isNaN(id)) {
+      data = await vendorStore.fetchVendorById(parseInt(id))
     } else {
-      console.log('❌ Vendeur non trouvé')
+      data = await vendorStore.fetchVendorBySlug(id)
+    }
+
+    if (data) {
+      vendor.value = data
+      await Promise.all([loadVendorPosts(data.id), loadVendorReels(data.id)])
+      avatarKey.value = Date.now()
+      coverImageKey.value = Date.now()
+    } else {
       vendor.value = null
     }
-  } catch (error) {
-    console.error('❌ Erreur chargement vendeur:', error)
+  } catch (e) {
+    console.error('Erreur loadVendor:', e)
     vendor.value = null
   } finally {
     loading.value = false
   }
 }
 
-watch(vendorId, (newId, oldId) => {
-  if (newId && newId !== oldId) {
-    loadVendor()
+// ===== CONTACT VENDOR =====
+const contactVendor = () => {
+  if (!authStore.isAuthenticated) {
+    router.push('/login')
+    return
   }
-})
+  if (!vendor.value) {
+    showToast('معلومات البائع غير متوفرة', 'error')
+    return
+  }
+  const vendorUserId = vendor.value.userId || vendor.value.user_id
+  if (!vendorUserId) {
+    showToast('لا يمكن بدء المحادثة', 'error')
+    return
+  }
 
-onMounted(() => {
-  console.log('VendorProfile mounted')
-  console.log('AuthStore disponible:', !!authStore)
-  console.log('VendorStore disponible:', !!vendorStore)
-  loadVendor()
-})
-</script>
+  localStorage.setItem('pendingChat', JSON.stringify({
+    receiverId: vendorUserId,
+    receiverName: vendor.value.shopName || vendor.value.name || 'حرفي',
+    receiverAvatar: getAvatarImage()
+  }))
 
-<style scoped>
-/* ===== VOS STYLES EXISTANTS (conservés) ===== */
-.vendor-profile-page {
-  background: #f0f2f5;
-  min-height: 100vh;
-  direction: rtl;
-  font-family: 'Cairo', sans-serif;
+  const existingConv = messageStore.conversations.find(
+    c => c.other_user_id === vendorUserId
+  )
+
+  messageStore.isOpen = true
+
+  if (existingConv) {
+    messageStore.openChat(existingConv)
+    showToast('جاري فتح المحادثة...')
+  } else {
+    const tempConv = {
+      id: null,
+      other_user_id: vendorUserId,
+      other_user_name: vendor.value.shopName || 'حرفي',
+      other_user_avatar: getAvatarImage(),
+      other_user_type: 'vendor',
+      last_message: '',
+      last_message_at: null,
+      unread_count: 0
+    }
+    messageStore.openChat(tempConv)
+    messageStore.startConversation(vendorUserId, 'vendor').then(conv => {
+      if (conv && conv.id) {
+        messageStore.activeChat = conv
+        messageStore.loadMessages(conv.id)
+      }
+    })
+    showToast('جاري بدء المحادثة...')
+  }
+
+  setTimeout(() => {
+    localStorage.removeItem('pendingChat')
+  }, 3000)
 }
 
-.container {
-  max-width: 1200px;
+// ===== OTHER =====
+const goToEditProfile = () => router.push(`/vendor/edit/${vendor.value?.id}`)
+const openSettings = () => showToast('الإعدادات قريباً')
+
+const handlePostCreated = async () => {
+  showCreatePostModal.value = false
+  await loadVendorPosts(vendor.value.id)
+  showToast('تم إنشاء المنشور')
+}
+
+const handleReelCreated = async () => {
+  showCreateReelModal.value = false
+  await loadVendorReels(vendor.value.id)
+  showToast('تم إنشاء Reel')
+}
+
+const handleClickOutside = (e) => {
+  if (!e.target.closest('.post-menu-dropdown') && !e.target.closest('.modal-menu-btn'))
+    activePostMenu.value = null
+}
+
+const openAvatarUpload = () => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      if (vendor.value) vendor.value.userAvatar = ev.target.result
+      avatarKey.value = Date.now()
+      showToast('تم تحديث الصورة')
+    }
+    reader.readAsDataURL(file)
+  }
+  input.click()
+}
+
+const openCoverUpload = () => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/*'
+  input.onchange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      localStorage.setItem(`vendor_cover_${vendor.value?.id}`, ev.target.result)
+      coverImageKey.value = Date.now()
+      showToast('تم تحديث الغلاف')
+    }
+    reader.readAsDataURL(file)
+  }
+  input.click()
+}
+
+// ===== WATCHER =====
+watch(
+  () => [route.params.name, route.params.id, route.query.id, route.query.slug],
+  ([newName, newId, newQueryId, newQuerySlug], [oldName, oldId, oldQueryId, oldQuerySlug]) => {
+    if (newName !== oldName || newId !== oldId || newQueryId !== oldQueryId || newQuerySlug !== oldQuerySlug) {
+      loadVendor()
+    }
+  }
+)
+
+// ===== LIFECYCLE =====
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+
+  if (authStore.user?.role === 'pending') {
+    router.push('/pending-vendor')
+    return
+  }
+  loadVendor()
+  loadCategoriesForEdit() // Charger les catégories pour l'édition
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+  document.body.style.overflow = ''
+})
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@400;500;600;700;800&display=swap');
+</style>
+
+<style scoped>
+/* ===== BASE & FONTS ===== */
+.vendor-profile-page {
+  font-family: 'Amiri', 'Cairo', serif;
+  background: #fafafa;
+  min-height: 100vh;
+}
+.vendor-profile-page * {
+  font-family: 'Amiri', 'Cairo', serif;
+}
+.vendor-profile-page.dark-mode {
+  background: #000000;
+  color: #ffffff;
+}
+
+/* Loading */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #fafafa;
+}
+.dark-mode .loading-state {
+  background: #000000;
+}
+.loading-spinner {
+  text-align: center;
+}
+.loading-spinner p {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-top: 16px;
+}
+.spinner-ring {
+  width: 44px;
+  height: 44px;
+  border: 3px solid #dbdbdb;
+  border-top-color: #0095f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Cover */
+.cover-photo-container {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  overflow: hidden;
+  background: #efefef;
+}
+.dark-mode .cover-photo-container { background: #1a1a1a; }
+.cover-photo-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.cover-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.cover-overlay-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
+}
+.change-cover-btn {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border: none;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+.change-cover-btn svg { width: 16px; height: 16px; stroke: white; }
+.change-cover-btn:hover { background: rgba(0, 0, 0, 0.8); transform: translateY(-1px); }
+
+/* Profile Container */
+.profile-container {
+  max-width: 935px;
   margin: 0 auto;
   padding: 0 20px;
 }
-
-/* ===== LOADING ===== */
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 60vh;
-}
-
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #e2e8f0;
-  border-top: 4px solid #d40025;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* ===== COVER ===== */
-.profile-cover {
-  position: relative;
-  height: 350px;
-  overflow: hidden;
-}
-
-.cover-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.cover-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.4) 100%);
-}
-
-.cover-actions {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  display: flex;
-  gap: 10px;
-  z-index: 10;
-}
-
-.btn-cover,
-.btn-follow,
-.btn-message,
-.btn-edit-profile {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 30px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-}
-
-.btn-cover,
-.btn-edit-profile {
-  background: rgba(255, 255, 255, 0.9);
-  color: #1e293b;
-}
-
-.btn-cover:hover,
-.btn-edit-profile:hover {
-  background: white;
-}
-
-.btn-follow {
-  background: #d40025;
-  color: white;
-}
-
-.btn-follow.following {
-  background: #10b981;
-}
-
-.btn-message {
-  background: white;
-  color: #1e293b;
-}
-
-.btn-follow:hover,
-.btn-message:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-/* ===== PROFILE HEADER ===== */
 .profile-header {
-  background: white;
-  padding: 20px 0 30px;
-  margin-top: -50px;
+  display: flex;
+  gap: 30px;
+  margin-top: -40px;
+  margin-bottom: 20px;
   position: relative;
   z-index: 5;
-  border-radius: 30px 30px 0 0;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
-
-.profile-info {
-  display: flex;
-  align-items: center;
-  gap: 30px;
-  margin-bottom: 20px;
+.profile-avatar-section {
+  flex-shrink: 0;
 }
-
-.avatar-wrapper {
+.avatar-container {
   position: relative;
   width: 150px;
   height: 150px;
-  flex-shrink: 0;
 }
-
-.avatar {
+.profile-avatar {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 5px solid white;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   object-fit: cover;
-}
-
-.verified-badge {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  width: 30px;
-  height: 30px;
-  background: #d40025;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  font-weight: 700;
   border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-
-.avatar-edit {
+.dark-mode .profile-avatar { border-color: #000000; }
+.avatar-edit-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 40px;
-  height: 40px;
-  background: white;
+  bottom: 5px;
+  left: 5px;
+  width: 32px;
+  height: 32px;
+  background: #0095f6;
   border: none;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  opacity: 0;
 }
-
-.avatar-edit:hover {
-  transform: scale(1.1);
-  background: #d40025;
-  color: white;
-}
-
-.info-main {
-  flex: 1;
-}
-
-.shop-name {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #1e293b;
-  margin-bottom: 5px;
-}
-
-.vendor-name {
-  color: #64748b;
-  font-size: 1rem;
-  margin-bottom: 5px;
-}
-
-.vendor-specialty {
-  display: inline-block;
-  padding: 5px 15px;
-  background: #f1f5f9;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  color: #d40025;
-  font-weight: 600;
-  margin: 10px 0;
-}
-
-.vendor-location {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #64748b;
-  font-size: 0.95rem;
-}
-
-.profile-stats {
-  display: flex;
-  gap: 30px;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-value {
-  display: block;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #1e293b;
-}
-
-.stat-label {
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.profile-bio {
-  margin: 20px 0;
-  padding: 20px 0;
-  border-top: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.profile-bio p {
-  color: #334155;
-  line-height: 1.7;
-  font-size: 1rem;
-}
-
-.contact-info {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-  margin-bottom: 15px;
-}
-
-.contact-link {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #64748b;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.contact-link:hover {
-  color: #d40025;
-}
-
-.social-links {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.social-link {
-  width: 35px;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: white;
-  transition: all 0.3s ease;
-}
-
-.social-link.facebook {
-  background: #1877f2;
-}
-
-.social-link.instagram {
-  background: linear-gradient(45deg, #f09433, #d62976, #962fbf);
-}
-
-.social-link:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-}
-
-.joined-date {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #94a3b8;
-  font-size: 0.9rem;
-}
-
-/* ===== CREATE POST SECTION ===== */
-.create-post-section {
-  background: white;
-  padding: 20px 0;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.create-post-card {
-  background: white;
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.post-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.post-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.post-input {
-  flex: 1;
-  background: #f0f2f5;
-  border-radius: 30px;
-  padding: 10px 15px;
-  cursor: pointer;
-  color: #64748b;
-}
-
-.post-input:hover {
-  background: #e4e6e9;
-}
-
-.post-photo-btn {
-  padding: 8px 15px;
-  background: #f0f2f5;
-  border: none;
-  border-radius: 30px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #1e293b;
-}
-
-.post-photo-btn:hover {
-  background: #e4e6e9;
-}
-
-/* ===== TABS ===== */
-.profile-tabs {
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.tabs-nav {
-  display: flex;
-  gap: 10px;
-  padding: 10px 0;
-}
-
-.tab-btn {
-  padding: 12px 24px;
-  background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.tab-btn:hover {
-  color: #d40025;
-}
-
-.tab-btn.active {
-  color: #d40025;
-  border-bottom-color: #d40025;
-}
-
-/* ===== TAB CONTENT ===== */
-.tab-content {
-  padding: 30px 0;
-}
-
-/* ===== POSTS FEED ===== */
-.posts-feed {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  max-width: 700px;
-  margin: 0 auto;
-}
-
-.post-card {
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.post-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 15px;
-  position: relative;
-}
-
-.post-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.post-author {
-  flex: 1;
-}
-
-.post-author h4 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 2px;
-}
-
-.post-date {
-  color: #64748b;
-  font-size: 0.8rem;
-}
-
-.post-status-badge {
-  padding: 4px 12px;
-  background: #fff3cd;
-  color: #856404;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.product-title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 10px;
-}
-
-.post-images {
-  display: grid;
-  gap: 5px;
-  margin: 15px 0;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.post-images.multiple {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.post-image {
-  cursor: pointer;
-  aspect-ratio: 1/1;
-  overflow: hidden;
-}
-
-.post-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.post-image:hover img {
-  transform: scale(1.05);
-}
-
-.more-images {
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  font-weight: 700;
-  cursor: pointer;
-  aspect-ratio: 1/1;
-}
-
-.post-price {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 15px 0;
-}
-
-.current-price {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: #d40025;
-}
-
-.old-price {
-  color: #94a3b8;
-  text-decoration: line-through;
-  font-size: 1rem;
-}
-
-.post-colors {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 10px 0;
-}
-
-.colors-label {
-  font-size: 0.85rem;
-  color: #64748b;
-  font-weight: 600;
-}
-
-.colors-list {
-  display: flex;
-  gap: 5px;
-}
-
-.color-dot {
+.avatar-container:hover .avatar-edit-btn { opacity: 1; }
+.avatar-edit-btn svg { width: 16px; height: 16px; stroke: white; }
+.verified-badge-instagram {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
   width: 24px;
   height: 24px;
+  background: #0095f6;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 2px solid white;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
+.verified-badge-instagram svg { width: 14px; height: 14px; fill: white; }
 
-.post-quantity {
-  font-size: 0.9rem;
-  color: #08717f;
-  margin: 10px 0;
-}
-
-.quantity-label {
-  color: #64748b;
-  margin-left: 5px;
-}
-
-.post-actions {
-  display: flex;
-  gap: 20px;
-  padding: 15px 0;
-  border-top: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.action-btn {
-  background: none;
-  border: none;
+/* Profile Info */
+.profile-info-section { flex: 1; }
+.profile-actions-row {
   display: flex;
   align-items: center;
-  gap: 5px;
-  color: #64748b;
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-}
-
-.action-btn:hover {
-  color: #d40025;
-}
-
-.action-btn.buy-btn {
-  margin-right: auto;
-  background: #d40025;
-  color: white;
-  padding: 5px 15px;
-  border-radius: 20px;
-}
-
-.action-btn.buy-btn:hover {
-  background: #b00020;
-  transform: translateY(-2px);
-}
-
-/* ===== COMMENTS ===== */
-.comments-section {
-  padding-top: 15px;
-}
-
-.add-comment {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.add-comment input {
-  flex: 1;
-  padding: 10px 15px;
-  border: 1px solid #e2e8f0;
-  border-radius: 30px;
-  font-size: 0.9rem;
-}
-
-.add-comment input:focus {
-  outline: none;
-  border-color: #d40025;
-}
-
-.add-comment button {
-  padding: 8px 20px;
-  background: #d40025;
-  color: white;
-  border: none;
-  border-radius: 30px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.add-comment button:hover {
-  background: #b00020;
-}
-
-/* ===== PRODUCTS GRID ===== */
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 20px;
-}
-
-.product-card {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-}
-
-.product-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-}
-
-.product-image {
-  position: relative;
-  height: 200px;
-  overflow: hidden;
-}
-
-.product-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.quick-buy {
-  position: absolute;
-  bottom: -50px;
-  left: 0;
-  right: 0;
-  background: #d40025;
-  color: white;
-  border: none;
-  padding: 10px;
-  cursor: pointer;
-  transition: bottom 0.3s ease;
-  font-weight: 600;
-}
-
-.product-card:hover .quick-buy {
-  bottom: 0;
-}
-
-.product-info {
-  padding: 15px;
-}
-
-.product-info h3 {
-  font-size: 1rem;
-  color: #1e293b;
-  margin-bottom: 8px;
-}
-
-.product-price {
-  color: #d40025;
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-/* ===== ABOUT TAB ===== */
-.about-card,
-.info-card,
-.stats-card {
-  background: white;
-  border-radius: 16px;
-  padding: 25px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
 }
-
-.about-card h3,
-.info-card h3,
-.stats-card h3 {
-  font-size: 1.2rem;
-  color: #1e293b;
-  margin-bottom: 15px;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 10px;
-}
-
-.info-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.info-label {
-  color: #64748b;
+.profile-username-link { text-decoration: none; color: inherit; }
+.profile-username-link:hover .profile-username { text-decoration: underline; opacity: 0.8; }
+.profile-username { font-size: 2rem; font-weight: 700; color: #262626; }
+.dark-mode .profile-username { color: #ffffff; }
+.action-buttons { display: flex; gap: 8px; }
+.btn-edit-profile {
+  padding: 7px 16px;
+  background: #efefef;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #262626;
 }
-
-.info-value {
-  color: #1e293b;
-}
-
-/* ===== EMPTY STATE ===== */
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  background: white;
-  border-radius: 16px;
-}
-
-.btn-create {
-  padding: 12px 25px;
-  background: #d40025;
-  color: white;
+.dark-mode .btn-edit-profile { background: #363636; color: #ffffff; }
+.btn-edit-profile:hover { background: #dbdbdb; }
+.btn-settings {
+  width: 32px;
+  height: 32px;
+  background: #efefef;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.btn-settings svg { width: 18px; height: 18px; stroke: #262626; }
+.dark-mode .btn-settings svg { stroke: #ffffff; }
+.btn-message-instagram {
+  width: 32px;
+  height: 32px;
+  background: #efefef;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.btn-message-instagram svg { width: 18px; height: 18px; stroke: #262626; }
+.dark-mode .btn-message-instagram svg { stroke: #ffffff; }
+
+/* Stats */
+.profile-stats-instagram { display: flex; gap: 40px; margin-bottom: 20px; }
+.stat-item { text-align: right; cursor: pointer; }
+.stat-number { font-size: 1.2rem; font-weight: 700; color: #262626; }
+.dark-mode .stat-number { color: #ffffff; }
+.stat-label { font-size: 1rem; color: #8e8e8e; margin-right: 5px; }
+
+/* Bio */
+.profile-bio-instagram { margin-bottom: 10px; }
+.bio-name-link { text-decoration: none; color: inherit; }
+.bio-name-link:hover .bio-name { text-decoration: underline; opacity: 0.8; }
+.bio-name { font-weight: 700; font-size: 1rem; color: #262626; margin-bottom: 4px; }
+.dark-mode .bio-name { color: #ffffff; }
+.bio-text { font-size: 1rem; color: #262626; margin-bottom: 4px; line-height: 1.6; }
+.dark-mode .bio-text { color: #ffffff; }
+.bio-link a { font-size: 0.95rem; color: #00376b; text-decoration: none; }
+.dark-mode .bio-link a { color: #0095f6; }
+
+/* Facebook Create Post */
+.facebook-create-post-section {
+  margin: 16px 0 20px 0;
+  background: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid #dbdbdb;
+}
+.dark-mode .facebook-create-post-section { background: #1a1a1a; border-color: #262626; }
+.facebook-post-card { display: flex; flex-direction: column; gap: 12px; }
+.facebook-post-header { display: flex; align-items: center; gap: 12px; }
+.facebook-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid #dbdbdb; }
+.dark-mode .facebook-avatar { border-color: #262626; }
+.facebook-post-button {
+  flex: 1;
+  background: #f0f2f5;
+  border: none;
+  border-radius: 30px;
+  padding: 12px 16px;
+  text-align: right;
+  font-size: 0.95rem;
+  color: #65676b;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.dark-mode .facebook-post-button { background: #3a3b3c; color: #b0b3b8; }
+.facebook-post-button:hover { background: #e4e6eb; }
+.dark-mode .facebook-post-button:hover { background: #4e4f50; }
+.facebook-post-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding-top: 8px;
+  border-top: 1px solid #dbdbdb;
+}
+.dark-mode .facebook-post-actions { border-top-color: #262626; }
+.facebook-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: #65676b;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.dark-mode .facebook-action-btn { color: #b0b3b8; }
+.facebook-action-btn:hover { background: #f0f2f5; }
+.dark-mode .facebook-action-btn:hover { background: #3a3b3c; }
+.facebook-action-btn svg { width: 22px; height: 22px; stroke: currentColor; }
+
+/* Tab Navigation */
+.tab-navigation { display: flex; justify-content: center; gap: 60px; border-top: 1px solid #dbdbdb; margin-top: 20px; }
+.dark-mode .tab-navigation { border-top-color: #262626; }
+.tab-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 0;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
   font-weight: 600;
+  letter-spacing: 1px;
+  color: #8e8e8e;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
 }
-
-.btn-create:hover {
-  background: #b00020;
-  transform: translateY(-2px);
+.tab-link svg { width: 12px; height: 12px; stroke: #8e8e8e; }
+.tab-link.active { color: #262626; }
+.tab-link.active svg { stroke: #262626; }
+.tab-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #262626;
 }
+.dark-mode .tab-link.active { color: #ffffff; }
+.dark-mode .tab-link.active svg { stroke: #ffffff; }
+.dark-mode .tab-link.active::after { background: #ffffff; }
 
-/* ===== MODAL ===== */
-.modal-overlay {
-  position: fixed;
+/* Posts Grid */
+.posts-grid-instagram { margin-top: 20px; }
+.instagram-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.grid-post { position: relative; aspect-ratio: 1 / 1; cursor: pointer; overflow: hidden; }
+.post-image-container { position: relative; width: 100%; height: 100%; }
+.grid-post-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+.grid-post:hover .grid-post-image { transform: scale(1.02); }
+.grid-wishlist-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+  color: white;
+}
+.grid-wishlist-btn:hover { transform: scale(1.1); background: rgba(0, 0, 0, 0.6); }
+.grid-wishlist-btn.active { background: rgba(239, 68, 68, 0.8); }
+.grid-wishlist-btn svg { width: 18px; height: 18px; }
+.post-overlay-instagram {
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
-
-.image-modal-content {
-  position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
-}
-
-.image-modal-content img {
-  max-width: 100%;
-  max-height: 90vh;
-  border-radius: 8px;
-}
-
-.close-btn {
+.grid-post:hover .post-overlay-instagram { opacity: 1; }
+.post-stats { display: flex; gap: 30px; }
+.stat { display: flex; align-items: center; gap: 6px; color: white; font-size: 1rem; font-weight: 600; }
+.stat svg { width: 20px; height: 20px; }
+.pinned-badge-instagram {
   position: absolute;
   top: 10px;
   right: 10px;
-  width: 40px;
-  height: 40px;
-  background: white;
-  border: none;
-  border-radius: 50%;
-  font-size: 1.2rem;
-  cursor: pointer;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 20px;
+  padding: 4px 8px;
 }
+.pinned-badge-instagram svg { width: 14px; height: 14px; fill: white; }
 
-/* ===== NOT FOUND ===== */
-.not-found {
+/* Empty State */
+.empty-state-instagram { text-align: center; padding: 80px 20px; }
+.empty-state-instagram svg { width: 64px; height: 64px; stroke: #8e8e8e; margin-bottom: 20px; }
+.empty-state-instagram p { color: #8e8e8e; font-size: 1.1rem; margin-bottom: 20px; }
+.btn-create-instagram {
+  padding: 8px 24px;
+  background: #0095f6;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-create-instagram:hover { background: #0081d6; }
+
+/* Not Found */
+.not-found-instagram {
   text-align: center;
   padding: 100px 20px;
+  background: white;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
-
-.not-found h2 {
-  font-size: 2rem;
-  color: #1e293b;
-  margin-bottom: 20px;
-}
-
-.btn-home {
-  display: inline-block;
-  padding: 12px 30px;
-  background: #d40025;
+.dark-mode .not-found-instagram { background: #000000; }
+.not-found-instagram svg { width: 80px; height: 80px; stroke: #8e8e8e; margin-bottom: 20px; }
+.not-found-instagram h2 { font-size: 1.5rem; font-weight: 700; color: #262626; margin-bottom: 20px; }
+.dark-mode .not-found-instagram h2 { color: #ffffff; }
+.btn-home-instagram {
+  padding: 8px 24px;
+  background: #0095f6;
   color: white;
   text-decoration: none;
   border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
+.btn-home-instagram:hover { background: #0081d6; }
 
-.btn-home:hover {
-  background: #b00020;
-}
+/* Toast */
+.custom-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 10000; animation: slideUp 0.3s ease; }
+.toast-content { background: #262626; color: white; padding: 10px 20px; border-radius: 24px; font-size: 0.95rem; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15); }
+.custom-toast.success .toast-content { background: #262626; }
+.custom-toast.error .toast-content { background: #ed4956; }
+@keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
-/* ===== SUCCESS NOTIFICATION ===== */
-.success-notification {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10000;
-  animation: slideDown 0.5s ease;
-  max-width: 90%;
-  width: 450px;
-}
-
-.notification-content {
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  border-right: 4px solid #08717f;
-  position: relative;
-}
-
-.notification-icon {
-  font-size: 2.5rem;
-  animation: scaleIn 0.5s ease;
-}
-
-.notification-text {
-  flex: 1;
-}
-
-.notification-text strong {
-  display: block;
-  font-size: 1.1rem;
-  color: #1e293b;
-  margin-bottom: 5px;
-}
-
-.notification-text p {
-  color: #64748b;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.notification-close {
-  background: #f1f5f9;
+/* ===== REELS SECTIONS ===== */
+.reels-section { margin-top: 20px; }
+.reels-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 0 8px; }
+.reels-header h2 { font-size: 1.1rem; font-weight: 600; color: #262626; display: flex; align-items: center; gap: 8px; }
+.dark-mode .reels-header h2 { color: #ffffff; }
+.reels-header h2 svg { width: 22px; height: 22px; stroke: #262626; }
+.dark-mode .reels-header h2 svg { stroke: #ffffff; }
+.reels-more-btn { background: none; border: none; color: #0095f6; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+.reels-more-btn svg { stroke: #0095f6; }
+.instagram-reels-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: #000; border-radius: 8px; overflow: hidden; }
+.reel-card-instagram { position: relative; aspect-ratio: 9 / 16; cursor: pointer; overflow: hidden; background: #000; }
+.reel-video-container { position: relative; width: 100%; height: 100%; }
+.reel-video-instagram { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+.reel-card-instagram:hover .reel-video-instagram { transform: scale(1.02); }
+.reel-wishlist-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
   border: none;
-  width: 30px;
-  height: 30px;
   border-radius: 50%;
-  font-size: 1.1rem;
-  cursor: pointer;
-  color: #64748b;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+  color: white;
+}
+.reel-wishlist-btn:hover { transform: scale(1.1); background: rgba(0, 0, 0, 0.6); }
+.reel-wishlist-btn.active { background: rgba(239, 68, 68, 0.8); }
+.reel-wishlist-btn svg { width: 18px; height: 18px; }
+.reel-overlay-instagram {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,0.6) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+}
+.reel-card-instagram:hover .reel-overlay-instagram { opacity: 1; }
+.reel-top-info { display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(-10px); transition: all 0.3s ease; }
+.reel-card-instagram:hover .reel-top-info { opacity: 1; transform: translateY(0); }
+.reel-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid white; }
+.reel-username { color: white; font-size: 0.7rem; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.reel-play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.reel-card-instagram:hover .reel-play-icon { opacity: 1; }
+.reel-play-icon svg { width: 24px; height: 24px; fill: white; margin-left: 3px; }
+.reel-stats-instagram { display: flex; gap: 16px; justify-content: flex-end; opacity: 0; transform: translateY(10px); transition: all 0.3s ease; }
+.reel-card-instagram:hover .reel-stats-instagram { opacity: 1; transform: translateY(0); }
+.reel-stat-instagram { display: flex; align-items: center; gap: 4px; color: white; font-size: 0.7rem; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.reel-stat-instagram svg { width: 14px; height: 14px; stroke: white; }
+.reel-title-instagram {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateY(10px);
   transition: all 0.3s ease;
 }
-
-.notification-close:hover {
-  background: #d40025;
+.reel-card-instagram:hover .reel-title-instagram { opacity: 1; transform: translateY(0); }
+.reel-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #0095f6;
   color: white;
-  transform: rotate(90deg);
+  font-size: 0.55rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  z-index: 5;
+}
+
+/* ===== REEL MODAL ===== */
+.reel-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #000000; display: flex; align-items: center; justify-content: center; z-index: 2000; }
+.reel-modal-container { width: 100%; height: 100%; max-width: 400px; background: #000; position: relative; display: flex; flex-direction: column; }
+.reel-modal-video { flex: 1; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.reel-side-info { position: absolute; bottom: 80px; right: 12px; display: flex; flex-direction: column; gap: 20px; z-index: 10; }
+.reel-side-action { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: transform 0.2s ease; }
+.reel-side-action:hover { transform: scale(1.05); }
+.reel-side-action svg { width: 28px; height: 28px; stroke: white; fill: none; }
+.reel-side-action .liked svg { fill: #ed4956; stroke: #ed4956; }
+.reel-side-action span { color: white; font-size: 0.7rem; font-weight: 600; }
+.reel-side-action .avatar-circle { width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; overflow: hidden; }
+.reel-side-action .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+.reel-bottom-info { position: absolute; bottom: 20px; left: 16px; right: 80px; z-index: 10; }
+.reel-author-info { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.reel-author-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #0095f6; }
+.reel-author-name { color: white; font-weight: 700; font-size: 0.9rem; }
+.reel-author-handle { color: #8e8e8e; font-size: 0.7rem; }
+.reel-caption { color: white; font-size: 0.8rem; margin-bottom: 8px; line-height: 1.4; }
+.reel-music { display: flex; align-items: center; gap: 6px; color: white; font-size: 0.7rem; opacity: 0.8; }
+.reel-music svg { width: 14px; height: 14px; fill: white; }
+.reel-comment-input-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  padding: 12px 16px;
+  display: flex;
+  gap: 12px;
+  z-index: 10;
+}
+.reel-comment-input-container input { flex: 1; background: #1a1a1a; border: none; border-radius: 24px; padding: 10px 16px; color: white; font-size: 0.85rem; }
+.reel-comment-input-container input::placeholder { color: #8e8e8e; }
+.reel-comment-input-container button { background: #0095f6; border: none; border-radius: 24px; padding: 10px 20px; color: white; font-weight: 600; cursor: pointer; }
+.reel-comment-input-container button:disabled { opacity: 0.5; cursor: not-allowed; }
+.close-reel-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  backdrop-filter: blur(5px);
+}
+.close-reel-btn svg { width: 20px; height: 20px; stroke: white; }
+
+/* ===== POST MODAL ===== */
+.post-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.92); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+.post-modal-container { position: relative; max-width: 90vw; max-height: 90vh; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.post-modal-content { display: flex; background: white; border-radius: 12px; overflow: hidden; max-width: 1100px; width: 100%; max-height: 90vh; }
+.dark-mode .post-modal-content { background: #000000; }
+.post-modal-image { flex: 1.2; position: relative; background: #000; display: flex; align-items: center; justify-content: center; min-height: 500px; }
+.post-modal-image img { max-width: 100%; max-height: 85vh; object-fit: contain; }
+.image-navigation { position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); display: flex; justify-content: space-between; padding: 0 16px; }
+.nav-btn { width: 32px; height: 32px; background: rgba(0, 0, 0, 0.6); border: none; border-radius: 50%; color: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+.nav-btn:hover { background: rgba(0, 0, 0, 0.8); }
+.post-modal-info { flex: 0.8; display: flex; flex-direction: column; background: white; }
+.dark-mode .post-modal-info { background: #000000; }
+.modal-post-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #efefef; }
+.dark-mode .modal-post-header { border-bottom-color: #262626; }
+.modal-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.modal-author { flex: 1; }
+.author-name { font-weight: 600; font-size: 14px; color: #262626; display: block; }
+.dark-mode .author-name { color: #ffffff; }
+.author-handle { font-size: 12px; color: #8e8e8e; }
+.modal-menu-btn { background: none; border: none; cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; }
+.modal-menu-btn svg { width: 20px; height: 20px; stroke: #262626; }
+.dark-mode .modal-menu-btn svg { stroke: #ffffff; }
+.modal-post-caption { padding: 12px 16px; border-bottom: 1px solid #efefef; max-height: 200px; overflow-y: auto; }
+.dark-mode .modal-post-caption { border-bottom-color: #262626; }
+.caption-author { font-weight: 600; font-size: 14px; color: #262626; margin-bottom: 4px; }
+.dark-mode .caption-author { color: #ffffff; }
+.caption-text h3 { font-size: 15px; font-weight: 600; color: #262626; margin-bottom: 6px; }
+.caption-text p { font-size: 14px; color: #8e8e8e; line-height: 1.4; }
+.dark-mode .caption-text h3 { color: #ffffff; }
+.modal-post-price { padding: 12px 16px; border-bottom: 1px solid #efefef; }
+.dark-mode .modal-post-price { border-bottom-color: #262626; }
+.current-price { font-size: 18px; font-weight: 700; color: #0095f6; }
+.old-price { font-size: 14px; color: #8e8e8e; text-decoration: line-through; margin-right: 8px; }
+.modal-post-actions { display: flex; gap: 16px; padding: 12px 16px; border-bottom: 1px solid #efefef; }
+.dark-mode .modal-post-actions { border-bottom-color: #262626; }
+.action-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; color: #262626; transition: all 0.2s ease; }
+.dark-mode .action-btn { color: #ffffff; }
+.action-btn svg { width: 22px; height: 22px; stroke: #262626; }
+.dark-mode .action-btn svg { stroke: #ffffff; }
+.like-icon.liked { fill: #ed4956; stroke: #ed4956; }
+.wishlist-icon.liked { fill: #ef4444; stroke: #ef4444; }
+.buy-btn-modal { margin-right: auto; background: #0095f6; padding: 6px 16px; border-radius: 8px; color: white; }
+.buy-btn-modal svg { stroke: white; }
+.buy-btn-modal:hover { background: #0081d6; }
+.modal-post-comments { flex: 1; display: flex; flex-direction: column; padding: 12px 16px; min-height: 200px; }
+.comments-list { flex: 1; overflow-y: auto; margin-bottom: 12px; }
+.comment-item { margin-bottom: 12px; font-size: 14px; }
+.comment-author { font-weight: 600; color: #262626; margin-left: 8px; }
+.dark-mode .comment-author { color: #ffffff; }
+.comment-text { color: #262626; }
+.dark-mode .comment-text { color: #ffffff; }
+.comment-input-wrapper { display: flex; gap: 12px; padding-top: 12px; border-top: 1px solid #efefef; }
+.dark-mode .comment-input-wrapper { border-top-color: #262626; }
+.comment-input { flex: 1; background: none; border: none; padding: 8px 0; font-size: 14px; color: #262626; outline: none; }
+.dark-mode .comment-input { color: #ffffff; }
+.comment-input::placeholder { color: #8e8e8e; }
+.post-comment-btn { background: none; border: none; color: #0095f6; font-weight: 600; cursor: pointer; opacity: 0.7; }
+.post-comment-btn:enabled { opacity: 1; }
+.modal-post-date { padding: 12px 16px; font-size: 10px; color: #8e8e8e; border-top: 1px solid #efefef; }
+.dark-mode .modal-post-date { border-top-color: #262626; }
+.close-modal-btn { position: absolute; top: 20px; left: 20px; background: none; border: none; cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; color: white; }
+.close-modal-btn svg { width: 24px; height: 24px; stroke: white; }
+
+/* Post Menu Dropdown */
+.post-menu-dropdown { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); min-width: 280px; z-index: 2100; overflow: hidden; animation: fadeInScale 0.2s ease; }
+.dark-mode .post-menu-dropdown { background: #262626; }
+@keyframes fadeInScale { from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+.menu-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 20px; background: none; border: none; text-align: right; cursor: pointer; transition: background 0.2s ease; color: #262626; font-size: 14px; }
+.dark-mode .menu-item { color: #ffffff; }
+.menu-item:hover { background: #efefef; }
+.dark-mode .menu-item:hover { background: #363636; }
+.menu-item.delete { color: #ed4956; }
+.menu-item svg { width: 20px; height: 20px; stroke: currentColor; }
+
+/* Edit Modal */
+.edit-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 3000; }
+.edit-modal { background: white; border-radius: 16px; width: 90%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
+.dark-mode .edit-modal { background: #1a1a1a; color: #fff; }
+.edit-modal-header { display: flex; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
+.dark-mode .edit-modal-header { border-color: #333; }
+.edit-modal-header h3 { font-size: 18px; font-weight: 700; }
+.edit-modal-close { width: 32px; height: 32px; background: #f1f5f9; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; }
+.dark-mode .edit-modal-close { background: #333; color: #fff; }
+.edit-modal-body { padding: 20px; }
+.edit-form-group { margin-bottom: 16px; }
+.edit-form-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.edit-form-input, .edit-form-textarea { width: 100%; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; }
+.dark-mode .edit-form-input, .dark-mode .edit-form-textarea { background: #333; border-color: #444; color: #fff; }
+.edit-modal-footer { display: flex; gap: 12px; padding: 16px 20px; border-top: 1px solid #e2e8f0; }
+.dark-mode .edit-modal-footer { border-color: #333; }
+
+/* Confirm Modal */
+.confirm-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 3000; }
+.confirm-modal { background: white; border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; text-align: center; }
+.dark-mode .confirm-modal { background: #1a1a1a; color: #fff; }
+.confirm-icon { width: 56px; height: 56px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+.dark-mode .confirm-icon { background: #3b1a1a; }
+.confirm-icon svg { width: 28px; height: 28px; stroke: #ef4444; }
+.confirm-modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.confirm-modal p { font-size: 14px; color: #64748b; margin-bottom: 20px; }
+.dark-mode .confirm-modal p { color: #aaa; }
+.confirm-modal-actions { display: flex; gap: 12px; }
+.btn-cancel { flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.dark-mode .btn-cancel { background: #333; color: #fff; }
+.btn-save { flex: 1; padding: 12px; background: linear-gradient(135deg, #08717f, #065a69); border: none; border-radius: 10px; color: #fff; cursor: pointer; font-size: 14px; font-weight: 600; }
+.btn-save:disabled { opacity: 0.6; }
+.btn-delete-confirm { flex: 1; padding: 12px; background: #ef4444; border: none; border-radius: 10px; color: #fff; cursor: pointer; font-size: 14px; font-weight: 600; }
+.btn-delete-confirm:disabled { opacity: 0.6; }
+
+/* Transitions */
+.modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.2s ease; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* Links */
+.profile-username-link, .bio-name-link, .modal-avatar-link, .author-link, .avatar-link, .reel-author-link { text-decoration: none; color: inherit; }
+.profile-username-link:hover .profile-username,
+.bio-name-link:hover .bio-name,
+.author-link:hover .author-name,
+.reel-author-link:hover .reel-author-name { text-decoration: underline; opacity: 0.8; }
+.modal-avatar-link:hover .modal-avatar,
+.avatar-link:hover .avatar-circle { opacity: 0.8; transform: scale(1.02); transition: all 0.2s ease; }
+
+/* Responsive */
+@media (max-width: 735px) {
+  .cover-photo-container { height: 200px; }
+  .profile-container { padding: 0 16px; }
+  .profile-header { flex-direction: column; align-items: center; text-align: center; gap: 16px; margin-top: -30px; margin-bottom: 24px; }
+  .profile-stats-instagram { justify-content: center; gap: 30px; }
+  .profile-actions-row { justify-content: center; }
+  .stat-item { text-align: center; }
+  .tab-navigation { gap: 30px; }
+  .instagram-grid { gap: 2px; }
+  .instagram-reels-grid { grid-template-columns: repeat(2, 1fr); }
+  .post-modal-content { flex-direction: column; max-height: 90vh; }
+  .post-modal-image { min-height: 300px; }
+  .post-modal-info { max-height: 300px; }
+}
+@media (max-width: 480px) {
+  .avatar-container { width: 100px; height: 100px; }
+  .profile-username { font-size: 1.5rem; }
+  .tab-link span { display: none; }
+  .tab-navigation { gap: 20px; }
+  .change-cover-btn span { display: none; }
+  .change-cover-btn { padding: 8px; }
+  .facebook-action-btn span { display: none; }
+  .facebook-action-btn { padding: 8px; }
+  .instagram-grid { gap: 2px; }
+  .instagram-reels-grid { grid-template-columns: 1fr; }
+  .reel-side-action svg { width: 24px; height: 24px; }
+  .reel-author-avatar { width: 32px; height: 32px; }
+  .reel-modal-container { max-width: 100%; }
+}
+/* Ajouter ces styles dans la section <style scoped> */
+
+/* Edit Categories Grid */
+.edit-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.edit-category-card {
+  cursor: pointer;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.dark-mode .edit-category-card {
+  border-color: #444;
+}
+
+.edit-category-card:hover {
+  border-color: #08717f;
+  transform: translateY(-2px);
+}
+
+.edit-category-card.selected {
+  border-color: #08717f;
+}
+
+.edit-category-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 70px;
+  overflow: hidden;
+}
+
+.edit-category-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.edit-category-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 113, 127, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+}
+
+.edit-category-info {
+  padding: 6px;
+  text-align: center;
+}
+
+.edit-category-name {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.dark-mode .edit-category-name {
+  color: #f1f5f9;
+}
+
+/* Edit Subcategories */
+.edit-subcategories-section {
+  margin: 8px 0 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  animation: slideDown 0.2s ease;
+}
+
+.dark-mode .edit-subcategories-section {
+  background: #1a1a1a;
+  border-color: #444;
 }
 
 @keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -30px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes scaleIn {
-  from { transform: scale(0); }
-  70% { transform: scale(1.2); }
-  to { transform: scale(1); }
+.edit-subcategories-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #08717f;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .profile-info {
-    flex-direction: column;
-    text-align: center;
-  }
+.edit-back-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
 
-  .profile-stats {
-    justify-content: center;
-  }
+.edit-back-btn:hover {
+  color: #d40025;
+}
 
-  .tabs-nav {
-    flex-wrap: wrap;
-  }
+.edit-subcategories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 6px;
+}
 
-  .tab-btn {
-    flex: 1;
-    padding: 10px;
-  }
+.edit-subcategory-card {
+  cursor: pointer;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.dark-mode .edit-subcategory-card {
+  border-color: #444;
+}
+
+.edit-subcategory-card:hover {
+  border-color: #10b981;
+}
+
+.edit-subcategory-card.selected {
+  border-color: #10b981;
+}
+
+.edit-subcategory-image-wrapper {
+  width: 100%;
+  height: 55px;
+  overflow: hidden;
+}
+
+.edit-subcategory-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.edit-subcategory-info {
+  padding: 4px;
+  text-align: center;
+}
+
+.edit-subcategory-name {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.dark-mode .edit-subcategory-name {
+  color: #f1f5f9;
+}
+
+/* Selected Category Display */
+.edit-selected-category {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f0fdf4;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.dark-mode .edit-selected-category {
+  background: #1a2e1a;
+}
+
+.edit-selected-label {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.edit-selected-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #08717f;
+}
+
+.edit-clear-category {
+  width: 22px;
+  height: 22px;
+  background: #fee2e2;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #d40025;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  margin-right: auto;
+}
+
+.edit-clear-category:hover {
+  background: #d40025;
+  color: white;
+}
+
+/* Form Row */
+.edit-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 </style>

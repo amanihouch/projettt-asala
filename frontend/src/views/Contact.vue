@@ -1,69 +1,34 @@
+<!-- frontend/src/views/Contact.vue - Version COMPLÈTE ET CORRIGÉE -->
 <template>
-  <div class="contact-page">
-    <!-- ===== HERO SECTION - ÉLÉGANT & RAFFINÉ ===== -->
-    <section class="contact-hero">
-      <div class="hero-pattern"></div>
-      <div class="container">
-        <div class="hero-content">
-          <div class="hero-badge" data-aos="fade-down">
-            <span class="badge-dot" style="background: #08717f"></span>
-            <span class="badge-dot" style="background: #d40025"></span>
-            <span class="badge-text">تواصل معنا</span>
-          </div>
-
-          <h1 class="hero-title" data-aos="fade-up" data-aos-delay="100">
-            <span class="title-line">نحن هنا</span>
-            <span class="title-line accent">في خدمتك</span>
-          </h1>
-
-          <p class="hero-description" data-aos="fade-up" data-aos-delay="200">
-            فريقنا متاح للإجابة على استفساراتك ومساعدتك في أي وقت
-          </p>
-        </div>
-      </div>
-
-      <!-- Simple Wave Divider -->
-      <div class="hero-wave">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 100" preserveAspectRatio="none">
-          <path fill="#ffffff" d="M0,0 C480,50 960,50 1440,0 L1440,100 L0,100 Z"></path>
-        </svg>
-      </div>
-    </section>
+  <div class="contact-page" :class="{ 'dark-theme': isDarkMode }">
 
     <!-- ===== MAIN CONTENT ===== -->
     <main class="contact-main">
       <div class="container">
         <!-- Section Header -->
         <div class="section-header" data-aos="fade-up">
-          <span class="section-tag" style="border-left-color: #d40025">اتصل بنا</span>
-          <h2 class="section-title">معلومات <span style="color: #08717f">الاتصال</span></h2>
-          <p class="section-subtitle">تواصل معنا عبر القنوات التالية وسنكون سعداء بخدمتك</p>
+          <span class="section-tag" style="border-left-color: #d40025">{{ currentLanguage === 'ar' ? 'اتصل بنا' : 'Contactez-nous' }}</span>
+          <h2 class="section-title">{{ currentLanguage === 'ar' ? 'معلومات' : 'Informations' }} <span style="color: #08717f">{{ currentLanguage === 'ar' ? 'الاتصال' : 'de contact' }}</span></h2>
+          <p class="section-subtitle">{{ currentLanguage === 'ar' ? 'تواصل معنا عبر القنوات التالية وسنكون سعداء بخدمتك' : 'Contactez-nous via les canaux suivants, nous serons ravis de vous servir' }}</p>
         </div>
 
-        <!-- ===== INFO CARDS - DESIGN ÉLÉGANT ===== -->
+        <!-- ===== INFO CARDS ===== -->
         <div class="info-grid">
           <!-- Address Card -->
           <div class="info-card" data-aos="fade-up" data-aos-delay="100">
             <div class="card-icon-wrapper" style="background: rgba(8, 113, 127, 0.1)">
               <div class="card-icon" style="color: #08717f">
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                >
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                   <circle cx="12" cy="10" r="3" />
                 </svg>
               </div>
             </div>
-            <h3 class="card-title">العنوان</h3>
-            <p class="card-text">شارع طريق قابس، مدنين الشمالية</p>
+            <h3 class="card-title">{{ currentLanguage === 'ar' ? 'العنوان' : 'Adresse' }}</h3>
+            <p class="card-text">{{ currentLanguage === 'ar' ? 'شارع طريق قابس، مدنين الشمالية' : 'Rue Gabès, Mednine Nord' }}</p>
             <p class="card-note">INFINITY Marketing & Production</p>
             <button class="card-action" @click="openInMaps" style="color: #08717f">
-              <span>عرض على الخريطة</span>
+              <span>{{ currentLanguage === 'ar' ? 'عرض على الخريطة' : 'Voir sur la carte' }}</span>
               <span class="action-icon">←</span>
             </button>
           </div>
@@ -72,26 +37,17 @@
           <div class="info-card" data-aos="fade-up" data-aos-delay="200">
             <div class="card-icon-wrapper" style="background: rgba(212, 0, 37, 0.1)">
               <div class="card-icon" style="color: #d40025">
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                >
-                  <path
-                    d="M22 16.92v3a1.999 1.999 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.574 2.81.7A2 2 0 0 1 22 16.92z"
-                  />
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M22 16.92v3a1.999 1.999 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.574 2.81.7A2 2 0 0 1 22 16.92z"/>
                 </svg>
               </div>
             </div>
-            <h3 class="card-title">الهاتف</h3>
-            <a href="tel:+21692105505" class="card-link">21692105505+</a>
-            <a href="tel:+966582522701" class="card-link">966582522701+</a>
+            <h3 class="card-title">{{ currentLanguage === 'ar' ? 'الهاتف' : 'Téléphone' }}</h3>
+            <a href="tel:+21692105505" class="card-link">+216 92 105 505</a>
+            <a href="tel:+966582522701" class="card-link">+966 58 252 2701</a>
             <div class="card-availability" style="color: #08717f">
               <span class="availability-dot"></span>
-              <span>متاح الآن</span>
+              <span>{{ currentLanguage === 'ar' ? 'متاح الآن' : 'Disponible maintenant' }}</span>
             </div>
           </div>
 
@@ -99,143 +55,60 @@
           <div class="info-card" data-aos="fade-up" data-aos-delay="300">
             <div class="card-icon-wrapper" style="background: rgba(8, 113, 127, 0.1)">
               <div class="card-icon" style="color: #08717f">
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                >
-                  <path
-                    d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-                  />
-                  <polyline points="22,6 12,13 2,6" />
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
                 </svg>
               </div>
             </div>
-            <h3 class="card-title">البريد الإلكتروني</h3>
-            <a href="mailto:Infinity.tunisia@gmail.com" class="card-link"
-              >Infinity.tunisia@gmail.com</a
-            >
-            <p class="card-note">نرد خلال 24 ساعة</p>
+            <h3 class="card-title">{{ currentLanguage === 'ar' ? 'البريد الإلكتروني' : 'Email' }}</h3>
+            <a href="mailto:Infinity.tunisia@gmail.com" class="card-link">Infinity.tunisia@gmail.com</a>
+            <p class="card-note">{{ currentLanguage === 'ar' ? 'نرد خلال 24 ساعة' : 'Réponse sous 24h' }}</p>
           </div>
 
           <!-- Hours Card -->
           <div class="info-card" data-aos="fade-up" data-aos-delay="400">
             <div class="card-icon-wrapper" style="background: rgba(212, 0, 37, 0.1)">
               <div class="card-icon" style="color: #d40025">
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
                 </svg>
               </div>
             </div>
-            <h3 class="card-title">ساعات العمل</h3>
+            <h3 class="card-title">{{ currentLanguage === 'ar' ? 'ساعات العمل' : 'Horaires' }}</h3>
             <div class="hours-list">
               <div class="hour-item">
-                <span>الأحد - الخميس</span>
-                <span class="hour-badge" style="background: rgba(8, 113, 127, 0.1); color: #08717f"
-                  >08:00 - 00:00</span
-                >
+                <span>{{ currentLanguage === 'ar' ? 'الأحد - الخميس' : 'Dimanche - Jeudi' }}</span>
+                <span class="hour-badge" style="background: rgba(8, 113, 127, 0.1); color: #08717f">08:00 - 00:00</span>
               </div>
               <div class="hour-item">
-                <span>الجمعة</span>
-                <span class="hour-badge" style="background: rgba(8, 113, 127, 0.1); color: #08717f"
-                  >08:00 - 12:00</span
-                >
+                <span>{{ currentLanguage === 'ar' ? 'الجمعة' : 'Vendredi' }}</span>
+                <span class="hour-badge" style="background: rgba(8, 113, 127, 0.1); color: #08717f">08:00 - 12:00</span>
               </div>
               <div class="hour-item">
-                <span>السبت</span>
-                <span
-                  class="hour-badge closed"
-                  style="background: rgba(212, 0, 37, 0.1); color: #d40025"
-                  >مغلق</span
-                >
+                <span>{{ currentLanguage === 'ar' ? 'السبت' : 'Samedi' }}</span>
+                <span class="hour-badge closed" style="background: rgba(212, 0, 37, 0.1); color: #d40025">{{ currentLanguage === 'ar' ? 'مغلق' : 'Fermé' }}</span>
               </div>
             </div>
             <div class="current-time" style="color: #08717f">
-              <span>التوقيت المحلي: {{ currentTime }}</span>
+              <span>{{ currentLanguage === 'ar' ? 'التوقيت المحلي:' : 'Heure locale:' }} {{ currentTime }}</span>
             </div>
           </div>
         </div>
-
-        <!-- ===== SOCIAL MEDIA - ÉLÉGANT ===== -->
-        <div class="social-section" data-aos="fade-up">
-          <div class="social-header">
-            <span class="social-line" style="background: #08717f"></span>
-            <h3>تابعنا على</h3>
-            <span class="social-line" style="background: #d40025"></span>
-          </div>
-
-          <div class="social-grid">
-            <a href="#" class="social-link">
-              <div class="social-icon" style="background: #1877f2">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                </svg>
-              </div>
-              <span>فيسبوك</span>
-            </a>
-            <a href="#" class="social-link">
-              <div
-                class="social-icon"
-                style="
-                  background: radial-gradient(
-                    circle at 30% 30%,
-                    #fdf497,
-                    #fdf497,
-                    #fd5949,
-                    #d6249f,
-                    #285aeb
-                  );
-                "
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                  <circle cx="12" cy="12" r="4" />
-                  <circle cx="17.5" cy="6.5" r="1.5" fill="white" />
-                </svg>
-              </div>
-              <span>انستغرام</span>
-            </a>
-            <a href="#" class="social-link">
-              <div class="social-icon" style="background: #1da1f2">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                  <path
-                    d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"
-                  />
-                </svg>
-              </div>
-              <span>تويتر</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- ===== FORM SECTION - DESIGN ÉLÉGANT ===== -->
+        <!-- ===== FORM SECTION ===== -->
         <div class="form-section" ref="formSection" data-aos="fade-up">
           <div class="form-container">
             <div class="form-header">
-              <div class="form-tag" style="border-left-color: #08717f">أرسل لنا</div>
-              <h2 class="form-title">رسالة</h2>
-              <p class="form-subtitle">سنتواصل معك في أقرب وقت ممكن</p>
+              <div class="form-tag" style="border-left-color: #08717f">{{ currentLanguage === 'ar' ? 'أرسل لنا' : 'Envoyez-nous' }}</div>
+              <h2 class="form-title">{{ currentLanguage === 'ar' ? 'رسالة' : 'Un message' }}</h2>
+              <p class="form-subtitle">{{ currentLanguage === 'ar' ? 'سنتواصل معك في أقرب وقت ممكن' : 'Nous vous répondrons dans les plus brefs délais' }}</p>
             </div>
 
             <form @submit.prevent="submitForm" class="contact-form">
-              <!-- 2 Columns Grid -->
               <div class="form-row">
-                <div
-                  class="form-group"
-                  :class="{ focused: focusedField === 'name', 'has-error': errors.name }"
-                >
-                  <label for="name">الاسم الكامل</label>
+                <div class="form-group" :class="{ focused: focusedField === 'name', 'has-error': errors.name }">
+                  <label for="name">{{ currentLanguage === 'ar' ? 'الاسم الكامل' : 'Nom complet' }}</label>
                   <div class="input-wrapper">
                     <span class="input-icon">👤</span>
                     <input
@@ -244,18 +117,15 @@
                       v-model="form.name"
                       @focus="focusedField = 'name'"
                       @blur="focusedField = null"
-                      placeholder="أدخل اسمك الكامل"
+                      :placeholder="currentLanguage === 'ar' ? 'أدخل اسمك الكامل' : 'Entrez votre nom complet'"
                     />
                     <div class="input-border" style="background: #08717f"></div>
                   </div>
                   <span v-if="errors.name" class="error-message">{{ errors.name }}</span>
                 </div>
 
-                <div
-                  class="form-group"
-                  :class="{ focused: focusedField === 'email', 'has-error': errors.email }"
-                >
-                  <label for="email">البريد الإلكتروني</label>
+                <div class="form-group" :class="{ focused: focusedField === 'email', 'has-error': errors.email }">
+                  <label for="email">{{ currentLanguage === 'ar' ? 'البريد الإلكتروني' : 'Email' }}</label>
                   <div class="input-wrapper">
                     <span class="input-icon">✉️</span>
                     <input
@@ -264,7 +134,7 @@
                       v-model="form.email"
                       @focus="focusedField = 'email'"
                       @blur="focusedField = null"
-                      placeholder="أدخل بريدك الإلكتروني"
+                      :placeholder="currentLanguage === 'ar' ? 'أدخل بريدك الإلكتروني' : 'Entrez votre email'"
                     />
                     <div class="input-border" style="background: #d40025"></div>
                   </div>
@@ -274,7 +144,7 @@
 
               <div class="form-row">
                 <div class="form-group" :class="{ focused: focusedField === 'phone' }">
-                  <label for="phone">رقم الهاتف (اختياري)</label>
+                  <label for="phone">{{ currentLanguage === 'ar' ? 'رقم الهاتف (اختياري)' : 'Téléphone (optionnel)' }}</label>
                   <div class="input-wrapper">
                     <span class="input-icon">📞</span>
                     <input
@@ -283,18 +153,15 @@
                       v-model="form.phone"
                       @focus="focusedField = 'phone'"
                       @blur="focusedField = null"
-                      placeholder="أدخل رقم هاتفك"
+                      :placeholder="currentLanguage === 'ar' ? 'أدخل رقم هاتفك' : 'Entrez votre téléphone'"
                     />
                     <div class="input-border" style="background: #08717f"></div>
                   </div>
                   <span v-if="errors.phone" class="error-message">{{ errors.phone }}</span>
                 </div>
 
-                <div
-                  class="form-group"
-                  :class="{ focused: focusedField === 'subject', 'has-error': errors.subject }"
-                >
-                  <label for="subject">الموضوع</label>
+                <div class="form-group" :class="{ focused: focusedField === 'subject', 'has-error': errors.subject }">
+                  <label for="subject">{{ currentLanguage === 'ar' ? 'الموضوع' : 'Sujet' }}</label>
                   <div class="input-wrapper">
                     <span class="input-icon">📌</span>
                     <select
@@ -303,12 +170,12 @@
                       @focus="focusedField = 'subject'"
                       @blur="focusedField = null"
                     >
-                      <option value="" disabled selected>اختر الموضوع</option>
-                      <option value="general">استفسار عام</option>
-                      <option value="support">دعم فني</option>
-                      <option value="partnership">شراكة</option>
-                      <option value="complaint">شكوى</option>
-                      <option value="other">أخرى</option>
+                      <option value="" disabled selected>{{ currentLanguage === 'ar' ? 'اختر الموضوع' : 'Choisissez un sujet' }}</option>
+                      <option value="general">{{ currentLanguage === 'ar' ? 'استفسار عام' : 'Demande générale' }}</option>
+                      <option value="support">{{ currentLanguage === 'ar' ? 'دعم فني' : 'Support technique' }}</option>
+                      <option value="partnership">{{ currentLanguage === 'ar' ? 'شراكة' : 'Partenariat' }}</option>
+                      <option value="complaint">{{ currentLanguage === 'ar' ? 'شكوى' : 'Réclamation' }}</option>
+                      <option value="other">{{ currentLanguage === 'ar' ? 'أخرى' : 'Autre' }}</option>
                     </select>
                     <span class="select-arrow">▼</span>
                     <div class="input-border" style="background: #d40025"></div>
@@ -317,12 +184,8 @@
                 </div>
               </div>
 
-              <!-- Message Field - Full Width -->
-              <div
-                class="form-group full-width"
-                :class="{ focused: focusedField === 'message', 'has-error': errors.message }"
-              >
-                <label for="message">الرسالة</label>
+              <div class="form-group full-width" :class="{ focused: focusedField === 'message', 'has-error': errors.message }">
+                <label for="message">{{ currentLanguage === 'ar' ? 'الرسالة' : 'Message' }}</label>
                 <div class="input-wrapper">
                   <span class="input-icon">💬</span>
                   <textarea
@@ -331,12 +194,9 @@
                     @focus="focusedField = 'message'"
                     @blur="focusedField = null"
                     rows="4"
-                    placeholder="اكتب رسالتك هنا..."
+                    :placeholder="currentLanguage === 'ar' ? 'اكتب رسالتك هنا...' : 'Écrivez votre message ici...'"
                   ></textarea>
-                  <div
-                    class="input-border"
-                    style="background: linear-gradient(90deg, #08717f, #d40025)"
-                  ></div>
+                  <div class="input-border" style="background: linear-gradient(90deg, #08717f, #d40025)"></div>
                 </div>
                 <div class="textarea-footer">
                   <span v-if="errors.message" class="error-message">{{ errors.message }}</span>
@@ -344,60 +204,41 @@
                 </div>
               </div>
 
-              <!-- Submit Button -->
               <div class="form-actions">
-                <button
-                  type="submit"
-                  class="submit-btn"
-                  :disabled="isSubmitting"
-                  :style="{ background: 'linear-gradient(135deg, #08717f, #065a69)' }"
-                >
+                <button type="submit" class="submit-btn" :disabled="isSubmitting" style="background: linear-gradient(135deg, #08717f, #065a69)">
                   <span v-if="isSubmitting" class="spinner"></span>
-                  <span v-else>إرسال الرسالة</span>
+                  <span v-else>{{ currentLanguage === 'ar' ? 'إرسال الرسالة' : 'Envoyer le message' }}</span>
                   <span class="btn-icon" v-if="!isSubmitting">←</span>
                 </button>
-                <p class="form-note">نحن نرد خلال 24 ساعة</p>
+                <p class="form-note">{{ currentLanguage === 'ar' ? 'نحن نرد خلال 24 ساعة' : 'Nous répondons sous 24h' }}</p>
               </div>
             </form>
           </div>
         </div>
 
-        <!-- ===== MAP SECTION - INFINITY MARKETING & PRODUCTION ===== -->
+        <!-- ===== MAP SECTION ===== -->
         <div class="map-section" data-aos="fade-up">
           <div class="map-container">
             <div class="map-header">
               <div class="map-badge-wrapper">
-                <span class="map-badge" style="border-left-color: #08717f">📍 موقعنا</span>
-                <span class="map-live" style="background: #08717f">مباشر</span>
+                <span class="map-badge" style="border-left-color: #08717f">{{ currentLanguage === 'ar' ? '📍 موقعنا' : '📍 Notre emplacement' }}</span>
+                <span class="map-live" style="background: #08717f">{{ currentLanguage === 'ar' ? 'مباشر' : 'Live' }}</span>
               </div>
               <h3 class="map-title">INFINITY Marketing & Production</h3>
-              <p class="map-address">شارع طريق قابس، مدنين الشمالية</p>
+              <p class="map-address">{{ currentLanguage === 'ar' ? 'شارع طريق قابس، مدنين الشمالية' : 'Rue Gabès, Mednine Nord, Tunisie' }}</p>
 
               <div class="map-actions">
-                <a
-                  href="https://maps.app.goo.gl/hME4kinoAf69PjHP8"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="map-btn"
-                  style="background: #08717f"
-                >
+                <a href="https://maps.app.goo.gl/hME4kinoAf69PjHP8" target="_blank" rel="noopener noreferrer" class="map-btn" style="background: #08717f">
                   <span class="btn-icon">🗺️</span>
-                  <span>فتح في خرائط Google</span>
+                  <span>{{ currentLanguage === 'ar' ? 'فتح في خرائط Google' : 'Ouvrir dans Google Maps' }}</span>
                 </a>
-                <a
-                  :href="`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent('INFINITY Marketing & Production تونس')}`"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="map-btn-outline"
-                  style="color: #08717f; border-color: #08717f"
-                >
+                <a :href="`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent('INFINITY Marketing & Production تونس')}`" target="_blank" rel="noopener noreferrer" class="map-btn-outline" style="color: #08717f; border-color: #08717f">
                   <span class="btn-icon">🧭</span>
-                  <span>الحصول على الاتجاهات</span>
+                  <span>{{ currentLanguage === 'ar' ? 'الحصول على الاتجاهات' : 'Obtenir l\'itinéraire' }}</span>
                 </a>
               </div>
             </div>
 
-            <!-- Google Maps Iframe - INFINITY Marketing & Production -->
             <div class="map-wrapper">
               <iframe
                 class="google-map"
@@ -409,28 +250,26 @@
                 title="Google Maps - INFINITY Marketing & Production"
               ></iframe>
 
-              <!-- Map Overlay Info -->
               <div class="map-overlay">
                 <div class="overlay-content">
                   <span class="overlay-icon">🏢</span>
                   <div class="overlay-text">
                     <strong>INFINITY Marketing & Production</strong>
-                    <span>مدنين الشمالية</span>
+                    <span>{{ currentLanguage === 'ar' ? 'مدنين الشمالية' : 'Mednine Nord' }}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Business Hours & Info -->
             <div class="map-footer">
               <div class="hours-status">
                 <div class="status-badge" style="background: #10b981">
                   <span class="status-dot"></span>
-                  <span>مفتوح الآن</span>
+                  <span>{{ currentLanguage === 'ar' ? 'مفتوح الآن' : 'Ouvert maintenant' }}</span>
                 </div>
                 <div class="hours-today">
                   <span class="hours-icon">⏰</span>
-                  <span>اليوم: 00:00–06:00 ● 08:00–00:00</span>
+                  <span>{{ currentLanguage === 'ar' ? 'اليوم: 00:00–06:00 ● 08:00–00:00' : 'Aujourd\'hui: 00:00–06:00 ● 08:00–00:00' }}</span>
                 </div>
               </div>
 
@@ -438,20 +277,20 @@
 
               <div class="nearby-title">
                 <span class="nearby-dot" style="background: #08717f"></span>
-                <span>معلومات إضافية:</span>
+                <span>{{ currentLanguage === 'ar' ? 'معلومات إضافية:' : 'Informations supplémentaires:' }}</span>
               </div>
               <div class="map-info-grid">
                 <div class="info-item">
                   <span class="info-icon">📅</span>
-                  <span>أيام العمل: الأحد - الخميس</span>
+                  <span>{{ currentLanguage === 'ar' ? 'أيام العمل: الأحد - الخميس' : 'Jours ouvrés: Dimanche - Jeudi' }}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-icon">⏱️</span>
-                  <span>ساعات العمل: 08:00 - 00:00</span>
+                  <span>{{ currentLanguage === 'ar' ? 'ساعات العمل: 08:00 - 00:00' : 'Horaires: 08:00 - 00:00' }}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-icon">📍</span>
-                  <span>المنطقة: طريق قابس</span>
+                  <span>{{ currentLanguage === 'ar' ? 'المنطقة: طريق قابس' : 'Zone: Route Gabès' }}</span>
                 </div>
                 <div class="info-item">
                   <span class="info-icon">🏢</span>
@@ -464,14 +303,9 @@
       </div>
     </main>
 
-    <!-- ===== TOAST NOTIFICATION - ÉLÉGANT ===== -->
+    <!-- ===== TOAST NOTIFICATION ===== -->
     <transition name="toast">
-      <div
-        v-if="toast.show"
-        class="toast-notification"
-        :class="toast.type"
-        :style="{ borderRightColor: toast.type === 'success' ? '#08717f' : '#d40025' }"
-      >
+      <div v-if="toast.show" class="toast-notification" :class="toast.type" :style="{ borderRightColor: toast.type === 'success' ? '#08717f' : '#d40025' }">
         <div class="toast-content">
           <span class="toast-icon">{{ toast.icon }}</span>
           <div class="toast-message">
@@ -479,17 +313,27 @@
             <p>{{ toast.message }}</p>
           </div>
         </div>
-        <button @click="toast.show = false" class="toast-close" aria-label="إغلاق">✕</button>
+        <button @click="toast.show = false" class="toast-close" aria-label="Fermer">✕</button>
       </div>
     </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useThemeStore } from '../stores/theme'
+
+// ===== I18N =====
+const { locale } = useI18n()
+const currentLanguage = computed(() => locale.value)
+
+// ===== DARK MODE =====
+const themeStore = useThemeStore()
+const isDarkMode = computed(() => themeStore.isDarkMode)
 
 // ===== CONSTANTS =====
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'
 
 // ===== CURRENT TIME =====
 const currentTime = ref('')
@@ -521,11 +365,6 @@ const openInMaps = () => {
   window.open('https://maps.app.goo.gl/hME4kinoAf69PjHP8', '_blank', 'noopener,noreferrer')
 }
 
-// Custom encode function (already exists in browser)
-const encodeURIComponent = (str) => {
-  return window.encodeURIComponent(str)
-}
-
 // ===== UPDATE CURRENT TIME =====
 const updateTime = () => {
   const now = new Date()
@@ -543,36 +382,91 @@ const validateForm = () => {
   const newErrors = {}
 
   if (!form.name.trim()) {
-    newErrors.name = 'الاسم مطلوب'
+    newErrors.name = currentLanguage.value === 'ar' ? 'الاسم مطلوب' : 'Le nom est requis'
   } else if (form.name.length < 3) {
-    newErrors.name = 'الاسم يجب أن يكون 3 أحرف على الأقل'
+    newErrors.name = currentLanguage.value === 'ar' ? 'الاسم يجب أن يكون 3 أحرف على الأقل' : 'Le nom doit contenir au moins 3 caractères'
   } else if (form.name.length > 50) {
-    newErrors.name = 'الاسم طويل جداً (الحد الأقصى 50 حرف)'
+    newErrors.name = currentLanguage.value === 'ar' ? 'الاسم طويل جداً (الحد الأقصى 50 حرف)' : 'Nom trop long (max 50 caractères)'
   }
 
   if (!form.email.trim()) {
-    newErrors.email = 'البريد الإلكتروني مطلوب'
+    newErrors.email = currentLanguage.value === 'ar' ? 'البريد الإلكتروني مطلوب' : 'L\'email est requis'
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    newErrors.email = 'البريد الإلكتروني غير صحيح'
+    newErrors.email = currentLanguage.value === 'ar' ? 'البريد الإلكتروني غير صحيح' : 'Email invalide'
   }
 
   if (form.phone && !/^[\d\+\-\(\)\s]{8,}$/.test(form.phone.trim())) {
-    newErrors.phone = 'رقم الهاتف غير صحيح'
+    newErrors.phone = currentLanguage.value === 'ar' ? 'رقم الهاتف غير صحيح' : 'Numéro de téléphone invalide'
   }
 
   if (!form.subject) {
-    newErrors.subject = 'الرجاء اختيار الموضوع'
+    newErrors.subject = currentLanguage.value === 'ar' ? 'الرجاء اختيار الموضوع' : 'Veuillez choisir un sujet'
   }
 
   if (!form.message.trim()) {
-    newErrors.message = 'الرسالة مطلوبة'
+    newErrors.message = currentLanguage.value === 'ar' ? 'الرسالة مطلوبة' : 'Le message est requis'
   } else if (form.message.length < 10) {
-    newErrors.message = 'الرسالة قصيرة جداً (10 أحرف على الأقل)'
+    newErrors.message = currentLanguage.value === 'ar' ? 'الرسالة قصيرة جداً (10 أحرف على الأقل)' : 'Message trop court (min 10 caractères)'
   } else if (form.message.length > 500) {
-    newErrors.message = 'الرسالة طويلة جداً (الحد الأقصى 500 حرف)'
+    newErrors.message = currentLanguage.value === 'ar' ? 'الرسالة طويلة جداً (الحد الأقصى 500 حرف)' : 'Message trop long (max 500 caractères)'
   }
 
   return newErrors
+}
+
+// ===== SHOW NOTIFICATION =====
+const showNotification = (title, message, type = 'success') => {
+  const icons = {
+    success: '✅',
+    error: '❌',
+    info: 'ℹ️',
+    warning: '⚠️',
+  }
+
+  toast.value = {
+    show: true,
+    type,
+    title,
+    message,
+    icon: icons[type],
+  }
+
+  setTimeout(() => {
+    toast.value.show = false
+  }, 5000)
+}
+
+// ===== SAUVEGARDER LE MESSAGE DANS LOCALSTORAGE =====
+const saveMessageToLocalStorage = (messageData) => {
+  try {
+    let existingMessages = []
+    const saved = localStorage.getItem('contact_messages')
+    if (saved) {
+      existingMessages = JSON.parse(saved)
+    }
+
+    const newMessage = {
+      id: Date.now(),
+      ...messageData,
+      isRead: false,
+      createdAt: new Date().toISOString()
+    }
+
+    existingMessages.unshift(newMessage)
+    localStorage.setItem('contact_messages', JSON.stringify(existingMessages))
+
+    // Déclencher l'événement pour AdminLayout
+    const unreadCount = existingMessages.filter(m => !m.isRead).length
+    window.dispatchEvent(new CustomEvent('contact-messages-updated', {
+      detail: { unreadCount: unreadCount }
+    }))
+
+    console.log('📧 Message sauvegardé dans localStorage, nouveau total:', existingMessages.length)
+    return true
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde message:', error)
+    return false
+  }
 }
 
 // ===== SUBMIT FORM =====
@@ -581,9 +475,12 @@ const submitForm = async () => {
 
   if (Object.keys(newErrors).length > 0) {
     errors.value = newErrors
-    showNotification('خطأ في البيانات', 'الرجاء تصحيح الأخطاء في النموذج', 'error')
+    showNotification(
+      currentLanguage.value === 'ar' ? 'خطأ في البيانات' : 'Erreur de validation',
+      currentLanguage.value === 'ar' ? 'الرجاء تصحيح الأخطاء في النموذج' : 'Veuillez corriger les erreurs',
+      'error'
+    )
 
-    // Scroll to first error
     const firstErrorField = document.querySelector('.has-error')
     if (firstErrorField) {
       firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -601,70 +498,59 @@ const submitForm = async () => {
       phone: form.phone.trim() || null,
       subject: form.subject,
       message: form.message.trim(),
-      timestamp: new Date().toISOString(),
-      source: 'contact_page',
+      source: 'contact_page'
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/contact`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(formData),
-    })
+    // ✅ Sauvegarder dans localStorage IMMÉDIATEMENT
+    saveMessageToLocalStorage(formData)
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || 'فشل في إرسال الرسالة')
+    // Essayer d'envoyer à l'API
+    try {
+      const response = await fetch(`${API_BASE_URL}/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (response.ok) {
+        showNotification(
+          currentLanguage.value === 'ar' ? 'تم إرسال الرسالة بنجاح' : 'Message envoyé avec succès',
+          currentLanguage.value === 'ar' ? 'سنتواصل معك في أقرب وقت ممكن' : 'Nous vous répondrons dès que possible',
+          'success'
+        )
+      } else {
+        console.log('API non disponible, message sauvegardé localement')
+      }
+    } catch (apiError) {
+      console.log('API non disponible, message sauvegardé localement')
+      showNotification(
+        currentLanguage.value === 'ar' ? 'تم حفظ رسالتك' : 'Message sauvegardé',
+        currentLanguage.value === 'ar' ? 'سيتم إرسال رسالتك عند استعادة الاتصال' : 'Votre message sera envoyé quand la connexion sera rétablie',
+        'info'
+      )
     }
 
-    const result = await response.json()
-
-    // Reset form
+    // Réinitialiser le formulaire
     form.name = ''
     form.email = ''
     form.phone = ''
     form.subject = ''
     form.message = ''
-
-    showNotification('تم إرسال الرسالة بنجاح', 'سنتواصل معك في أقرب وقت ممكن', 'success')
-
-    // Clear any saved drafts
     localStorage.removeItem('contactFormDraft')
+
   } catch (error) {
     console.error('Contact form error:', error)
     showNotification(
-      'خطأ في الإرسال',
-      error.message || 'حدث خطأ ما، الرجاء المحاولة لاحقاً',
-      'error',
+      currentLanguage.value === 'ar' ? 'حدث خطأ' : 'Une erreur est survenue',
+      error.message || 'Veuillez réessayer plus tard',
+      'error'
     )
   } finally {
     isSubmitting.value = false
   }
-}
-
-// ===== NOTIFICATION =====
-const showNotification = (title, message, type = 'success') => {
-  const icons = {
-    success: '✅',
-    error: '❌',
-    info: 'ℹ️',
-    warning: '⚠️',
-  }
-
-  toast.value = {
-    show: true,
-    type,
-    title,
-    message,
-    icon: icons[type],
-  }
-
-  // Auto hide after 5 seconds
-  setTimeout(() => {
-    toast.value.show = false
-  }, 5000)
 }
 
 // ===== AUTOSAVE DRAFT =====
@@ -692,7 +578,6 @@ const loadDraft = () => {
     const saved = localStorage.getItem('contactFormDraft')
     if (saved) {
       const draft = JSON.parse(saved)
-      // Only load drafts less than 24 hours old
       if (draft.timestamp && Date.now() - draft.timestamp < 24 * 60 * 60 * 1000) {
         form.name = draft.name || ''
         form.email = draft.email || ''
@@ -701,7 +586,11 @@ const loadDraft = () => {
         form.message = draft.message || ''
 
         if (form.message || form.name || form.email) {
-          showNotification('تم استعادة مسودة', 'لديك رسالة غير مكتملة', 'info')
+          showNotification(
+            currentLanguage.value === 'ar' ? 'تم استعادة مسودة' : 'Brouillon récupéré',
+            currentLanguage.value === 'ar' ? 'لديك رسالة غير مكتملة' : 'Vous avez un message non terminé',
+            'info'
+          )
         }
       } else {
         localStorage.removeItem('contactFormDraft')
@@ -713,42 +602,14 @@ const loadDraft = () => {
 }
 
 // ===== LIFECYCLE HOOKS =====
-onMounted(() => {
-  // Load saved draft
-  loadDraft()
+let unwatch = null
 
-  // Update time every second
+onMounted(() => {
+  loadDraft()
   updateTime()
   const timeInterval = setInterval(updateTime, 1000)
 
-  // Simple Intersection Observer for animations
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('aos-animate')
-          // Unobserve after animation
-          observer.unobserve(entry.target)
-        }
-      })
-    },
-    {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px',
-    },
-  )
-
-  // Observe elements with data-aos attribute
-  document.querySelectorAll('[data-aos]').forEach((el) => observer.observe(el))
-
-  // Observe cards
-  document.querySelectorAll('.info-card').forEach((el) => {
-    el.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
-    observer.observe(el)
-  })
-
-  // Watch form changes for autosave
-  const unwatch = watch(
+  unwatch = watch(
     () => ({ ...form }),
     () => {
       clearTimeout(autosaveTimer)
@@ -757,29 +618,27 @@ onMounted(() => {
     { deep: true },
   )
 
-  // Cleanup function
   onUnmounted(() => {
-    observer.disconnect()
     clearInterval(timeInterval)
     clearTimeout(autosaveTimer)
-    unwatch()
+    if (unwatch) unwatch()
   })
 })
-
-// Import watch for autosave
-import { watch } from 'vue'
 </script>
 
+<style>
+/* ===== GOOGLE FONTS - AMIRI ===== */
+@import url('https://fonts.googleapis.com/css2?family=Amiri&display=swap');
+</style>
+
 <style scoped>
-/* ===== CSS VARIABLES - COULEURS ÉLÉGANTES ===== */
+/* ===== CSS VARIABLES ===== */
 .contact-page {
   --teal: #08717f;
   --teal-dark: #065a69;
-  --teal-light: #e0f2f1;
   --teal-soft: rgba(8, 113, 127, 0.1);
   --red: #d40025;
   --red-dark: #b00020;
-  --red-light: #ffe0e0;
   --red-soft: rgba(212, 0, 37, 0.1);
   --gray-50: #f8fafc;
   --gray-100: #f1f5f9;
@@ -792,12 +651,9 @@ import { watch } from 'vue'
   --gray-800: #1e293b;
   --gray-900: #0f172a;
   --white: #ffffff;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.08);
   --radius: 16px;
-  --radius-sm: 8px;
-  --radius-lg: 24px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -808,12 +664,47 @@ import { watch } from 'vue'
 }
 
 .contact-page {
-  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Amiri', 'Cairo', 'Inter', serif;
   color: var(--gray-800);
   background: var(--white);
   line-height: 1.6;
   overflow-x: hidden;
   direction: rtl;
+  transition: all 0.3s ease;
+}
+
+.contact-page * {
+  font-family: 'Amiri', 'Cairo', 'Inter', serif;
+}
+
+/* Dark Mode */
+.contact-page.dark-theme {
+  --white: #1e293b;
+  --gray-50: #0f172a;
+  --gray-100: #1e293b;
+  --gray-200: #334155;
+  --gray-300: #475569;
+  --gray-400: #64748b;
+  --gray-500: #94a3b8;
+  --gray-600: #cbd5e1;
+  --gray-700: #e2e8f0;
+  --gray-800: #f1f5f9;
+  --teal: #0a94a6;
+  --teal-soft: rgba(10, 148, 166, 0.1);
+  --red: #ff1744;
+  --red-soft: rgba(255, 23, 68, 0.1);
+}
+
+.contact-page.dark-theme .contact-main {
+  background: #0f172a;
+}
+
+.contact-page.dark-theme .info-card,
+.contact-page.dark-theme .social-section,
+.contact-page.dark-theme .form-container,
+.contact-page.dark-theme .map-container {
+  background: #1e293b;
+  border-color: #334155;
 }
 
 .container {
@@ -823,128 +714,13 @@ import { watch } from 'vue'
   position: relative;
 }
 
-/* ===== AOS ANIMATIONS ===== */
-[data-aos] {
-  opacity: 0;
-  transform: translateY(30px);
-  transition:
-    opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: opacity, transform;
-}
-
-[data-aos].aos-animate {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-[data-aos='fade-down'].aos-animate {
-  transform: translateY(0);
-}
-
-/* ===== HERO SECTION ===== */
-.contact-hero {
-  position: relative;
-  background: linear-gradient(145deg, #0a1a1f, #031015);
-  padding: 100px 0 120px;
-  color: white;
-  overflow: hidden;
-}
-
-.hero-pattern {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image:
-    radial-gradient(circle at 20% 30%, rgba(8, 113, 127, 0.15) 0%, transparent 30%),
-    radial-gradient(circle at 80% 70%, rgba(212, 0, 37, 0.1) 0%, transparent 30%);
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 10;
-  text-align: center;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 24px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border-radius: 40px;
-  margin-bottom: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.badge-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.badge-text {
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 1px;
-  margin: 0 4px;
-}
-
-.hero-title {
-  margin-bottom: 20px;
-}
-
-.title-line {
-  display: block;
-  font-size: clamp(2.2rem, 6vw, 3.8rem);
-  font-weight: 800;
-  line-height: 1.2;
-}
-
-.title-line.accent {
-  background: linear-gradient(135deg, #08717f, #d40025);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-top: 5px;
-}
-
-.hero-description {
-  font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.9);
-  max-width: 600px;
-  margin: 0 auto;
-  font-weight: 400;
-  line-height: 1.7;
-}
-
-.hero-wave {
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  line-height: 0;
-}
-
-.hero-wave svg {
-  width: 100%;
-  height: 50px;
-  display: block;
-}
-
-/* ===== MAIN CONTENT ===== */
+/* Main Content */
 .contact-main {
   padding: 80px 0;
   background: var(--white);
 }
 
-/* ===== SECTION HEADER ===== */
+/* Section Header */
 .section-header {
   text-align: center;
   margin-bottom: 60px;
@@ -960,6 +736,7 @@ import { watch } from 'vue'
   color: var(--gray-700);
   border-radius: 30px 0 0 30px;
   margin-bottom: 16px;
+  font-family: 'Amiri', serif;
 }
 
 .section-title {
@@ -967,6 +744,7 @@ import { watch } from 'vue'
   font-weight: 700;
   color: var(--gray-800);
   margin-bottom: 12px;
+  font-family: 'Amiri', serif;
 }
 
 .section-subtitle {
@@ -974,9 +752,10 @@ import { watch } from 'vue'
   color: var(--gray-600);
   max-width: 600px;
   margin: 0 auto;
+  font-family: 'Amiri', serif;
 }
 
-/* ===== INFO CARDS ===== */
+/* Info Grid */
 .info-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -992,7 +771,6 @@ import { watch } from 'vue'
   border: 1px solid var(--gray-200);
   transition: var(--transition);
   text-align: center;
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1001,7 +779,6 @@ import { watch } from 'vue'
 .info-card:hover {
   transform: translateY(-8px);
   box-shadow: var(--shadow-hover);
-  border-color: transparent;
 }
 
 .card-icon-wrapper {
@@ -1011,18 +788,7 @@ import { watch } from 'vue'
   align-items: center;
   justify-content: center;
   border-radius: 20px;
-  margin: 0 auto 20px;
-  transition: var(--transition);
-}
-
-.info-card:hover .card-icon-wrapper {
-  transform: scale(1.1) rotate(5deg);
-}
-
-.card-icon {
-  width: 32px;
-  height: 32px;
-  transition: var(--transition);
+  margin-bottom: 20px;
 }
 
 .card-title {
@@ -1030,19 +796,13 @@ import { watch } from 'vue'
   font-weight: 700;
   color: var(--gray-800);
   margin-bottom: 12px;
+  font-family: 'Amiri', serif;
 }
 
 .card-text {
   color: var(--gray-600);
   font-size: 0.95rem;
-  line-height: 1.6;
-  margin-bottom: 4px;
-}
-
-.card-note {
-  font-size: 0.85rem;
-  color: var(--gray-500);
-  margin-top: 8px;
+  font-family: 'Amiri', serif;
 }
 
 .card-link {
@@ -1052,6 +812,7 @@ import { watch } from 'vue'
   font-size: 0.95rem;
   margin-bottom: 4px;
   transition: var(--transition);
+  font-family: 'Amiri', serif;
 }
 
 .card-link:hover {
@@ -1072,19 +833,12 @@ import { watch } from 'vue'
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
+  font-family: 'Amiri', serif;
 }
 
 .card-action:hover {
   background: var(--teal);
   color: white !important;
-}
-
-.card-action:hover .action-icon {
-  transform: translateX(4px);
-}
-
-.action-icon {
-  transition: var(--transition);
 }
 
 .card-availability {
@@ -1094,6 +848,7 @@ import { watch } from 'vue'
   margin-top: 16px;
   font-size: 0.8rem;
   font-weight: 600;
+  font-family: 'Amiri', serif;
 }
 
 .availability-dot {
@@ -1105,15 +860,8 @@ import { watch } from 'vue'
 }
 
 @keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(1.2);
-  }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
 }
 
 .hours-list {
@@ -1129,6 +877,7 @@ import { watch } from 'vue'
   justify-content: space-between;
   align-items: center;
   font-size: 0.9rem;
+  font-family: 'Amiri', serif;
 }
 
 .hour-badge {
@@ -1136,6 +885,7 @@ import { watch } from 'vue'
   border-radius: 30px;
   font-size: 0.8rem;
   font-weight: 600;
+  font-family: 'Amiri', serif;
 }
 
 .hour-badge.closed {
@@ -1150,9 +900,10 @@ import { watch } from 'vue'
   padding: 8px 16px;
   background: var(--teal-soft);
   border-radius: 30px;
+  font-family: 'Amiri', serif;
 }
 
-/* ===== SOCIAL SECTION ===== */
+/* Social Section */
 .social-section {
   background: var(--white);
   border-radius: var(--radius);
@@ -1180,7 +931,7 @@ import { watch } from 'vue'
   font-size: 1.3rem;
   font-weight: 700;
   color: var(--gray-800);
-  margin: 0;
+  font-family: 'Amiri', serif;
 }
 
 .social-grid {
@@ -1214,20 +965,16 @@ import { watch } from 'vue'
   justify-content: center;
   border-radius: 16px;
   color: white;
-  transition: var(--transition);
-}
-
-.social-link:hover .social-icon {
-  transform: scale(1.1) rotate(8deg);
 }
 
 .social-link span {
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--gray-700);
+  font-family: 'Amiri', serif;
 }
 
-/* ===== FORM SECTION ===== */
+/* Form Section */
 .form-section {
   margin-bottom: 60px;
 }
@@ -1255,6 +1002,7 @@ import { watch } from 'vue'
   color: var(--gray-700);
   border-radius: 30px 0 0 30px;
   margin-bottom: 16px;
+  font-family: 'Amiri', serif;
 }
 
 .form-title {
@@ -1262,11 +1010,13 @@ import { watch } from 'vue'
   font-weight: 700;
   color: var(--gray-800);
   margin-bottom: 8px;
+  font-family: 'Amiri', serif;
 }
 
 .form-subtitle {
   font-size: 1rem;
   color: var(--gray-600);
+  font-family: 'Amiri', serif;
 }
 
 .contact-form {
@@ -1297,6 +1047,7 @@ import { watch } from 'vue'
   font-weight: 600;
   color: var(--gray-700);
   transition: var(--transition);
+  font-family: 'Amiri', serif;
 }
 
 .form-group.focused label {
@@ -1322,24 +1073,20 @@ import { watch } from 'vue'
   color: var(--teal);
 }
 
-input,
-select,
-textarea {
+input, select, textarea {
   width: 100%;
   padding: 14px 48px 14px 16px;
   border: 2px solid var(--gray-200);
   border-radius: 12px;
   font-size: 0.95rem;
-  font-family: inherit;
+  font-family: 'Amiri', serif;
   color: var(--gray-800);
   background: var(--white);
   transition: var(--transition);
   direction: rtl;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--teal);
   box-shadow: 0 0 0 4px rgba(8, 113, 127, 0.05);
@@ -1362,12 +1109,6 @@ select {
   color: var(--gray-500);
   font-size: 0.8rem;
   pointer-events: none;
-  transition: var(--transition);
-}
-
-.form-group.focused .select-arrow {
-  color: var(--teal);
-  transform: translateY(2px);
 }
 
 .input-border {
@@ -1397,6 +1138,7 @@ select {
   font-size: 0.75rem;
   font-weight: 500;
   margin-top: 4px;
+  font-family: 'Amiri', serif;
 }
 
 .textarea-footer {
@@ -1409,6 +1151,7 @@ select {
 .char-count {
   color: var(--gray-500);
   font-size: 0.8rem;
+  font-family: 'Amiri', serif;
 }
 
 .form-actions {
@@ -1430,6 +1173,7 @@ select {
   cursor: pointer;
   transition: var(--transition);
   min-width: 220px;
+  font-family: 'Amiri', serif;
 }
 
 .submit-btn:hover:not(:disabled) {
@@ -1442,15 +1186,6 @@ select {
   cursor: not-allowed;
 }
 
-.btn-icon {
-  font-size: 1.1rem;
-  transition: var(--transition);
-}
-
-.submit-btn:hover .btn-icon {
-  transform: translateX(-5px);
-}
-
 .spinner {
   width: 20px;
   height: 20px;
@@ -1461,18 +1196,17 @@ select {
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 .form-note {
   margin-top: 20px;
   color: var(--gray-500);
   font-size: 0.85rem;
+  font-family: 'Amiri', serif;
 }
 
-/* ===== MAP SECTION - INFINITY MARKETING ===== */
+/* Map Section */
 .map-section {
   margin-top: 40px;
 }
@@ -1507,6 +1241,7 @@ select {
   font-weight: 600;
   color: var(--gray-700);
   border-radius: 30px 0 0 30px;
+  font-family: 'Amiri', serif;
 }
 
 .map-live {
@@ -1515,19 +1250,13 @@ select {
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 30px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
   animation: livePulse 1.5s infinite;
+  font-family: 'Amiri', serif;
 }
 
 @keyframes livePulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 .map-title {
@@ -1535,12 +1264,14 @@ select {
   font-weight: 700;
   color: var(--gray-800);
   margin-bottom: 8px;
+  font-family: 'Amiri', serif;
 }
 
 .map-address {
   color: var(--gray-600);
   font-size: 1.1rem;
   margin-bottom: 20px;
+  font-family: 'Amiri', serif;
 }
 
 .map-actions {
@@ -1551,46 +1282,28 @@ select {
   flex-wrap: wrap;
 }
 
-.map-btn {
+.map-btn, .map-btn-outline {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  color: white;
-  border: none;
   border-radius: 50px;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
   transition: var(--transition);
+  font-family: 'Amiri', serif;
 }
 
-.map-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(8, 113, 127, 0.3);
+.map-btn {
+  color: white;
+  border: none;
 }
 
 .map-btn-outline {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
   background: transparent;
   border: 2px solid;
-  border-radius: 50px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: var(--transition);
-}
-
-.map-btn-outline:hover {
-  background: var(--teal);
-  color: white !important;
-  border-color: var(--teal);
-  transform: translateY(-3px);
 }
 
 .map-wrapper {
@@ -1600,7 +1313,6 @@ select {
   border-radius: 20px;
   overflow: hidden;
   margin-bottom: 30px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .google-map {
@@ -1617,7 +1329,6 @@ select {
   backdrop-filter: blur(10px);
   border-radius: 50px;
   padding: 12px 24px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
   direction: rtl;
 }
 
@@ -1627,23 +1338,10 @@ select {
   gap: 12px;
 }
 
-.overlay-icon {
-  font-size: 1.5rem;
-}
-
 .overlay-text {
   display: flex;
   flex-direction: column;
-}
-
-.overlay-text strong {
-  font-size: 1rem;
-  color: var(--gray-800);
-}
-
-.overlay-text span {
-  font-size: 0.8rem;
-  color: var(--gray-600);
+  font-family: 'Amiri', serif;
 }
 
 .map-footer {
@@ -1668,6 +1366,7 @@ select {
   border-radius: 30px;
   font-size: 0.85rem;
   font-weight: 600;
+  font-family: 'Amiri', serif;
 }
 
 .status-dot {
@@ -1676,19 +1375,6 @@ select {
   background: white;
   border-radius: 50%;
   animation: pulse 2s infinite;
-}
-
-.hours-today {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--gray-700);
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.hours-icon {
-  font-size: 1.1rem;
 }
 
 .divider {
@@ -1705,12 +1391,7 @@ select {
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--gray-700);
-}
-
-.nearby-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  font-family: 'Amiri', serif;
 }
 
 .map-info-grid {
@@ -1727,15 +1408,10 @@ select {
   background: var(--gray-50);
   border-radius: 12px;
   font-size: 0.9rem;
-  color: var(--gray-700);
+  font-family: 'Amiri', serif;
 }
 
-.info-icon {
-  font-size: 1.1rem;
-  color: var(--teal);
-}
-
-/* ===== TOAST NOTIFICATION ===== */
+/* Toast Notification */
 .toast-notification {
   position: fixed;
   bottom: 30px;
@@ -1756,6 +1432,7 @@ select {
   border-right-style: solid;
   direction: rtl;
   animation: slideInRight 0.3s ease;
+  font-family: 'Amiri', serif;
 }
 
 @keyframes slideInRight {
@@ -1808,18 +1485,7 @@ select {
   transform: scale(1.2);
 }
 
-.toast-enter-active,
-.toast-leave-active {
-  transition: all 0.3s ease;
-}
-
-.toast-enter-from,
-.toast-leave-to {
-  opacity: 0;
-  transform: translateX(30px);
-}
-
-/* ===== RTL SPECIFIC STYLES ===== */
+/* RTL Specific */
 [dir='rtl'] .section-tag,
 [dir='rtl'] .form-tag,
 [dir='rtl'] .map-badge {
@@ -1839,21 +1505,9 @@ select {
   right: 16px;
 }
 
-[dir='rtl'] .card-link:hover {
-  transform: translateX(-4px);
-}
-
-[dir='rtl'] .card-action:hover .action-icon {
-  transform: translateX(-4px);
-}
-
 [dir='rtl'] .map-overlay {
   right: auto;
   left: 20px;
-}
-
-[dir='rtl'] .submit-btn:hover .btn-icon {
-  transform: translateX(5px);
 }
 
 [dir='rtl'] .toast-notification {
@@ -1864,112 +1518,43 @@ select {
   border-left-style: solid;
 }
 
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* ===== RESPONSIVE DESIGN ===== */
+/* Responsive */
 @media (max-width: 1024px) {
   .info-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
   .map-info-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
-  .contact-hero {
-    padding: 80px 0 100px;
-  }
-
-  .hero-title {
-    font-size: clamp(2rem, 5vw, 2.8rem);
-  }
-
-  .hero-description {
-    font-size: 1rem;
-  }
-
-  .section-title {
-    font-size: 1.8rem;
-  }
-
   .info-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
   }
-
   .social-grid {
     grid-template-columns: 1fr;
   }
-
   .social-link {
     flex-direction: row;
     justify-content: flex-start;
     padding: 16px 24px;
   }
-
   .form-row {
     grid-template-columns: 1fr;
-    gap: 20px;
   }
-
   .form-container {
     padding: 32px 24px;
   }
-
-  .form-title {
-    font-size: 1.6rem;
-  }
-
-  .submit-btn {
-    width: 100%;
-  }
-
   .map-container {
     padding: 24px;
   }
-
-  .map-title {
-    font-size: 1.5rem;
-  }
-
-  .map-address {
-    font-size: 1rem;
-  }
-
-  .map-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .map-btn,
-  .map-btn-outline {
-    justify-content: center;
-  }
-
   .map-wrapper {
     height: 300px;
   }
-
-  .hours-status {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .map-info-grid {
     grid-template-columns: 1fr;
   }
-
   .toast-notification {
     min-width: 90%;
     width: calc(100% - 40px);
@@ -1979,142 +1564,23 @@ select {
 }
 
 @media (max-width: 480px) {
-  .hero-badge {
-    padding: 8px 16px;
-  }
-
-  .badge-text {
-    font-size: 0.85rem;
-  }
-
   .section-title {
     font-size: 1.5rem;
   }
-
-  .section-subtitle {
-    font-size: 0.95rem;
-  }
-
   .info-card {
     padding: 24px 20px;
   }
-
   .form-container {
     padding: 24px 16px;
   }
-
-  .form-title {
-    font-size: 1.4rem;
-  }
-
   .map-container {
     padding: 20px 16px;
   }
-
-  .map-title {
-    font-size: 1.3rem;
-  }
-
   .map-overlay {
     right: 50%;
     transform: translateX(50%);
     width: 90%;
     padding: 10px 16px;
   }
-
-  .overlay-text strong {
-    font-size: 0.9rem;
-  }
-
-  .overlay-text span {
-    font-size: 0.75rem;
-  }
-
-  .toast-notification {
-    padding: 14px 18px;
-  }
-
-  .toast-message strong {
-    font-size: 0.9rem;
-  }
-
-  .toast-message p {
-    font-size: 0.8rem;
-  }
-}
-
-/* ===== PRINT STYLES ===== */
-@media print {
-  .contact-hero {
-    background: none;
-    color: black;
-    padding: 40px 0;
-  }
-
-  .hero-pattern,
-  .hero-wave,
-  .map-actions,
-  .card-action,
-  .toast-notification,
-  .social-section,
-  .form-section {
-    display: none;
-  }
-
-  .title-line.accent {
-    -webkit-text-fill-color: #08717f;
-    background: none;
-  }
-
-  .info-card,
-  .map-container {
-    box-shadow: none;
-    border: 1px solid #ddd;
-    break-inside: avoid;
-  }
-
-  .google-map {
-    filter: grayscale(100%);
-    border: 1px solid #ddd;
-  }
-
-  .map-overlay {
-    border: 1px solid #ddd;
-    background: white;
-  }
-
-  a {
-    text-decoration: none;
-    color: black;
-  }
-}
-
-/* ===== ACCESSIBILITY ===== */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-:focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: 2px;
-}
-
-/* ===== UTILITY CLASSES ===== */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
 }
 </style>

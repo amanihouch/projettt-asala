@@ -1,3 +1,4 @@
+// backend/src/services/email.js
 /**
  * Email Configuration - ULTRA DESIGN VERSION with Newsletter
  * ASALA - منصة الحرف اليدوية التونسية
@@ -988,6 +989,147 @@ const sendEmail = async (to, template) => {
     throw error;
   }
 };
+// Ajoutez cette fonction à votre fichier email.js
+
+// ===== ENVOYER UN EMAIL DE CONTACT À L'ADMIN =====
+const sendContactEmail = async (contactData) => {
+  const { name, email, phone, subject, message, timestamp } = contactData;
+
+  const html = `
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>رسالة جديدة من ${name}</title>
+      <style>
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          line-height: 1.6;
+          color: #333;
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+          background: #f5f5f5;
+        }
+        .container {
+          background: white;
+          border-radius: 12px;
+          padding: 30px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .header {
+          text-align: center;
+          border-bottom: 3px solid #08717f;
+          padding-bottom: 20px;
+          margin-bottom: 25px;
+        }
+        .header h1 {
+          color: #08717f;
+          margin: 0;
+          font-size: 24px;
+        }
+        .info-grid {
+          display: grid;
+          grid-template-columns: 100px 1fr;
+          gap: 12px;
+          margin-bottom: 25px;
+          background: #f8f9fa;
+          padding: 15px;
+          border-radius: 8px;
+        }
+        .info-label {
+          font-weight: bold;
+          color: #08717f;
+        }
+        .info-value {
+          color: #333;
+        }
+        .message-box {
+          background: #f8f9fa;
+          padding: 20px;
+          border-radius: 8px;
+          margin-top: 20px;
+          border-right: 4px solid #d40025;
+        }
+        .message-box h3 {
+          margin-top: 0;
+          color: #d40025;
+        }
+        .footer {
+          text-align: center;
+          margin-top: 30px;
+          padding-top: 20px;
+          border-top: 1px solid #ddd;
+          font-size: 12px;
+          color: #666;
+        }
+        .badge {
+          display: inline-block;
+          background: #08717f;
+          color: white;
+          padding: 5px 12px;
+          border-radius: 20px;
+          font-size: 12px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>📩 رسالة جديدة من المنصة</h1>
+          <span class="badge">${new Date(timestamp).toLocaleString('ar-TN')}</span>
+        </div>
+        
+        <div class="info-grid">
+          <div class="info-label">الاسم:</div>
+          <div class="info-value">${name}</div>
+          
+          <div class="info-label">البريد الإلكتروني:</div>
+          <div class="info-value">${email}</div>
+          
+          ${phone ? `<div class="info-label">الهاتف:</div><div class="info-value">${phone}</div>` : ''}
+          
+          <div class="info-label">الموضوع:</div>
+          <div class="info-value">${subject}</div>
+        </div>
+        
+        <div class="message-box">
+          <h3>✉️ محتوى الرسالة</h3>
+          <p>${message.replace(/\n/g, '<br>')}</p>
+        </div>
+        
+        <div class="footer">
+          <p>هذه الرسالة مرسلة من نموذج الاتصال في المنصة</p>
+          <p>للرد على المرسل: <a href="mailto:${email}">${email}</a></p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+    رسالة جديدة من ${name}
+    
+    البريد الإلكتروني: ${email}
+    ${phone ? `الهاتف: ${phone}` : ''}
+    الموضوع: ${subject}
+    
+    الرسالة:
+    ${message}
+    
+    ---
+    هذه الرسالة مرسلة من نموذج الاتصال في المنصة
+  `;
+
+  await transporter.sendMail({
+    from: `"Turath Platform" <${process.env.SMTP_FROM || 'noreply@turath.com'}>`,
+    to: process.env.ADMIN_EMAIL || 'admin@turath.com',
+    subject: `📩 رسالة جديدة من ${name} - ${subject}`,
+    text,
+    html
+  });
+};
 
 // ============================================
 // EMAIL FUNCTIONS
@@ -1017,5 +1159,6 @@ module.exports = {
   sendOrderConfirmationEmail,
   sendNewsletterWelcomeEmail,
   sendNewsletterCampaign,
-  EMAIL_TEMPLATES
+  EMAIL_TEMPLATES,
+   sendContactEmail
 };

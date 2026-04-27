@@ -1,302 +1,229 @@
+<!-- src/views/Profile.vue - Version améliorée avec police Amiri -->
 <template>
-  <div class="profile-page" dir="rtl">
-    <!-- Loading -->
+  <div class="profile-page" :class="{ 'dark-mode': isDarkMode }" dir="rtl">
+    <!-- Loading State -->
     <div v-if="loading" class="loading-state">
-      <div class="spinner"></div>
-      <p>جاري تحميل الملف الشخصي...</p>
+      <div class="instagram-loader">
+        <div class="loader-ring"></div>
+        <div class="loader-logo">📸</div>
+        <p>جاري تحميل ملفك الشخصي...</p>
+      </div>
     </div>
 
     <template v-else>
+      <!-- Cover Photo -->
+      <div class="cover-container">
+        <div class="cover-wrapper">
+          <img
+            :src="coverImageUrl"
+            alt="Cover"
+            class="cover-photo"
+            @error="handleCoverError"
+            :key="coverImageKey"
+          />
+          <div class="cover-overlay"></div>
+          <button v-if="isCurrentUser" class="edit-cover-btn" @click="openCoverUpload" :disabled="uploadingCover">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <span>{{ uploadingCover ? 'جاري الرفع...' : 'تغيير الغلاف' }}</span>
+          </button>
+        </div>
+        <input type="file" ref="coverInput" @change="handleCoverUpload" accept="image/*" style="display: none" />
+      </div>
+
       <!-- Profile Header -->
       <div class="profile-header">
         <div class="container">
-          <div class="profile-info">
+          <div class="profile-info-wrapper">
+            <!-- Avatar -->
             <div class="avatar-section">
-              <img
-                :src="authStore.userAvatar"
-                :alt="authStore.userName"
-                class="profile-avatar"
-                @error="handleImageError"
-              />
-              <button
-                class="change-avatar-btn"
-                @click="triggerAvatarUpload"
-                :disabled="uploading"
-                :class="{ uploading }"
-              >
-                <span class="icon">{{ uploading ? '⏳' : '📷' }}</span>
-                <span class="tooltip">تغيير الصورة</span>
-              </button>
-              <input
-                type="file"
-                ref="avatarInput"
-                @change="handleAvatarUpload"
-                accept="image/*"
-                style="display: none"
-              />
+              <div class="avatar-wrapper">
+                <img
+                  :src="avatarUrl"
+                  :alt="authStore.userName"
+                  class="profile-avatar"
+                  @error="handleAvatarError"
+                  :key="avatarKey"
+                />
+                <button v-if="isCurrentUser" class="avatar-edit-btn" @click="triggerAvatarUpload" :disabled="uploadingAvatar">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/>
+                    <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/>
+                  </svg>
+                </button>
+                <div v-if="authStore.userRole === 'vendor'" class="verified-badge">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                  </svg>
+                </div>
+              </div>
+              <input type="file" ref="avatarInput" @change="handleAvatarUpload" accept="image/*" style="display: none" />
             </div>
 
-            <div class="profile-details">
-              <h1 class="profile-name">{{ authStore.userName }}</h1>
-              <p class="profile-email">{{ authStore.userEmail }}</p>
-              <p class="profile-phone" v-if="authStore.userPhone">{{ authStore.userPhone }}</p>
-              <span class="profile-role" :class="authStore.userRole">
-                {{
-                  authStore.userRole === 'admin'
-                    ? 'مدير'
-                    : authStore.userRole === 'vendor'
-                      ? 'بائع'
-                      : 'عميل'
-                }}
-              </span>
-            </div>
-          </div>
+            <!-- Info -->
+            <div class="info-section">
+              <div class="username-row">
+                <h1 class="username">{{ profileUser?.name || authStore.userName }}</h1>
+                <div class="action-buttons">
+                  <button
+                    v-if="!isCurrentUser && profileUser?.role === 'vendor'"
+                    class="message-btn"
+                    @click="contactVendor"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span>مراسلة</span>
+                  </button>
 
-          <!-- Quick Stats -->
-          <div class="profile-stats">
-            <div class="stat-item">
-              <span class="stat-value">{{ orders.length }}</span>
-              <span class="stat-label">إجمالي الطلبات</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ pendingOrders }}</span>
-              <span class="stat-label">قيد الانتظار</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ completedOrders }}</span>
-              <span class="stat-label">مكتملة</span>
+                  <template v-if="isCurrentUser">
+                    <button class="edit-profile-btn" @click="editProfile">تعديل الملف</button>
+                    <button class="settings-btn" @click="openSettings">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                      </svg>
+                    </button>
+                  </template>
+                </div>
+              </div>
+
+              <div class="profile-stats">
+                <div class="stat">
+                  <span class="stat-number">{{ orders.length }}</span>
+                  <span class="stat-label">طلبات</span>
+                </div>
+              </div>
+
+              <div class="profile-bio">
+                <div class="bio-name">{{ profileUser?.name || authStore.userName }}</div>
+                <div class="bio-text">{{ userBio || 'مرحباً! أنا أستخدم تطبيق تراث' }}</div>
+                <div class="bio-link" v-if="userWebsite">
+                  <a :href="userWebsite" target="_blank">{{ userWebsite }}</a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Profile Tabs -->
-      <div class="profile-tabs">
+      <!-- Tabs Navigation -->
+      <div class="tabs-container">
         <div class="container">
-          <div class="tabs-nav">
+          <div class="tabs">
             <button
+              v-for="tab in tabs"
+              :key="tab.id"
               class="tab-btn"
-              :class="{ active: activeTab === 'account' }"
-              @click="activeTab = 'account'"
+              :class="{ active: activeTab === tab.id }"
+              @click="activeTab = tab.id"
             >
-              <span class="tab-icon">👤</span>
-              <span class="tab-text">حسابي</span>
-            </button>
-            <button
-              class="tab-btn"
-              :class="{ active: activeTab === 'orders' }"
-              @click="activeTab = 'orders'"
-            >
-              <span class="tab-icon">📦</span>
-              <span class="tab-text">طلباتي</span>
+              <span class="tab-icon">{{ tab.icon }}</span>
+              <span class="tab-text">{{ tab.label }}</span>
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Tab Content -->
-      <div class="tab-content">
+      <!-- Content -->
+      <div class="content-container">
         <div class="container">
-          <!-- ACCOUNT TAB -->
-          <div v-if="activeTab === 'account'" class="account-tab">
-            <div class="account-card">
-              <h2 class="card-title">
-                <span class="title-icon">👤</span>
-                المعلومات الشخصية
-              </h2>
-
-              <div class="info-grid">
-                <div class="info-item">
-                  <span class="info-label">الاسم الكامل</span>
-                  <span class="info-value">{{ authStore.userName }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">البريد الإلكتروني</span>
-                  <span class="info-value">{{ authStore.userEmail }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">رقم الهاتف</span>
-                  <span class="info-value">{{ authStore.userPhone || 'غير محدد' }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">العنوان</span>
-                  <span class="info-value">{{ authStore.userAddress || 'غير محدد' }}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">الدور</span>
-                  <span class="info-value role-badge" :class="authStore.userRole">
-                    {{
-                      authStore.userRole === 'admin'
-                        ? 'مدير'
-                        : authStore.userRole === 'vendor'
-                          ? 'بائع'
-                          : 'عميل'
-                    }}
-                  </span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">تاريخ التسجيل</span>
-                  <span class="info-value">{{ formatDate(authStore.userCreatedAt) }}</span>
-                </div>
-              </div>
-
-              <button class="btn-edit" @click="editProfile">
-                <span class="btn-icon">✏️</span>
-                تعديل المعلومات
-              </button>
-            </div>
-
-            <div class="account-card">
-              <h2 class="card-title">
-                <span class="title-icon">⚙️</span>
-                إعدادات الحساب
-              </h2>
-
-              <div class="settings-list">
-                <button class="setting-item" @click="changePassword">
-                  <span class="setting-icon">🔒</span>
-                  <span class="setting-text">تغيير كلمة المرور</span>
-                  <span class="setting-arrow">←</span>
-                </button>
-                <button class="setting-item" @click="notificationSettings">
-                  <span class="setting-icon">🔔</span>
-                  <span class="setting-text">إعدادات الإشعارات</span>
-                  <span class="setting-arrow">←</span>
-                </button>
-                <button class="setting-item" @click="privacySettings">
-                  <span class="setting-icon">🛡️</span>
-                  <span class="setting-text">الخصوصية والأمان</span>
-                  <span class="setting-arrow">←</span>
-                </button>
-                <button class="setting-item logout" @click="logout">
-                  <span class="setting-icon logout-icon">🚪</span>
-                  <span class="setting-text logout-text">تسجيل الخروج</span>
-                  <span class="setting-arrow">←</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- ORDERS TAB -->
           <div v-if="activeTab === 'orders'" class="orders-tab">
-            <div class="orders-header">
-              <h2 class="orders-title">طلباتي</h2>
-              <p class="orders-count">إجمالي {{ orders.length }} طلب</p>
+            <div v-if="loadingOrders" class="loading-spinner">
+              <div class="spinner"></div>
             </div>
-
-            <!-- Loading Orders -->
-            <div v-if="loadingOrders" class="loading-orders">
-              <div class="spinner-small"></div>
-              <p>جاري تحميل الطلبات...</p>
-            </div>
-
-            <!-- Orders List -->
             <div v-else-if="orders.length > 0" class="orders-list">
-              <div v-for="order in orders" :key="order.id" class="order-card">
+              <div v-for="order in orders" :key="order.id" class="order-card" @click="viewOrderDetails(order.id)">
                 <div class="order-header">
                   <div class="order-info">
-                    <span class="order-id">#{{ order.id }}</span>
+                    <span class="order-number">طلب #{{ order.orderNumber || order.id }}</span>
                     <span class="order-date">{{ formatDate(order.createdAt) }}</span>
                   </div>
                   <div class="order-status" :class="order.status">
                     {{ getOrderStatusText(order.status) }}
                   </div>
                 </div>
-
-                <div class="order-items">
-                  <div v-for="item in order.items" :key="item.id" class="order-item">
-                    <img
-                      :src="item.image || 'https://placehold.co/60x60/08717f/white?text=منتج'"
-                      :alt="item.name"
-                      class="item-image"
-                      @error="handleImageError"
-                    />
-                    <div class="item-details">
-                      <h4 class="item-name">{{ item.name }}</h4>
-                      <p class="item-price">{{ formatPrice(item.price) }} د.ت</p>
-                      <p class="item-quantity">الكمية: {{ item.quantity }}</p>
-                    </div>
-                    <div class="item-total">{{ formatPrice(item.price * item.quantity) }} د.ت</div>
+                <div class="order-items-preview">
+                  <div v-for="item in order.items?.slice(0, 3)" :key="item.id" class="order-item-preview">
+                    <img :src="item.image || getDefaultImage()" :alt="item.name" class="item-thumb" @error="handleItemImageError" />
+                  </div>
+                  <div v-if="order.items?.length > 3" class="more-items">
+                    +{{ order.items.length - 3 }}
                   </div>
                 </div>
-
                 <div class="order-footer">
-                  <div class="delivery-info">
-                    <span class="info-icon">📍</span>
-                    <span>{{
-                      order.delivery?.address || authStore.userAddress || 'عنوان غير محدد'
-                    }}</span>
-                  </div>
-                  <div class="order-total">
-                    <span>المجموع:</span>
-                    <span class="total-price">{{ formatPrice(order.total) }} د.ت</span>
-                  </div>
-                </div>
-
-                <div class="order-actions">
-                  <button class="btn-track" @click="trackOrder(order.id)">
-                    <span>تتبع الطلب</span>
-                    <span class="btn-icon">←</span>
-                  </button>
-                  <button class="btn-details" @click="viewOrderDetails(order.id)">
-                    <span>عرض التفاصيل</span>
-                  </button>
+                  <span class="order-total">{{ formatPrice(order.total) }} د.ت</span>
+                  <span class="order-items-count">{{ order.items?.length || 0 }} منتج</span>
                 </div>
               </div>
             </div>
+            <div v-else class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
+              <p>لا توجد طلبات بعد</p>
+              <router-link to="/products" class="shop-now-btn">تسوق الآن</router-link>
+            </div>
+          </div>
 
-            <!-- Empty Orders -->
-            <div v-else class="empty-orders">
-              <div class="empty-icon">📦</div>
-              <h3>لا توجد طلبات بعد</h3>
-              <p>عندما تقوم بطلب منتجات، ستظهر هنا</p>
-              <router-link to="/products" class="btn-shop"> تسوق الآن </router-link>
+          <div v-else-if="activeTab === 'settings'" class="settings-tab">
+            <div class="settings-list">
+              <div class="setting-item" @click="changePassword">
+                <div class="setting-icon">🔒</div>
+                <div class="setting-content">
+                  <h4>تغيير كلمة المرور</h4>
+                  <p>تحديث كلمة المرور لحماية حسابك</p>
+                </div>
+                <div class="setting-arrow">←</div>
+              </div>
+
+              <div class="setting-item logout" @click="logout">
+                <div class="setting-icon">🚪</div>
+                <div class="setting-content">
+                  <h4>تسجيل الخروج</h4>
+                  <p>الخروج من حسابك</p>
+                </div>
+                <div class="setting-arrow">←</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </template>
 
-    <!-- Edit Profile Modal -->
-    <transition name="modal">
+    <!-- Modals (same as before) -->
+    <transition name="modal-fade">
       <div v-if="showEditModal" class="modal-overlay" @click.self="showEditModal = false">
-        <div class="modal-content">
+        <div class="modal-container">
           <div class="modal-header">
-            <h3>تعديل المعلومات الشخصية</h3>
-            <button class="modal-close" @click="showEditModal = false">✕</button>
+            <h3>تعديل الملف الشخصي</h3>
+            <button class="close-modal" @click="showEditModal = false">✕</button>
           </div>
-
           <div class="modal-body">
             <form @submit.prevent="saveProfileChanges">
               <div class="form-group">
-                <label class="form-label">الاسم الكامل</label>
+                <label>الاسم</label>
                 <input type="text" v-model="editForm.fullName" class="form-input" required />
               </div>
               <div class="form-group">
-                <label class="form-label">البريد الإلكتروني</label>
-                <input
-                  type="email"
-                  v-model="editForm.email"
-                  class="form-input"
-                  dir="ltr"
-                  required
-                />
+                <label>البريد الإلكتروني</label>
+                <input type="email" v-model="editForm.email" class="form-input" dir="ltr" required />
               </div>
               <div class="form-group">
-                <label class="form-label">رقم الهاتف</label>
-                <input type="tel" v-model="editForm.phone" class="form-input" dir="ltr" />
+                <label>السيرة الذاتية</label>
+                <textarea v-model="editForm.bio" class="form-textarea" rows="3" placeholder="اكتب شيئاً عن نفسك..."></textarea>
               </div>
               <div class="form-group">
-                <label class="form-label">العنوان</label>
-                <textarea v-model="editForm.address" class="form-textarea" rows="2"></textarea>
+                <label>الموقع الإلكتروني</label>
+                <input type="url" v-model="editForm.website" class="form-input" dir="ltr" placeholder="https://..." />
               </div>
-
-              <div class="modal-actions">
-                <button type="button" class="btn-cancel" @click="showEditModal = false">
-                  إلغاء
-                </button>
-                <button type="submit" class="btn-save" :disabled="authStore.loading">
-                  <span v-if="!authStore.loading">حفظ التغييرات</span>
+              <div class="form-actions">
+                <button type="button" class="cancel-btn" @click="showEditModal = false">إلغاء</button>
+                <button type="submit" class="save-btn" :disabled="saving">
+                  <span v-if="!saving">حفظ</span>
                   <span v-else class="loading-spinner"></span>
                 </button>
               </div>
@@ -306,55 +233,31 @@
       </div>
     </transition>
 
-    <!-- Change Password Modal -->
-    <transition name="modal">
+    <transition name="modal-fade">
       <div v-if="showPasswordModal" class="modal-overlay" @click.self="showPasswordModal = false">
-        <div class="modal-content">
+        <div class="modal-container">
           <div class="modal-header">
             <h3>تغيير كلمة المرور</h3>
-            <button class="modal-close" @click="showPasswordModal = false">✕</button>
+            <button class="close-modal" @click="showPasswordModal = false">✕</button>
           </div>
-
           <div class="modal-body">
             <form @submit.prevent="savePassword">
               <div class="form-group">
-                <label class="form-label">كلمة المرور الحالية</label>
-                <input
-                  type="password"
-                  v-model="passwordForm.currentPassword"
-                  class="form-input"
-                  dir="ltr"
-                  required
-                />
+                <label>كلمة المرور الحالية</label>
+                <input type="password" v-model="passwordForm.currentPassword" class="form-input" dir="ltr" required />
               </div>
               <div class="form-group">
-                <label class="form-label">كلمة المرور الجديدة</label>
-                <input
-                  type="password"
-                  v-model="passwordForm.newPassword"
-                  class="form-input"
-                  dir="ltr"
-                  required
-                  minlength="6"
-                />
+                <label>كلمة المرور الجديدة</label>
+                <input type="password" v-model="passwordForm.newPassword" class="form-input" dir="ltr" required minlength="6" />
               </div>
               <div class="form-group">
-                <label class="form-label">تأكيد كلمة المرور الجديدة</label>
-                <input
-                  type="password"
-                  v-model="passwordForm.confirmPassword"
-                  class="form-input"
-                  dir="ltr"
-                  required
-                />
+                <label>تأكيد كلمة المرور</label>
+                <input type="password" v-model="passwordForm.confirmPassword" class="form-input" dir="ltr" required />
               </div>
-
-              <div class="modal-actions">
-                <button type="button" class="btn-cancel" @click="showPasswordModal = false">
-                  إلغاء
-                </button>
-                <button type="submit" class="btn-save" :disabled="changingPassword">
-                  <span v-if="!changingPassword">تغيير كلمة المرور</span>
+              <div class="form-actions">
+                <button type="button" class="cancel-btn" @click="showPasswordModal = false">إلغاء</button>
+                <button type="submit" class="save-btn" :disabled="changingPassword">
+                  <span v-if="!changingPassword">تغيير</span>
                   <span v-else class="loading-spinner"></span>
                 </button>
               </div>
@@ -364,126 +267,226 @@
       </div>
     </transition>
 
-    <!-- Toast Notification -->
-    <transition name="toast">
+    <transition name="modal-fade">
+      <div v-if="showMessageModal" class="modal-overlay" @click.self="showMessageModal = false">
+        <div class="modal-container message-modal">
+          <div class="modal-header">
+            <div class="message-header-info">
+              <img :src="profileUser?.avatar || getDefaultAvatar()" class="message-avatar" />
+              <div>
+                <h3>{{ profileUser?.name }}</h3>
+                <span class="vendor-badge">حرفي</span>
+              </div>
+            </div>
+            <button class="close-modal" @click="showMessageModal = false">✕</button>
+          </div>
+          <div class="modal-body message-body">
+            <div class="message-preview">
+              <p>أرسل رسالة إلى {{ profileUser?.name }} للاستفسار عن المنتجات أو الخدمات</p>
+            </div>
+            <div class="message-input-wrapper">
+              <textarea
+                v-model="messageText"
+                class="message-textarea"
+                placeholder="اكتب رسالتك هنا..."
+                rows="4"
+              ></textarea>
+            </div>
+            <div class="message-actions">
+              <button type="button" class="cancel-btn" @click="showMessageModal = false">إلغاء</button>
+              <button type="button" class="send-message-btn" @click="sendMessageToVendor" :disabled="!messageText.trim() || sendingMessage">
+                <span v-if="!sendingMessage">إرسال</span>
+                <span v-else class="loading-spinner"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <transition name="toast-slide">
       <div v-if="toast.show" class="toast-notification" :class="toast.type">
         <span class="toast-icon">{{ toast.icon }}</span>
         <span class="toast-message">{{ toast.message }}</span>
+        <div class="toast-progress"></div>
       </div>
     </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useThemeStore } from '../stores/theme'
+import { useMessageStore } from '../stores/messageStore'
+import api from '../services/api'
+
+// Assets imports
+import defaultProfileImage from '../assets/default-profil.jpg'
+import defaultCoverImage from '../assets/default-cover.jpg'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
+const messageStore = useMessageStore()
 
-// ===== STATE =====
+const isDarkMode = computed(() => themeStore.isDarkMode)
+
+// State
 const loading = ref(true)
 const loadingOrders = ref(false)
-const activeTab = ref('account')
+const activeTab = ref('orders')
 const showEditModal = ref(false)
 const showPasswordModal = ref(false)
+const showMessageModal = ref(false)
 const changingPassword = ref(false)
-const uploading = ref(false)
-const toast = ref({
-  show: false,
-  message: '',
-  type: 'success',
-  icon: '✅',
-})
+const uploadingAvatar = ref(false)
+const uploadingCover = ref(false)
+const saving = ref(false)
+const sendingMessage = ref(false)
+const messageText = ref('')
+const toast = ref({ show: false, message: '', type: 'success', icon: '✅' })
 
-// Avatar
 const avatarInput = ref(null)
+const coverInput = ref(null)
+const avatarKey = ref(Date.now())
+const coverImageKey = ref(Date.now())
 
-// Edit Form
+const orders = ref([])
+const userBio = ref('')
+const userWebsite = ref('')
+const profileUser = ref(null)
+
+// Default images
+const getDefaultAvatar = () => defaultProfileImage
+const getDefaultCover = () => defaultCoverImage
+const getDefaultImage = () => 'https://placehold.co/48x48/08717f/white?text=+'
+
+const avatarUrl = ref(authStore.userAvatar || defaultProfileImage)
+const coverImageUrl = ref(defaultCoverImage)
+
 const editForm = ref({
   fullName: '',
   email: '',
-  phone: '',
-  address: '',
+  bio: '',
+  website: ''
 })
 
-// Password Form
 const passwordForm = ref({
   currentPassword: '',
   newPassword: '',
-  confirmPassword: '',
+  confirmPassword: ''
 })
 
-// ===== ORDERS =====
-const orders = ref([])
+const tabs = ref([
+  { id: 'orders', label: 'طلباتي', icon: '🛒' },
+  { id: 'settings', label: 'الإعدادات', icon: '⚙️' }
+])
 
-// ===== COMPUTED =====
-const pendingOrders = computed(() => {
-  return orders.value.filter((o) => o.status === 'pending' || o.status === 'processing').length
+const isCurrentUser = computed(() => {
+  const routeUserId = route.params.id
+  return !routeUserId || routeUserId === String(authStore.user?.id)
 })
 
-const completedOrders = computed(() => {
-  return orders.value.filter((o) => o.status === 'delivered' || o.status === 'completed').length
-})
+const contactVendor = () => {
+  if (!authStore.isAuthenticated) {
+    localStorage.setItem('redirectAfterLogin', router.currentRoute.value.fullPath)
+    router.push('/login')
+    return
+  }
 
-// ===== METHODS =====
-const handleImageError = (e) => {
-  e.target.src = 'https://placehold.co/300x300/08717f/white?text=صورة'
+  if (!profileUser.value) return
+
+  const existingConv = messageStore.conversations.find(c =>
+    c.other_user_id === profileUser.value.id
+  )
+
+  if (existingConv) {
+    messageStore.openChat(existingConv)
+    showNotification('✅ تم فتح المحادثة', 'success')
+  } else {
+    showMessageModal.value = true
+  }
 }
 
-const showNotification = (message, type = 'success') => {
-  const icons = {
-    success: '✅',
-    error: '❌',
-    info: 'ℹ️',
-    warning: '⚠️',
-  }
+const sendMessageToVendor = async () => {
+  if (!messageText.value.trim() || !profileUser.value) return
 
-  toast.value = {
-    show: true,
-    message,
-    type,
-    icon: icons[type],
-  }
+  sendingMessage.value = true
+  try {
+    const conversation = await messageStore.startConversation(
+      profileUser.value.id,
+      'vendor'
+    )
 
-  setTimeout(() => {
-    toast.value.show = false
-  }, 3000)
+    if (conversation) {
+      const success = await messageStore.sendMessage(
+        profileUser.value.id,
+        messageText.value.trim(),
+        conversation.id
+      )
+
+      if (success) {
+        showNotification('✅ تم إرسال الرسالة بنجاح', 'success')
+        showMessageModal.value = false
+        messageText.value = ''
+        messageStore.openChat(conversation)
+      } else {
+        showNotification('❌ فشل إرسال الرسالة', 'error')
+      }
+    } else {
+      showNotification('❌ فشل بدء المحادثة', 'error')
+    }
+  } catch (error) {
+    console.error('Erreur envoi message:', error)
+    showNotification('❌ حدث خطأ أثناء إرسال الرسالة', 'error')
+  } finally {
+    sendingMessage.value = false
+  }
+}
+
+const formatImageUrl = (url) => {
+  if (!url) return null
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  if (url.startsWith('data:image')) return url
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+  return `${API_BASE_URL}${url.startsWith('/') ? url : '/' + url}`
 }
 
 const formatDate = (dateStr) => {
-  if (!dateStr) return 'غير محدد'
+  if (!dateStr) return ''
   const date = new Date(dateStr)
-  return date.toLocaleDateString('ar-TN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  const now = new Date()
+  const diff = Math.floor((now - date) / (1000 * 60))
+  if (diff < 1) return 'الآن'
+  if (diff < 60) return `منذ ${diff} دقيقة`
+  if (diff < 1440) return `منذ ${Math.floor(diff / 60)} ساعة`
+  return date.toLocaleDateString('ar-TN', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-const formatPrice = (price) => {
-  return new Intl.NumberFormat('ar-TN').format(price || 0)
-}
+const formatPrice = (price) => new Intl.NumberFormat('ar-TN').format(price || 0)
 
 const getOrderStatusText = (status) => {
-  const statusMap = {
+  const map = {
     pending: 'قيد الانتظار',
     processing: 'قيد المعالجة',
     shipped: 'تم الشحن',
     delivered: 'تم التوصيل',
     completed: 'مكتمل',
-    cancelled: 'ملغي',
+    cancelled: 'ملغي'
   }
-  return statusMap[status] || status
+  return map[status] || status
 }
 
-// ===== AVATAR UPLOAD SIMPLIFIÉ =====
-const triggerAvatarUpload = () => {
-  avatarInput.value?.click()
+const showNotification = (message, type = 'success') => {
+  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' }
+  toast.value = { show: true, message, type, icon: icons[type] }
+  setTimeout(() => (toast.value.show = false), 3000)
 }
 
-const compressImage = (file, maxWidth = 300, quality = 0.7) => {
+const compressImage = (file, maxWidth = 800, maxSizeKB = 500) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.readAsDataURL(file)
@@ -494,6 +497,7 @@ const compressImage = (file, maxWidth = 300, quality = 0.7) => {
         const canvas = document.createElement('canvas')
         let width = img.width
         let height = img.height
+        let quality = 0.9
 
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width)
@@ -502,12 +506,16 @@ const compressImage = (file, maxWidth = 300, quality = 0.7) => {
 
         canvas.width = width
         canvas.height = height
-
         const ctx = canvas.getContext('2d')
         ctx.drawImage(img, 0, 0, width, height)
 
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality)
-        resolve(compressedDataUrl)
+        let compressed = canvas.toDataURL('image/jpeg', quality)
+        while (compressed.length > maxSizeKB * 1024 && quality > 0.3) {
+          quality -= 0.1
+          compressed = canvas.toDataURL('image/jpeg', quality)
+        }
+
+        resolve(compressed)
       }
       img.onerror = reject
     }
@@ -515,53 +523,114 @@ const compressImage = (file, maxWidth = 300, quality = 0.7) => {
   })
 }
 
+const triggerAvatarUpload = () => avatarInput.value?.click()
+
 const handleAvatarUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) return
 
   if (file.size > 2 * 1024 * 1024) {
-    showNotification('حجم الصورة يجب أن يكون أقل من 2 ميجابايت', 'warning')
-    return
+    return showNotification('حجم الصورة يجب أن يكون أقل من 2 ميجابايت', 'warning')
   }
-
   if (!file.type.startsWith('image/')) {
-    showNotification('الرجاء اختيار صورة صالحة', 'warning')
-    return
+    return showNotification('الرجاء اختيار صورة صالحة', 'warning')
   }
 
-  uploading.value = true
-
+  uploadingAvatar.value = true
   try {
-    const compressedImage = await compressImage(file, 300)
+    const compressedImage = await compressImage(file, 300, 500)
+    const formData = new FormData()
+    formData.append('avatar', file)
 
-    // Appel à updateAvatar avec l'objet contenant le base64
-    const result = await authStore.updateAvatar({ avatar: compressedImage })
+    const response = await api.post('/users/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
 
-    if (result.success) {
-      showNotification('✅ تم تحديث الصورة بنجاح')
+    if (response.data.success) {
+      const newAvatarUrl = response.data.avatar || response.data.user?.avatar
+      if (newAvatarUrl) {
+        avatarUrl.value = formatImageUrl(newAvatarUrl)
+        avatarKey.value = Date.now()
+        localStorage.setItem('userAvatar', avatarUrl.value)
+        showNotification('✅ تم تحديث الصورة الشخصية بنجاح')
+      }
     } else {
-      showNotification(result.error, 'error')
+      avatarUrl.value = compressedImage
+      avatarKey.value = Date.now()
+      localStorage.setItem('userAvatar', avatarUrl.value)
+      showNotification('✅ تم تحديث الصورة الشخصية (محلياً)', 'success')
     }
   } catch (error) {
-    console.error('❌ Erreur upload avatar:', error)
-    showNotification('حدث خطأ أثناء رفع الصورة', 'error')
+    console.error('Upload error:', error)
+    const compressedImage = await compressImage(file, 300, 500)
+    avatarUrl.value = compressedImage
+    avatarKey.value = Date.now()
+    localStorage.setItem('userAvatar', avatarUrl.value)
+    showNotification('⚠️ تم حفظ الصورة محلياً', 'warning')
   } finally {
-    uploading.value = false
+    uploadingAvatar.value = false
     event.target.value = ''
   }
 }
 
-// ===== LOAD ORDERS =====
-const loadOrders = () => {
-  loadingOrders.value = true
+const openCoverUpload = () => coverInput.value?.click()
+
+const handleCoverUpload = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  if (file.size > 5 * 1024 * 1024) {
+    return showNotification('حجم الصورة يجب أن يكون أقل من 5 ميجابايت', 'warning')
+  }
+
+  uploadingCover.value = true
+  try {
+    const compressedImage = await compressImage(file, 1200, 500)
+    coverImageUrl.value = compressedImage
+    coverImageKey.value = Date.now()
+    localStorage.setItem('userCover', coverImageUrl.value)
+    showNotification('✅ تم تحديث صورة الغلاف بنجاح')
+  } catch (error) {
+    console.error('Cover upload error:', error)
+    showNotification('❌ فشل تحديث صورة الغلاف', 'error')
+  } finally {
+    uploadingCover.value = false
+    event.target.value = ''
+  }
+}
+
+const loadProfileData = async () => {
+  const userId = route.params.id
+
+  if (!userId || userId === String(authStore.user?.id)) {
+    profileUser.value = {
+      id: authStore.user?.id,
+      name: authStore.userName,
+      email: authStore.userEmail,
+      avatar: authStore.userAvatar,
+      role: authStore.userRole
+    }
+    return
+  }
 
   try {
-    const allOrders = JSON.parse(localStorage.getItem('orders') || '[]')
-    orders.value = allOrders
-      .filter((order) => order.customer?.email === authStore.userEmail)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    const response = await api.get(`/users/${userId}`)
+    if (response.data.success) {
+      profileUser.value = response.data.data.user || response.data.data
+    }
+  } catch (error) {
+    console.error('Erreur chargement profil:', error)
+    showNotification('❌ فشل تحميل الملف الشخصي', 'error')
+  }
+}
 
-    console.log('📦 Commandes chargées:', orders.value.length)
+const loadOrders = async () => {
+  loadingOrders.value = true
+  try {
+    const response = await api.get('/orders/my-orders')
+    if (response.data.success) {
+      orders.value = response.data.data || response.data.orders || []
+    }
   } catch (error) {
     console.error('Error loading orders:', error)
     orders.value = []
@@ -570,1100 +639,1206 @@ const loadOrders = () => {
   }
 }
 
-// ===== PROFILE ACTIONS =====
 const editProfile = () => {
   editForm.value = {
-    fullName: authStore.userName,
-    email: authStore.userEmail,
-    phone: authStore.userPhone || '',
-    address: authStore.userAddress || '',
+    fullName: authStore.userName || '',
+    email: authStore.userEmail || '',
+    bio: userBio.value,
+    website: userWebsite.value
   }
   showEditModal.value = true
 }
 
 const saveProfileChanges = async () => {
+  saving.value = true
   try {
-    const result = await authStore.updateProfile({
+    await authStore.updateProfile({
       name: editForm.value.fullName,
-      email: editForm.value.email,
-      phone: editForm.value.phone,
-      address: editForm.value.address,
+      email: editForm.value.email
     })
-
-    if (result.success) {
-      showNotification('✅ تم حفظ التغييرات بنجاح')
-      showEditModal.value = false
-    } else {
-      showNotification(result.error, 'error')
-    }
+    userBio.value = editForm.value.bio
+    userWebsite.value = editForm.value.website
+    localStorage.setItem('userBio', userBio.value)
+    localStorage.setItem('userWebsite', userWebsite.value)
+    showNotification('✅ تم حفظ التغييرات بنجاح')
+    showEditModal.value = false
   } catch (error) {
-    console.error('Error saving profile:', error)
-    showNotification('حدث خطأ أثناء الحفظ', 'error')
+    showNotification('❌ حدث خطأ أثناء الحفظ', 'error')
+  } finally {
+    saving.value = false
   }
 }
 
-// ===== PASSWORD =====
 const changePassword = () => {
   showPasswordModal.value = true
-  passwordForm.value = {
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  }
+  passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
 }
 
 const savePassword = async () => {
   if (passwordForm.value.newPassword.length < 6) {
-    showNotification('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'warning')
-    return
+    return showNotification('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'warning')
   }
-
   if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    showNotification('كلمة المرور غير متطابقة', 'warning')
-    return
+    return showNotification('كلمة المرور غير متطابقة', 'warning')
   }
 
   changingPassword.value = true
-
   try {
-    // Simuler un appel API
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await api.patch('/users/change-password', {
+      currentPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword
+    })
     showNotification('✅ تم تغيير كلمة المرور بنجاح')
     showPasswordModal.value = false
   } catch (error) {
-    console.error('Error changing password:', error)
-    showNotification('حدث خطأ', 'error')
+    showNotification('❌ كلمة المرور الحالية غير صحيحة', 'error')
   } finally {
     changingPassword.value = false
   }
 }
 
-// ===== SETTINGS ACTIONS =====
-const notificationSettings = () => {
-  router.push('/notification-settings')
-}
-
-const privacySettings = () => {
-  router.push('/privacy-settings')
-}
+const viewOrderDetails = (orderId) => router.push(`/order/${orderId}`)
+const openSettings = () => (activeTab.value = 'settings')
 
 const logout = () => {
   authStore.logout()
-  showNotification('👋 تم تسجيل الخروج', 'info')
-  setTimeout(() => {
-    router.push('/login')
-  }, 1500)
+  localStorage.removeItem('userAvatar')
+  localStorage.removeItem('userCover')
+  showNotification('👋 تم تسجيل الخروج بنجاح')
+  setTimeout(() => router.push('/login'), 1500)
 }
 
-// ===== ORDER ACTIONS =====
-const trackOrder = (orderId) => {
-  router.push(`/order-tracking/${orderId}`)
-}
+const handleAvatarError = (e) => { e.target.src = defaultProfileImage }
+const handleCoverError = (e) => { e.target.src = defaultCoverImage }
+const handleItemImageError = (e) => { e.target.src = getDefaultImage() }
 
-const viewOrderDetails = (orderId) => {
-  router.push(`/order-details/${orderId}`)
-}
-
-// ===== LIFECYCLE =====
-onMounted(() => {
+onMounted(async () => {
   if (!authStore.isAuthenticated) {
     router.push('/login')
     return
   }
 
-  loadOrders()
+  await messageStore.init()
+  await loadProfileData()
 
-  setTimeout(() => {
-    loading.value = false
-  }, 500)
+  const savedAvatar = localStorage.getItem('userAvatar')
+  if (savedAvatar) avatarUrl.value = savedAvatar
+  else avatarUrl.value = defaultProfileImage
+
+  const savedCover = localStorage.getItem('userCover')
+  if (savedCover) coverImageUrl.value = savedCover
+  else coverImageUrl.value = defaultCoverImage
+
+  userBio.value = localStorage.getItem('userBio') || ''
+  userWebsite.value = localStorage.getItem('userWebsite') || ''
+
+  if (isCurrentUser.value) {
+    await loadOrders()
+  } else {
+    tabs.value = []
+  }
+
+  setTimeout(() => { loading.value = false }, 500)
 })
+
+watch(isDarkMode, (newValue) => {
+  if (newValue) {
+    document.body.classList.add('dark-mode')
+  } else {
+    document.body.classList.remove('dark-mode')
+  }
+}, { immediate: true })
 </script>
 
-
 <style scoped>
-/* ===== VARIABLES ===== */
-:root {
-  --primary: #08717f;
-  --primary-dark: #065a69;
-  --secondary: #d40025;
-  --secondary-dark: #b00020;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --dark: #1e293b;
-  --gray: #64748b;
-  --light: #f8fafc;
-  --border: #e2e8f0;
-}
+/* Import Amiri font */
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Base styles with Amiri font */
+.profile-page,
+.profile-page * {
+  font-family: 'Amiri', 'Traditional Arabic', 'Segoe UI', serif;
 }
 
 .profile-page {
+  background: #fafafa;
   min-height: 100vh;
-  background: var(--light);
-  font-family: 'Cairo', sans-serif;
-  direction: rtl;
 }
 
+.profile-page.dark-mode {
+  background: #000000;
+  color: #ffffff;
+}
+
+/* Container */
 .container {
-  max-width: 1200px;
+  max-width: 935px;
   margin: 0 auto;
   padding: 0 20px;
 }
 
-/* ===== LOADING ===== */
-.loading-state {
+/* Cover styles */
+.cover-container {
+  position: relative;
+  height: 200px;
+  background: #efefef;
+}
+
+.dark-mode .cover-container {
+  background: #1a1a1a;
+}
+
+.cover-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.cover-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
+}
+
+.edit-cover-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  color: white;
+  cursor: pointer;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 60vh;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  font-family: 'Amiri', serif;
 }
 
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid var(--border);
-  border-top: 4px solid var(--primary);
-  border-right: 4px solid var(--secondary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
+.edit-cover-btn:hover {
+  background: rgba(0,0,0,0.8);
+  transform: scale(1.02);
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.spinner-small {
-  width: 30px;
-  height: 30px;
-  border: 3px solid var(--border);
-  border-top: 3px solid var(--primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 10px;
-}
-
-/* ===== PROFILE HEADER ===== */
+/* Profile Header */
 .profile-header {
-  background: white;
-  padding: 40px 0;
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  margin-top: -60px;
+  margin-bottom: 24px;
 }
 
-.profile-info {
+.profile-info-wrapper {
   display: flex;
-  align-items: center;
   gap: 30px;
-  margin-bottom: 20px;
+  align-items: flex-end;
 }
 
-/* Avatar Section - Amélioré */
+/* Avatar Section */
 .avatar-section {
   position: relative;
-  width: 120px;
-  height: 120px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 150px;
+  height: 150px;
 }
 
 .profile-avatar {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 4px solid white;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   object-fit: cover;
-  transition: all 0.3s ease;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
 }
 
-.change-avatar-btn {
+.profile-avatar:hover {
+  transform: scale(1.02);
+}
+
+.dark-mode .profile-avatar {
+  border-color: #000000;
+}
+
+.avatar-edit-btn {
   position: absolute;
   bottom: 5px;
   right: 5px;
-  width: 35px;
-  height: 35px;
-  background: white;
+  width: 32px;
+  height: 32px;
+  background: #0095f6;
   border: none;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  border: 2px solid var(--primary);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
 }
 
-.change-avatar-btn:hover {
-  background: var(--primary);
-  color: white;
+.avatar-wrapper:hover .avatar-edit-btn {
+  opacity: 1;
+}
+
+.avatar-edit-btn:hover {
   transform: scale(1.1);
 }
 
-.change-avatar-btn.uploading {
-  background: var(--gray);
-  border-color: var(--gray);
-  cursor: not-allowed;
-  animation: pulse 1.5s infinite;
+.avatar-edit-btn svg {
+  stroke: white;
+  width: 16px;
+  height: 16px;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.change-avatar-btn .tooltip {
+.verified-badge {
   position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--dark);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-  margin-bottom: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: 24px;
+  height: 24px;
+  background: #0095f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
 }
 
-.change-avatar-btn:hover .tooltip {
-  opacity: 1;
-  visibility: visible;
+.verified-badge svg {
+  width: 14px;
+  height: 14px;
+  fill: white;
 }
 
-.profile-details {
+/* Info Section */
+.info-section {
   flex: 1;
+  padding-bottom: 20px;
 }
 
-.profile-name {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--dark);
-  margin-bottom: 5px;
+.username-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
-.profile-email,
-.profile-phone {
-  color: var(--gray);
-  font-size: 1rem;
-  margin-bottom: 5px;
+.username {
+  font-size: 28px;
+  font-weight: 700;
+  color: #262626;
+  margin: 0;
+  font-family: 'Amiri', serif;
 }
 
-.profile-role {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
+.dark-mode .username {
+  color: #ffffff;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.message-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  background: #0095f6;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
   font-weight: 600;
-  margin-top: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Amiri', serif;
 }
 
-.profile-role.admin {
-  background: var(--secondary);
+.message-btn:hover {
+  background: #0077cc;
+  transform: translateY(-1px);
+}
+
+.edit-profile-btn {
+  padding: 7px 16px;
+  background: #efefef;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Amiri', serif;
+}
+
+.edit-profile-btn:hover {
+  background: #e0e0e0;
+  transform: translateY(-1px);
+}
+
+.dark-mode .edit-profile-btn {
+  background: #363636;
   color: white;
 }
 
-.profile-role.vendor {
-  background: var(--primary);
-  color: white;
+.dark-mode .edit-profile-btn:hover {
+  background: #404040;
 }
 
-.profile-role.customer {
-  background: var(--success);
-  color: white;
+.settings-btn {
+  width: 32px;
+  height: 32px;
+  background: #efefef;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
+.settings-btn:hover {
+  background: #e0e0e0;
+  transform: rotate(90deg);
+}
+
+.dark-mode .settings-btn {
+  background: #363636;
+}
+
+.dark-mode .settings-btn:hover {
+  background: #404040;
+}
+
+/* Stats */
 .profile-stats {
   display: flex;
   gap: 40px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
+  margin-bottom: 20px;
 }
 
-.stat-item {
-  text-align: center;
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
-.stat-value {
-  display: block;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--primary);
+.stat-number {
+  font-size: 18px;
+  font-weight: 700;
+  color: #262626;
+}
+
+.dark-mode .stat-number {
+  color: #ffffff;
 }
 
 .stat-label {
-  color: var(--gray);
-  font-size: 0.9rem;
+  font-size: 16px;
+  color: #8e8e8e;
 }
 
-/* ===== TABS ===== */
-.profile-tabs {
-  background: white;
-  border-bottom: 1px solid var(--border);
+/* Bio */
+.profile-bio {
+  margin-bottom: 10px;
 }
 
-.tabs-nav {
+.bio-name {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: #262626;
+}
+
+.dark-mode .bio-name {
+  color: #ffffff;
+}
+
+.bio-text {
+  font-size: 14px;
+  color: #262626;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.dark-mode .bio-text {
+  color: #ffffff;
+}
+
+.bio-link a {
+  font-size: 14px;
+  color: #00376b;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.bio-link a:hover {
+  text-decoration: underline;
+}
+
+.dark-mode .bio-link a {
+  color: #0095f6;
+}
+
+/* Tabs */
+.tabs-container {
+  border-top: 1px solid #dbdbdb;
+}
+
+.dark-mode .tabs-container {
+  border-top-color: #262626;
+}
+
+.tabs {
   display: flex;
-  gap: 20px;
-  padding: 10px 0;
+  justify-content: center;
+  gap: 60px;
 }
 
 .tab-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  background: transparent;
+  gap: 6px;
+  padding: 16px 0;
+  background: none;
   border: none;
-  border-bottom: 3px solid transparent;
-  font-size: 1rem;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--gray);
+  letter-spacing: 1px;
+  color: #8e8e8e;
   cursor: pointer;
-  transition: all 0.3s ease;
+  position: relative;
+  transition: color 0.2s;
+  font-family: 'Amiri', serif;
 }
 
 .tab-btn:hover {
-  color: var(--primary);
+  color: #262626;
+}
+
+.dark-mode .tab-btn:hover {
+  color: #ffffff;
 }
 
 .tab-btn.active {
-  color: var(--secondary);
-  border-bottom-color: var(--secondary);
+  color: #262626;
 }
 
-.tab-icon {
-  font-size: 1.2rem;
+.dark-mode .tab-btn.active {
+  color: #ffffff;
 }
 
-/* ===== TAB CONTENT ===== */
-.tab-content {
-  padding: 40px 0;
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #262626;
 }
 
-/* ===== ACCOUNT CARD ===== */
-.account-card {
-  background: white;
-  border-radius: 16px;
-  padding: 30px;
-  margin-bottom: 30px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--border);
+.dark-mode .tab-btn.active::after {
+  background: #ffffff;
 }
 
-.card-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 1.3rem;
-  color: var(--dark);
-  margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #f1f5f9;
-}
-
-.title-icon {
-  font-size: 1.5rem;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  margin-bottom: 25px;
-}
-
-.info-item {
-  padding: 15px;
-  background: var(--light);
-  border-radius: 10px;
-  border: 1px solid var(--border);
-}
-
-.info-label {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--gray);
-  margin-bottom: 5px;
-}
-
-.info-value {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--dark);
-}
-
-.role-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.role-badge.admin {
-  background: var(--secondary);
-  color: white;
-}
-
-.role-badge.vendor {
-  background: var(--primary);
-  color: white;
-}
-
-.role-badge.customer {
-  background: var(--success);
-  color: white;
-}
-
-.btn-edit {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 25px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-edit:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(8, 113, 127, 0.3);
-}
-
-/* ===== SETTINGS ===== */
-.settings-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.setting-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 15px;
-  background: var(--light);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-}
-
-.setting-item:hover {
-  background: white;
-  border-color: var(--primary);
-  transform: translateX(-4px);
-}
-
-.setting-item.logout {
-  border-color: #fecdd3;
-  background: #fff5f7;
-}
-
-.setting-item.logout:hover {
-  background: #fee2e2;
-  border-color: var(--secondary);
-}
-
-.setting-icon {
-  font-size: 1.2rem;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  border-radius: 8px;
-  color: var(--primary);
-}
-
-.logout-icon {
-  color: var(--secondary) !important;
-}
-
-.setting-text {
-  flex: 1;
-  text-align: right;
-  font-size: 0.95rem;
-  color: var(--dark);
-}
-
-.logout-text {
-  color: var(--secondary) !important;
-  font-weight: 700;
-}
-
-.setting-arrow {
-  color: #94a3b8;
-  font-size: 1rem;
-}
-
-/* ===== ORDERS ===== */
-.orders-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-}
-
-.orders-title {
-  font-size: 1.5rem;
-  color: var(--dark);
-}
-
-.orders-count {
-  color: var(--gray);
-  font-size: 0.95rem;
-}
-
-.loading-orders {
+/* Empty States */
+.empty-state {
   text-align: center;
-  padding: 40px;
-  color: var(--gray);
+  padding: 80px 20px;
 }
 
+.empty-state svg {
+  width: 64px;
+  height: 64px;
+  stroke: #8e8e8e;
+  margin-bottom: 20px;
+}
+
+.empty-state p {
+  color: #8e8e8e;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.shop-now-btn {
+  display: inline-block;
+  padding: 8px 24px;
+  background: #0095f6;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-family: 'Amiri', serif;
+}
+
+.shop-now-btn:hover {
+  background: #0077cc;
+  transform: translateY(-1px);
+}
+
+/* Orders */
 .orders-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
+  margin-top: 20px;
 }
 
 .order-card {
   background: white;
-  border-radius: 16px;
-  padding: 25px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-  border: 1px solid var(--border);
-  transition: all 0.3s ease;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #dbdbdb;
+}
+
+.dark-mode .order-card {
+  background: #1a1a1a;
+  border-color: #262626;
 }
 
 .order-card:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .order-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .order-info {
   display: flex;
-  gap: 15px;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.order-id {
+.order-number {
   font-weight: 700;
-  color: var(--primary);
-  background: #e0f2f1;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 14px;
 }
 
 .order-date {
-  color: var(--gray);
-  font-size: 0.9rem;
+  font-size: 12px;
+  color: #8e8e8e;
 }
 
 .order-status {
-  padding: 5px 15px;
-  border-radius: 30px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.order-status.pending {
-  background: #fff3cd;
-  color: #856404;
-}
+.order-status.pending { background: #fff3cd; color: #856404; }
+.order-status.processing { background: #cce5ff; color: #004085; }
+.order-status.shipped { background: #d1ecf1; color: #0c5460; }
+.order-status.delivered { background: #d4edda; color: #155724; }
+.order-status.completed { background: #d4edda; color: #155724; }
+.order-status.cancelled { background: #f8d7da; color: #721c24; }
 
-.order-status.processing {
-  background: #cce5ff;
-  color: #004085;
-}
-
-.order-status.shipped {
-  background: #d1ecf1;
-  color: #0c5460;
-}
-
-.order-status.delivered,
-.order-status.completed {
-  background: #d4edda;
-  color: #155724;
-}
-
-.order-status.cancelled {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.order-items {
-  margin-bottom: 20px;
-}
-
-.order-item {
+.order-items-preview {
   display: flex;
-  gap: 15px;
-  padding: 10px 0;
-  border-bottom: 1px solid #f1f5f9;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
-.order-item:last-child {
-  border-bottom: none;
-}
-
-.item-image {
-  width: 60px;
-  height: 60px;
+.item-thumb {
+  width: 48px;
+  height: 48px;
   border-radius: 8px;
   object-fit: cover;
-  border: 1px solid var(--border);
 }
 
-.item-details {
-  flex: 1;
-}
-
-.item-name {
-  font-size: 0.95rem;
-  color: var(--dark);
-  margin-bottom: 5px;
-  font-weight: 600;
-}
-
-.item-price {
-  color: var(--secondary);
+.more-items {
+  width: 48px;
+  height: 48px;
+  background: #efefef;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
   font-weight: 700;
-  font-size: 0.85rem;
-  margin-bottom: 3px;
 }
 
-.item-quantity {
-  color: var(--gray);
-  font-size: 0.8rem;
-}
-
-.item-total {
-  font-weight: 700;
-  color: var(--primary);
-  font-size: 0.95rem;
-  min-width: 100px;
-  text-align: left;
+.dark-mode .more-items {
+  background: #262626;
 }
 
 .order-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 0;
-  border-top: 1px solid #f1f5f9;
-  border-bottom: 1px solid #f1f5f9;
-  margin-bottom: 20px;
+  padding-top: 12px;
+  border-top: 1px solid #efefef;
 }
 
-.delivery-info {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--gray);
-  font-size: 0.9rem;
-}
-
-.info-icon {
-  font-size: 1rem;
+.dark-mode .order-footer {
+  border-top-color: #262626;
 }
 
 .order-total {
-  font-size: 1.1rem;
   font-weight: 700;
-  color: var(--dark);
+  color: #d40025;
+  font-size: 16px;
 }
 
-.total-price {
-  color: var(--secondary);
-  margin-right: 8px;
+.order-items-count {
+  font-size: 12px;
+  color: #8e8e8e;
 }
 
-.order-actions {
-  display: flex;
-  gap: 10px;
+/* Settings */
+.settings-list {
+  max-width: 600px;
+  margin: 20px auto;
 }
 
-.btn-track,
-.btn-details {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.setting-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btn-track {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: white;
-}
-
-.btn-track:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(8, 113, 127, 0.3);
-}
-
-.btn-details {
-  background: #f1f5f9;
-  color: var(--gray);
-}
-
-.btn-details:hover {
-  background: #e2e8f0;
-  transform: translateY(-2px);
-}
-
-/* Empty Orders */
-.empty-orders {
-  text-align: center;
-  padding: 60px 20px;
+  gap: 16px;
+  padding: 16px;
   background: white;
-  border-radius: 16px;
-  border: 2px dashed var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+  border: 1px solid #dbdbdb;
 }
 
-.empty-icon {
-  font-size: 4rem;
-  opacity: 0.3;
-  margin-bottom: 20px;
-  display: block;
+.dark-mode .setting-item {
+  background: #1a1a1a;
+  border-color: #262626;
 }
 
-.empty-orders h3 {
-  font-size: 1.3rem;
-  color: var(--dark);
-  margin-bottom: 10px;
+.setting-item:hover {
+  transform: translateX(-4px);
+  border-color: #0095f6;
 }
 
-.empty-orders p {
-  color: var(--gray);
-  margin-bottom: 25px;
+.setting-item.logout:hover {
+  border-color: #ed4956;
 }
 
-.btn-shop {
-  display: inline-block;
-  padding: 12px 30px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: white;
-  text-decoration: none;
-  border-radius: 30px;
-  font-weight: 600;
-  transition: all 0.3s ease;
+.setting-icon {
+  font-size: 24px;
 }
 
-.btn-shop:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(8, 113, 127, 0.3);
+.setting-content {
+  flex: 1;
 }
 
-/* ===== MODAL ===== */
+.setting-content h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  font-family: 'Amiri', serif;
+}
+
+.setting-content p {
+  font-size: 12px;
+  color: #8e8e8e;
+  margin: 0;
+}
+
+.setting-arrow {
+  font-size: 18px;
+  color: #8e8e8e;
+}
+
+/* Modals */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
+  background: rgba(0,0,0,0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
 }
 
-.modal-content {
+.modal-container {
   background: white;
-  border-radius: 20px;
+  border-radius: 12px;
   width: 90%;
-  max-width: 450px;
+  max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: modalSlideIn 0.3s ease;
 }
 
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.dark-mode .modal-container {
+  background: #1a1a1a;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid var(--border);
+  padding: 16px;
+  border-bottom: 1px solid #dbdbdb;
+}
+
+.dark-mode .modal-header {
+  border-bottom-color: #262626;
 }
 
 .modal-header h3 {
-  font-size: 1.2rem;
-  color: var(--dark);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  font-family: 'Amiri', serif;
 }
 
-.modal-close {
-  width: 35px;
-  height: 35px;
-  background: var(--light);
+.close-modal {
+  width: 32px;
+  height: 32px;
+  background: none;
   border: none;
-  border-radius: 8px;
-  font-size: 1.2rem;
+  font-size: 20px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.2s;
 }
 
-.modal-close:hover {
-  background: var(--secondary);
-  color: white;
+.close-modal:hover {
+  transform: scale(1.1);
 }
 
 .modal-body {
-  padding: 25px;
+  padding: 20px;
 }
 
+/* Forms */
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
-.form-label {
+.form-group label {
   display: block;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--dark);
   margin-bottom: 8px;
+  font-family: 'Amiri', serif;
 }
 
 .form-input,
 .form-textarea {
   width: 100%;
-  padding: 12px 15px;
-  border: 2px solid var(--border);
+  padding: 10px 12px;
+  border: 1px solid #dbdbdb;
   border-radius: 8px;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s;
+  font-family: 'Amiri', serif;
+}
+
+.dark-mode .form-input,
+.dark-mode .form-textarea {
+  background: #262626;
+  border-color: #363636;
+  color: white;
 }
 
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(8, 113, 127, 0.1);
+  border-color: #0095f6;
 }
 
-.form-textarea {
-  resize: vertical;
-  min-height: 60px;
-}
-
-.modal-actions {
+.form-actions {
   display: flex;
-  gap: 15px;
-  margin-top: 25px;
+  gap: 12px;
+  margin-top: 20px;
 }
 
-.btn-cancel,
-.btn-save {
+.cancel-btn,
+.save-btn {
   flex: 1;
-  padding: 12px;
-  border: none;
+  padding: 10px;
   border-radius: 8px;
-  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
+  font-family: 'Amiri', serif;
+  font-size: 14px;
 }
 
-.btn-cancel {
-  background: var(--light);
-  color: var(--gray);
+.cancel-btn {
+  background: #efefef;
+  border: none;
 }
 
-.btn-cancel:hover {
-  background: #e2e8f0;
+.cancel-btn:hover {
+  background: #e0e0e0;
 }
 
-.btn-save {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+.dark-mode .cancel-btn {
+  background: #363636;
   color: white;
 }
 
-.btn-save:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(8, 113, 127, 0.3);
+.dark-mode .cancel-btn:hover {
+  background: #404040;
 }
 
-.btn-save:disabled {
-  opacity: 0.7;
+.save-btn {
+  background: #0095f6;
+  border: none;
+  color: white;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #0077cc;
+}
+
+.save-btn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-.loading-spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 2px solid white;
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+/* Message Modal */
+.message-modal {
+  max-width: 450px;
 }
 
-/* ===== TOAST ===== */
-.toast-notification {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
+.message-header-info {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 24px;
-  background: white;
-  border-radius: 50px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  z-index: 9999;
-  min-width: 280px;
-  border-right: 4px solid;
-  animation: slideInRight 0.3s ease;
 }
 
-.toast-notification.success {
-  border-right-color: var(--success);
+.message-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
-.toast-notification.error {
-  border-right-color: var(--error);
+.vendor-badge {
+  font-size: 12px;
+  background: #08717f;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 20px;
+  display: inline-block;
 }
 
-.toast-notification.info {
-  border-right-color: var(--primary);
+.message-body {
+  padding: 20px;
 }
 
-.toast-notification.warning {
-  border-right-color: var(--warning);
+.message-preview {
+  background: #f0fdf4;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  text-align: center;
 }
 
-@keyframes slideInRight {
+.message-preview p {
+  margin: 0;
+  color: #15803d;
+  font-size: 14px;
+}
+
+.dark-mode .message-preview {
+  background: #1a3a2a;
+}
+
+.dark-mode .message-preview p {
+  color: #4ade80;
+}
+
+.message-textarea {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #dbdbdb;
+  border-radius: 12px;
+  font-size: 14px;
+  resize: vertical;
+  font-family: 'Amiri', serif;
+  transition: border-color 0.2s;
+}
+
+.dark-mode .message-textarea {
+  background: #262626;
+  border-color: #363636;
+  color: white;
+}
+
+.message-textarea:focus {
+  outline: none;
+  border-color: #0095f6;
+}
+
+.message-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.send-message-btn {
+  flex: 1;
+  padding: 12px;
+  background: #0095f6;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Amiri', serif;
+}
+
+.send-message-btn:hover:not(:disabled) {
+  background: #0077cc;
+}
+
+.send-message-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #262626;
+  border-radius: 24px;
+  color: white;
+  z-index: 2000;
+  animation: slideUp 0.3s ease;
+  font-family: 'Amiri', serif;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.toast-notification.success { background: #262626; }
+.toast-notification.error { background: #ed4956; }
+.toast-notification.warning { background: #f5a623; }
+.toast-notification.info { background: #0095f6; }
+
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #08717f, #d40025);
+  animation: toastProgress 3s linear forwards;
+  border-radius: 0 0 24px 24px;
+}
+
+/* Loaders */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.instagram-loader {
+  text-align: center;
+}
+
+.loader-ring {
+  width: 44px;
+  height: 44px;
+  border: 3px solid #dbdbdb;
+  border-top-color: #0095f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+.loader-logo {
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 40px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #dbdbdb;
+  border-top-color: #0095f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+/* Animations */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateX(30px);
+    transform: translateX(-50%) translateY(20px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateX(-50%) translateY(0);
   }
 }
 
-.toast-icon {
-  font-size: 1.3rem;
+@keyframes toastProgress {
+  from { width: 100%; }
+  to { width: 0; }
 }
 
-.toast-message {
-  color: var(--dark);
-  font-size: 0.9rem;
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .profile-info {
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+.toast-slide-enter-active,
+.toast-slide-leave-active {
+  transition: all 0.3s;
+}
+
+.toast-slide-enter-from,
+.toast-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+
+/* Responsive Design */
+@media (max-width: 735px) {
+  .profile-info-wrapper {
     flex-direction: column;
+    align-items: center;
     text-align: center;
+    gap: 16px;
+  }
+
+  .avatar-wrapper {
+    width: 100px;
+    height: 100px;
   }
 
   .profile-stats {
     justify-content: center;
   }
 
-  .tabs-nav {
+  .username-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .action-buttons {
     justify-content: center;
   }
 
-  .info-grid {
-    grid-template-columns: 1fr;
+  .tabs {
+    gap: 30px;
   }
 
-  .order-header {
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
+  .tab-text {
+    display: none;
   }
 
-  .order-footer {
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
+  .tab-icon {
+    font-size: 20px;
   }
 
-  .order-actions {
-    flex-direction: column;
+  .container {
+    padding: 0 16px;
   }
 
-  .toast-notification {
-    min-width: auto;
-    width: calc(100% - 40px);
-    right: 20px;
+  .cover-container {
+    height: 150px;
+  }
+
+  .edit-cover-btn span {
+    display: none;
+  }
+
+  .edit-cover-btn svg {
+    margin: 0;
+  }
+
+  .edit-cover-btn {
+    padding: 8px;
   }
 }
 
 @media (max-width: 480px) {
-  .profile-name {
-    font-size: 1.5rem;
+  .profile-stats {
+    gap: 20px;
   }
 
-  .stat-item {
-    flex: 1;
+  .stat-number {
+    font-size: 16px;
   }
 
-  .stat-value {
-    font-size: 1.2rem;
+  .stat-label {
+    font-size: 14px;
   }
 
-  .order-item {
-    flex-wrap: wrap;
+  .username {
+    font-size: 22px;
   }
 
-  .item-total {
-    width: 100%;
-    text-align: right;
-    padding-right: 75px;
+  .order-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .order-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 }
 </style>

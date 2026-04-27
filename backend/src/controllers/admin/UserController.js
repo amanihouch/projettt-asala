@@ -1,12 +1,17 @@
-// backend/src/controllers/admin/UserController.js
 const User = require('../../models/User');
 const db = require('../../models/db');
 
-// ===== RÉCUPÉRER TOUS LES UTILISATEURS =====
+// ===== RÉCUPÉRER TOUS LES UTILISATEURS - VERSION CORRIGÉE =====
 exports.getAllUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search = '', role = '' } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const search = req.query.search || '';
+    const role = req.query.role || '';
 
+    console.log('📊 Paramètres:', { page, limit, search, role });
+
+    // Construire la requête de base
     let sql = `
       SELECT id, name, email, phone, role, avatar, isActive, lastLogin, createdAt
       FROM users
@@ -14,35 +19,77 @@ exports.getAllUsers = async (req, res) => {
     `;
     const params = [];
 
-    if (role && role !== 'all') {
+    // Ajouter les filtres
+    if (role && role !== 'all' && role !== '') {
       sql += ' AND role = ?';
       params.push(role);
     }
 
-    if (search) {
-      sql += ' AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)';
+    if (search && search.trim() !== '') {
+      sql += ' AND (name LIKE ? OR email LIKE ?)';
       const term = `%${search}%`;
-      params.push(term, term, term);
+      params.push(term, term);
     }
 
-    sql += ' ORDER BY createdAt DESC';
+    // Compter le total
+    let countSql = sql.replace(/SELECT.*FROM/, 'SELECT COUNT(*) as total FROM');
+    console.log('📊 Count SQL:', countSql);
+    console.log('📊 Count params:', params);
+    
+    let total = 0;
+    try {
+      const countResult = await db.getOne(countSql, params);
+      total = countResult?.total || 0;
+    } catch (err) {
+      console.error('❌ Erreur count:', err.message);
+      // Si erreur, essayer sans les filtres
+      const fallbackCount = await db.getOne('SELECT COUNT(*) as total FROM users');
+      total = fallbackCount?.total || 0;
+    }
 
-    const result = await db.paginate(sql, params, page, limit);
+    // Calculer l'offset
+    const offset = (page - 1) * limit;
+    
+    // Récupérer les données avec pagination
+    let dataSql = sql + ' ORDER BY createdAt DESC LIMIT ? OFFSET ?';
+    const dataParams = [...params, limit, offset];
+    
+    console.log('📊 Data SQL:', dataSql);
+    console.log('📊 Data params:', dataParams);
+    
+    let users = [];
+    try {
+      users = await db.query(dataSql, dataParams);
+    } catch (err) {
+      console.error('❌ Erreur data:', err.message);
+      // Fallback: récupérer sans pagination
+      users = await db.query(sql + ' ORDER BY createdAt DESC', params);
+    }
+
+    console.log('✅ Utilisateurs trouvés:', users.length);
 
     res.json({
       success: true,
-      data: result
+      data: {
+        data: users,
+        pagination: {
+          page: page,
+          limit: limit,
+          total: total,
+          totalPages: Math.ceil(total / limit)
+        }
+      }
     });
   } catch (error) {
     console.error('❌ Erreur admin getAllUsers:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Erreur lors de la récupération des utilisateurs'
     });
   }
 };
 
-// ===== RÉCUPÉRER UN UTILISATEUR =====
+// ===== RÉCUPÉRER UN UTILISATEUR PAR ID (fonctionne déjà) =====
 exports.getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -55,20 +102,33 @@ exports.getUserById = async (req, res) => {
     }
 
     // Récupérer les statistiques
-    const orderStats = await db.getOne(
-      'SELECT COUNT(*) as orderCount, COALESCE(SUM(total), 0) as orderTotal FROM orders WHERE userId = ?',
-      [user.id]
-    );
+    let orderStats = { orderCount: 0, orderTotal: 0 };
+    try {
+      const result = await db.getOne(
+        'SELECT COUNT(*) as orderCount, COALESCE(SUM(total), 0) as orderTotal FROM orders WHERE userId = ?',
+        [user.id]
+      );
+      if (result) {
+        orderStats = result;
+      }
+    } catch (err) {
+      console.log('⚠️ Erreur récupération commandes:', err.message);
+    }
 
-    const vendor = await db.getOne('SELECT * FROM vendors WHERE userId = ?', [user.id]);
+    let vendor = null;
+    try {
+      vendor = await db.getOne('SELECT * FROM vendors WHERE userId = ?', [user.id]);
+    } catch (err) {
+      console.log('⚠️ Erreur récupération vendeur:', err.message);
+    }
 
     res.json({
       success: true,
       data: {
         user,
         stats: {
-          orderCount: orderStats?.orderCount || 0,
-          orderTotal: orderStats?.orderTotal || 0,
+          orderCount: orderStats.orderCount || 0,
+          orderTotal: orderStats.orderTotal || 0,
           isVendor: !!vendor,
           vendorId: vendor?.id
         }
@@ -86,7 +146,7 @@ exports.getUserById = async (req, res) => {
 // ===== METTRE À JOUR UN UTILISATEUR =====
 exports.updateUser = async (req, res) => {
   try {
-    const { name, email, phone, role, isActive } = req.body;
+    const { name, email, phone, role, isActive, address } = req.body;
 
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -96,13 +156,26 @@ exports.updateUser = async (req, res) => {
       });
     }
 
-    const updated = await User.update(req.params.id, {
-      name,
-      email,
-      phone,
-      role,
-      isActive: isActive !== undefined ? isActive : user.isActive
-    });
+    // Vérifier si l'email est déjà utilisé par un autre utilisateur
+    if (email && email !== user.email) {
+      const existingUser = await User.findByEmail(email);
+      if (existingUser && existingUser.id !== parseInt(req.params.id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cet email est déjà utilisé par un autre utilisateur'
+        });
+      }
+    }
+
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (email !== undefined) updates.email = email;
+    if (phone !== undefined) updates.phone = phone;
+    if (role !== undefined) updates.role = role;
+    if (isActive !== undefined) updates.isActive = isActive;
+    if (address !== undefined) updates.address = address;
+
+    const updated = await User.update(req.params.id, updates);
 
     res.json({
       success: true,
@@ -130,7 +203,14 @@ exports.deleteUser = async (req, res) => {
     }
 
     // Vérifier s'il a des commandes
-    const hasOrders = await db.exists('SELECT 1 FROM orders WHERE userId = ?', [user.id]);
+    let hasOrders = false;
+    try {
+      const orderResult = await db.getOne('SELECT 1 FROM orders WHERE userId = ? LIMIT 1', [user.id]);
+      hasOrders = !!orderResult;
+    } catch (err) {
+      console.log('⚠️ Erreur vérification commandes:', err.message);
+    }
+    
     if (hasOrders) {
       return res.status(400).json({
         success: false,
@@ -138,7 +218,30 @@ exports.deleteUser = async (req, res) => {
       });
     }
 
-    await User.delete(req.params.id);
+    // Supprimer les relations de wishlist
+    try {
+      await db.query('DELETE FROM wishlist WHERE user_id = ?', [user.id]);
+    } catch (err) {
+      console.log('⚠️ Erreur suppression wishlist:', err.message);
+    }
+
+    // Supprimer les likes
+    try {
+      await db.query('DELETE FROM product_likes WHERE userId = ?', [user.id]);
+      await db.query('DELETE FROM post_likes WHERE userId = ?', [user.id]);
+    } catch (err) {
+      console.log('⚠️ Erreur suppression likes:', err.message);
+    }
+
+    // Supprimer l'utilisateur
+    const deleted = await User.delete(req.params.id);
+    
+    if (!deleted) {
+      return res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la suppression'
+      });
+    }
 
     res.json({
       success: true,
@@ -165,12 +268,12 @@ exports.toggleUserStatus = async (req, res) => {
     }
 
     const newStatus = !user.isActive;
-    await User.update(req.params.id, { isActive: newStatus });
+    const updated = await User.update(req.params.id, { isActive: newStatus });
 
     res.json({
       success: true,
-      message: newStatus ? 'Utilisateur activé' : 'Utilisateur désactivé',
-      data: { isActive: newStatus }
+      message: newStatus ? 'Utilisateur activé avec succès' : 'Utilisateur désactivé avec succès',
+      data: { isActive: newStatus, user: updated }
     });
   } catch (error) {
     console.error('❌ Erreur admin toggleUserStatus:', error);

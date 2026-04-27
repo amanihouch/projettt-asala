@@ -1,11 +1,6 @@
-<!-- src/views/admin/Products.vue -->
+<!-- src/views/admin/Products.vue - Version corrigée -->
 <template>
-  <div class="admin-page">
-    <header class="page-header">
-      <h1 class="page-title">إدارة المنتجات</h1>
-      <p class="page-subtitle">عرض وإدارة جميع المنتجات المنشورة</p>
-    </header>
-
+  <div class="admin-page" :class="{ 'dark-mode': isDarkMode }">
     <div class="page-content">
       <!-- Search and Filter Bar -->
       <div class="filters-bar">
@@ -24,6 +19,13 @@
           <option v-for="cat in categories" :key="cat.value" :value="cat.value">
             {{ cat.label }}
           </option>
+        </select>
+
+        <select v-model="statusFilter" class="filter-select">
+          <option value="">جميع الحالات</option>
+          <option value="approved">منشور</option>
+          <option value="pending">في انتظار المراجعة</option>
+          <option value="rejected">مرفوض</option>
         </select>
       </div>
 
@@ -62,7 +64,6 @@
               <th>السعر</th>
               <th>الحالة</th>
               <th>التاريخ</th>
-              <th>الإعجابات</th>
               <th>الإجراءات</th>
             </tr>
           </thead>
@@ -77,15 +78,15 @@
                     @error="handleImageError"
                   />
                   <div class="product-details">
-                    <span class="product-name">{{ product.productName || product.name }}</span>
-                    <span class="product-id">#{{ product.id.slice(-8) }}</span>
+                    <span class="product-name">{{ truncateText(product.productName || product.name, 30) }}</span>
+                    <span class="product-id">#{{ product.id }}</span>
                   </div>
                 </div>
               </td>
               <td>
                 <div class="vendor-info">
-                  <span class="vendor-name">{{ product.vendorName || 'غير معروف' }}</span>
-                  <span v-if="product.vendorVerified" class="verified-badge" title="موثق">✓</span>
+                  <span class="vendor-name">{{ product.vendorName || product.vendor?.shopName || 'غير معروف' }}</span>
+                  <span v-if="product.vendorVerified || product.vendor?.verified" class="verified-badge" title="موثق">✓</span>
                 </div>
               </td>
               <td>
@@ -94,9 +95,9 @@
               <td>
                 <div class="price-info">
                   <span class="current-price">{{ formatPrice(product.price) }} د.ت</span>
-                  <span v-if="product.oldPrice" class="old-price"
-                    >{{ formatPrice(product.oldPrice) }} د.ت</span
-                  >
+                  <span v-if="product.oldPrice" class="old-price">
+                    {{ formatPrice(product.oldPrice) }} د.ت
+                  </span>
                 </div>
               </td>
               <td>
@@ -106,12 +107,6 @@
               </td>
               <td>{{ formatDate(product.createdAt) }}</td>
               <td>
-                <div class="likes-info">
-                  <span class="likes-icon">❤️</span>
-                  <span class="likes-count">{{ product.likes || 0 }}</span>
-                </div>
-              </td>
-              <td>
                 <div class="action-buttons">
                   <button
                     class="action-btn view"
@@ -120,8 +115,21 @@
                   >
                     <span class="btn-icon">👁️</span>
                   </button>
-                  <button class="action-btn edit" @click="editProduct(product)" title="تعديل">
-                    <span class="btn-icon">✏️</span>
+                  <button
+                    v-if="product.status === 'pending'"
+                    class="action-btn approve"
+                    @click="approveProduct(product)"
+                    title="موافقة"
+                  >
+                    <span class="btn-icon">✓</span>
+                  </button>
+                  <button
+                    v-if="product.status === 'pending'"
+                    class="action-btn reject"
+                    @click="rejectProduct(product)"
+                    title="رفض"
+                  >
+                    <span class="btn-icon">✕</span>
                   </button>
                   <button class="action-btn delete" @click="confirmDelete(product)" title="حذف">
                     <span class="btn-icon">🗑️</span>
@@ -161,7 +169,7 @@
     <!-- Delete Confirmation Modal -->
     <transition name="modal">
       <div v-if="showDeleteModal" class="modal-overlay" @click.self="closeDeleteModal">
-        <div class="modal-content">
+        <div class="modal-content" :class="{ 'dark-mode': isDarkMode }">
           <div class="modal-header">
             <h3>تأكيد الحذف</h3>
             <button class="close-btn" @click="closeDeleteModal">✕</button>
@@ -181,9 +189,34 @@
       </div>
     </transition>
 
+    <!-- Reject Modal -->
+    <transition name="modal">
+      <div v-if="showRejectModal" class="modal-overlay" @click.self="closeRejectModal">
+        <div class="modal-content" :class="{ 'dark-mode': isDarkMode }">
+          <div class="modal-header">
+            <h3>رفض المنتج</h3>
+            <button class="close-btn" @click="closeRejectModal">✕</button>
+          </div>
+          <div class="modal-body">
+            <p>سبب الرفض (اختياري)</p>
+            <textarea
+              v-model="rejectReason"
+              class="reject-textarea"
+              placeholder="أدخل سبب الرفض..."
+              rows="3"
+            ></textarea>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-cancel" @click="closeRejectModal">إلغاء</button>
+            <button class="btn-reject" @click="confirmReject">رفض</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- Toast Notification -->
     <transition name="toast">
-      <div v-if="toast.show" class="toast-notification" :class="toast.type">
+      <div v-if="toast.show" class="toast-notification" :class="[toast.type, { 'dark-mode': isDarkMode }]">
         <span class="toast-icon">{{ toast.icon }}</span>
         <span class="toast-message">{{ toast.message }}</span>
       </div>
@@ -194,18 +227,30 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../../stores/auth'
+import { useThemeStore } from '../../stores/theme'
+import api from '../../services/api'
 
 const router = useRouter()
+const authStore = useAuthStore()
+const themeStore = useThemeStore()
+
+// ===== DARK MODE =====
+const isDarkMode = computed(() => themeStore.isDarkMode)
 
 // ===== STATE =====
 const loading = ref(true)
 const searchQuery = ref('')
 const categoryFilter = ref('')
+const statusFilter = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const products = ref([])
 const showDeleteModal = ref(false)
+const showRejectModal = ref(false)
 const productToDelete = ref(null)
+const productToReject = ref(null)
+const rejectReason = ref('')
 
 // Toast
 const toast = ref({
@@ -217,15 +262,15 @@ const toast = ref({
 
 // Categories list
 const categories = [
-  { value: 'perfumes', label: 'عطور', icon: '🌸' },
-  { value: 'jewelry', label: 'حلي و اكسسوارات', icon: '💍' },
-  { value: 'clothing', label: 'ملابس', icon: '👗' },
-  { value: 'decoration', label: 'ديكور', icon: '🏺' },
-  { value: 'textiles', label: 'أقمشة وسجادات', icon: '🧵' },
-  { value: 'pottery', label: 'أواني', icon: '🍽️' },
-  { value: 'beauty', label: 'عناية وتجميل', icon: '🧴' },
-  { value: 'food', label: 'أغدية', icon: '🍯' },
-  { value: 'other', label: 'أخرى', icon: '✨' },
+  { value: 'perfumes', label: 'عطور' },
+  { value: 'jewelry', label: 'حلي و اكسسوارات' },
+  { value: 'clothing', label: 'ملابس' },
+  { value: 'decor', label: 'ديكور' },
+  { value: 'textiles', label: 'أقمشة وسجادات' },
+  { value: 'pottery', label: 'أواني' },
+  { value: 'beauty', label: 'عناية وتجميل' },
+  { value: 'food', label: 'أغذية' },
+  { value: 'other', label: 'أخرى' },
 ]
 
 // ===== COMPUTED =====
@@ -247,9 +292,8 @@ const filteredProducts = computed(() => {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(
       (p) =>
-        p.productName?.toLowerCase().includes(query) ||
-        p.name?.toLowerCase().includes(query) ||
-        p.vendorName?.toLowerCase().includes(query),
+        (p.productName || p.name || '').toLowerCase().includes(query) ||
+        (p.vendorName || p.vendor?.shopName || '').toLowerCase().includes(query)
     )
   }
 
@@ -258,11 +302,16 @@ const filteredProducts = computed(() => {
     result = result.filter((p) => p.category === categoryFilter.value)
   }
 
+  // Status filter
+  if (statusFilter.value) {
+    result = result.filter((p) => (p.status || 'approved') === statusFilter.value)
+  }
+
   return result
 })
 
 const totalPages = computed(() => {
-  return Math.ceil(filteredProducts.value.length / itemsPerPage.value)
+  return Math.ceil(filteredProducts.value.length / itemsPerPage.value) || 1
 })
 
 const paginatedProducts = computed(() => {
@@ -272,6 +321,11 @@ const paginatedProducts = computed(() => {
 })
 
 // ===== METHODS =====
+const truncateText = (text, length) => {
+  if (!text) return ''
+  return text.length > length ? text.substring(0, length) + '...' : text
+}
+
 const showNotification = (message, type = 'success') => {
   const icons = {
     success: '✅',
@@ -333,20 +387,95 @@ const getProductImage = (product) => {
   if (product.image) {
     return product.image
   }
-  return 'https://via.placeholder.com/300x300?text=لا+توجد+صورة'
+  return 'https://placehold.co/300x300/08717f/white?text=منتج'
 }
 
 const handleImageError = (e) => {
-  e.target.src = 'https://via.placeholder.com/300x300?text=خطأ+في+الصورة'
+  e.target.src = 'https://placehold.co/300x300/08717f/white?text=منتج'
 }
 
 const viewProduct = (product) => {
-  // Navigate to product detail page
   router.push(`/admin/post/${product.id}`)
 }
 
-const editProduct = (product) => {
-  router.push(`/admin/post/edit/${product.id}`)
+const approveProduct = async (product) => {
+  try {
+    const routes = [
+      `/admin/posts/${product.id}/approve`,
+      `/admin/products/${product.id}/approve`,
+      `/posts/${product.id}/approve`
+    ]
+
+    let response = null
+    for (const route of routes) {
+      try {
+        response = await api.patch(route)
+        if (response.data.success) break
+      } catch (e) {
+        continue
+      }
+    }
+
+    if (response && response.data.success) {
+      product.status = 'approved'
+      showNotification('✅ تمت الموافقة على المنتج بنجاح')
+    } else {
+      product.status = 'approved'
+      showNotification('✅ تمت الموافقة على المنتج (محلياً)', 'warning')
+    }
+  } catch (error) {
+    console.error('Error approving product:', error)
+    product.status = 'approved'
+    showNotification('⚠️ تم التحديث محلياً فقط', 'warning')
+  }
+}
+
+const rejectProduct = (product) => {
+  productToReject.value = product
+  rejectReason.value = ''
+  showRejectModal.value = true
+}
+
+const closeRejectModal = () => {
+  showRejectModal.value = false
+  productToReject.value = null
+  rejectReason.value = ''
+}
+
+const confirmReject = async () => {
+  if (!productToReject.value) return
+
+  try {
+    const routes = [
+      `/admin/posts/${productToReject.value.id}/reject`,
+      `/admin/products/${productToReject.value.id}/reject`,
+      `/posts/${productToReject.value.id}/reject`
+    ]
+
+    let response = null
+    for (const route of routes) {
+      try {
+        response = await api.patch(route, { reason: rejectReason.value || 'غير محدد' })
+        if (response.data.success) break
+      } catch (e) {
+        continue
+      }
+    }
+
+    if (response && response.data.success) {
+      productToReject.value.status = 'rejected'
+      showNotification('✅ تم رفض المنتج بنجاح')
+    } else {
+      productToReject.value.status = 'rejected'
+      showNotification('✅ تم رفض المنتج (محلياً)', 'warning')
+    }
+    closeRejectModal()
+  } catch (error) {
+    console.error('Error rejecting product:', error)
+    productToReject.value.status = 'rejected'
+    showNotification('⚠️ تم التحديث محلياً فقط', 'warning')
+    closeRejectModal()
+  }
 }
 
 const confirmDelete = (product) => {
@@ -359,66 +488,97 @@ const closeDeleteModal = () => {
   productToDelete.value = null
 }
 
-const deleteProduct = () => {
+const deleteProduct = async () => {
   if (!productToDelete.value) return
 
   try {
-    // Remove from products array
-    products.value = products.value.filter((p) => p.id !== productToDelete.value.id)
+    const routes = [
+      `/admin/posts/${productToDelete.value.id}`,
+      `/admin/products/${productToDelete.value.id}`,
+      `/posts/${productToDelete.value.id}`
+    ]
 
-    // Update localStorage
-    localStorage.setItem('posts', JSON.stringify(products.value))
+    let response = null
+    for (const route of routes) {
+      try {
+        response = await api.delete(route)
+        if (response.data.success) break
+      } catch (e) {
+        continue
+      }
+    }
 
-    // Also remove from pending_posts if exists
-    const pendingPosts = JSON.parse(localStorage.getItem('pending_posts') || '[]')
-    const updatedPending = pendingPosts.filter((p) => p.id !== productToDelete.value.id)
-    localStorage.setItem('pending_posts', JSON.stringify(updatedPending))
-
-    showNotification('✅ تم حذف المنتج بنجاح')
+    if (response && response.data.success) {
+      products.value = products.value.filter((p) => p.id !== productToDelete.value.id)
+      showNotification('✅ تم حذف المنتج بنجاح')
+    } else {
+      products.value = products.value.filter((p) => p.id !== productToDelete.value.id)
+      showNotification('✅ تم حذف المنتج (محلياً)', 'warning')
+    }
     closeDeleteModal()
 
-    // Reset to first page if current page is empty
     if (paginatedProducts.value.length === 0 && currentPage.value > 1) {
       currentPage.value--
     }
   } catch (error) {
     console.error('Error deleting product:', error)
-    showNotification('❌ حدث خطأ أثناء الحذف', 'error')
+    products.value = products.value.filter((p) => p.id !== productToDelete.value.id)
+    showNotification('⚠️ تم الحذف محلياً فقط', 'warning')
     closeDeleteModal()
   }
 }
 
-const loadProducts = () => {
+const loadProducts = async () => {
   loading.value = true
 
   try {
-    // Load from posts (approved posts)
-    const posts = JSON.parse(localStorage.getItem('posts') || '[]')
+    const routes = [
+      '/admin/posts',
+      '/admin/products',
+      '/posts/admin/all',
+      '/products/admin/all'
+    ]
 
-    // Load from pending_posts
-    const pendingPosts = JSON.parse(localStorage.getItem('pending_posts') || '[]')
+    let allProducts = []
 
-    // Load vendors for vendor names
-    const vendors = JSON.parse(localStorage.getItem('vendors') || '[]')
+    for (const route of routes) {
+      try {
+        console.log(`🔄 Tentative de chargement depuis: ${route}`)
+        const response = await api.get(route)
 
-    // Combine all products
-    let allProducts = [...posts, ...pendingPosts]
-
-    // Add vendor info
-    allProducts = allProducts.map((product) => {
-      const vendor = vendors.find((v) => v.id === product.vendorId)
-      return {
-        ...product,
-        vendorName: vendor?.shopName || product.vendorName || 'بائع',
-        vendorVerified: vendor?.verified || false,
+        if (response.data.success) {
+          const data = response.data.data?.posts || response.data.data?.products || response.data.posts || response.data.products || response.data.data || []
+          if (data.length > 0) {
+            allProducts = data
+            console.log(`✅ Produits chargés depuis ${route}:`, allProducts.length)
+            break
+          }
+        }
+      } catch (e) {
+        console.log(`❌ Échec ${route}:`, e.message)
       }
-    })
+    }
 
-    // Sort by date (newest first)
-    allProducts.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    if (allProducts.length === 0) {
+      console.log('🔄 Fallback: chargement depuis localStorage')
+      const posts = JSON.parse(localStorage.getItem('posts') || '[]')
+      const pendingPosts = JSON.parse(localStorage.getItem('pending_posts') || '[]')
+      const products_ls = JSON.parse(localStorage.getItem('products') || '[]')
+      allProducts = [...posts, ...pendingPosts, ...products_ls]
+    }
 
-    products.value = allProducts
+    products.value = allProducts.map(product => ({
+      ...product,
+      vendorName: product.vendor?.shopName || product.vendorName || product.vendor_name || 'بائع',
+      vendorVerified: product.vendor?.verified || product.vendorVerified || false,
+      status: product.status || 'approved'
+    }))
+
     console.log('✅ Products loaded:', products.value.length)
+
+    if (products.value.length === 0) {
+      showNotification('ℹ️ لا توجد منتجات في قاعدة البيانات', 'info')
+    }
   } catch (error) {
     console.error('Error loading products:', error)
     products.value = []
@@ -427,35 +587,86 @@ const loadProducts = () => {
     loading.value = false
   }
 }
+// ✅ FONCTION CORRIGÉE avec débogage complet
+const goToVendor = (product) => {
+  if (!product) {
+    console.warn('⚠️ Produit non défini pour goToVendor')
+    return
+  }
+
+  // 🔍 Afficher TOUTES les propriétés du produit pour trouver l'ID vendeur
+  console.log('🔍 Structure complète du produit:', JSON.stringify(product, null, 2))
+  console.log('🔍 Clés du produit:', Object.keys(product))
+
+  // Chercher l'ID du vendeur dans TOUS les champs possibles
+  const vendorId = product?.vendorId ||
+                   product?.vendor_id ||
+                   product?.userId ||
+                   product?.user_id ||
+                   product?.vendor?.id ||
+                   product?.vendor?.userId ||
+                   product?.vendor?.user_id ||
+                   product?.ownerId ||
+                   product?.owner_id ||
+                   product?.sellerId ||
+                   product?.seller_id ||
+                   product?.shopId ||
+                   product?.shop_id ||
+                   product?.authorId ||
+                   product?.author_id
+
+  console.log('🔗 Redirection vendeur:', {
+    productId: product.id,
+    productName: product.name || product.productName,
+    vendorId: vendorId,
+    vendorName: getVendorName(product)
+  })
+
+  if (vendorId) {
+    // Vérifier si c'est un ID numérique ou un slug
+    if (!isNaN(vendorId)) {
+      router.push(`/vendor/${vendorId}`)
+    } else {
+      router.push(`/vendor/${encodeURIComponent(vendorId)}`)
+    }
+  } else {
+    // Fallback : utiliser le nom du vendeur comme slug
+    const vendorName = getVendorName(product)
+    if (vendorName && vendorName !== 'حرفي') {
+      const slug = vendorName.toLowerCase().replace(/\s+/g, '-')
+      console.log('🔄 Fallback: redirection par slug:', slug)
+      router.push(`/vendor/${encodeURIComponent(slug)}`)
+    } else {
+      console.error('❌ Aucun ID vendeur trouvé pour:', product)
+      showNotification('❌ لم يتم العثور على صفحة الحرفي', 'warning')
+    }
+  }
+}
 
 // ===== LIFECYCLE =====
 onMounted(() => {
+  if (!authStore.isAuthenticated || authStore.userRole !== 'admin') {
+    router.push('/login')
+    return
+  }
   loadProducts()
 })
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
 .admin-page {
   padding: 30px;
   background: #f8fafc;
   min-height: 100vh;
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Amiri', 'Cairo', serif;
   direction: rtl;
+  transition: all 0.3s ease;
 }
 
-.page-header {
-  margin-bottom: 30px;
-}
-
-.page-title {
-  font-size: 2rem;
-  color: #1e293b;
-  margin-bottom: 5px;
-}
-
-.page-subtitle {
-  color: #64748b;
-  font-size: 1rem;
+.admin-page.dark-mode {
+  background: #0f172a;
 }
 
 .page-content {
@@ -463,6 +674,12 @@ onMounted(() => {
   border-radius: 20px;
   padding: 25px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.dark-mode .page-content {
+  background: #1e293b;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 /* Filters Bar */
@@ -486,6 +703,18 @@ onMounted(() => {
   border-radius: 10px;
   font-size: 0.95rem;
   transition: all 0.3s ease;
+  background: white;
+  color: #1e293b;
+}
+
+.dark-mode .search-input {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.dark-mode .search-input::placeholder {
+  color: #64748b;
 }
 
 .search-input:focus {
@@ -510,15 +739,27 @@ onMounted(() => {
   color: #1e293b;
   cursor: pointer;
   min-width: 180px;
-  appearance: none;
+  background: white;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: left 12px center;
 }
 
+.dark-mode .filter-select {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f1f5f9;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
 .filter-select:focus {
   outline: none;
   border-color: #08717f;
+}
+
+.dark-mode .filter-select option {
+  background: #0f172a;
+  color: #f1f5f9;
 }
 
 /* Stats Bar */
@@ -531,6 +772,11 @@ onMounted(() => {
   background: #f8fafc;
   border-radius: 12px;
   margin-bottom: 25px;
+  transition: all 0.3s ease;
+}
+
+.dark-mode .stats-bar {
+  background: #0f172a;
 }
 
 .stat-item {
@@ -545,16 +791,28 @@ onMounted(() => {
   line-height: 1.2;
 }
 
+.dark-mode .stat-value {
+  color: #2dd4bf;
+}
+
 .stat-label {
   color: #64748b;
   font-size: 0.85rem;
   font-weight: 600;
 }
 
+.dark-mode .stat-label {
+  color: #94a3b8;
+}
+
 .stat-divider {
   width: 2px;
   height: 40px;
   background: #e2e8f0;
+}
+
+.dark-mode .stat-divider {
+  background: #334155;
 }
 
 /* Loading State */
@@ -573,10 +831,21 @@ onMounted(() => {
   margin: 0 auto 20px;
 }
 
+.dark-mode .spinner {
+  border-color: #334155;
+  border-top-color: #08717f;
+}
+
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  color: #64748b;
+}
+
+.dark-mode .loading-state p {
+  color: #94a3b8;
 }
 
 /* Table */
@@ -601,11 +870,30 @@ onMounted(() => {
   white-space: nowrap;
 }
 
+.dark-mode .data-table th {
+  background: #0f172a;
+  color: #94a3b8;
+  border-bottom-color: #334155;
+}
+
 .data-table td {
   padding: 15px 10px;
   border-bottom: 1px solid #f1f5f9;
   color: #1e293b;
   vertical-align: middle;
+}
+
+.dark-mode .data-table td {
+  border-bottom-color: #334155;
+  color: #cbd5e1;
+}
+
+.data-table tr:hover td {
+  background: #f8fafc;
+}
+
+.dark-mode .data-table tr:hover td {
+  background: #0f172a;
 }
 
 /* Product Info */
@@ -623,6 +911,10 @@ onMounted(() => {
   border: 1px solid #e2e8f0;
 }
 
+.dark-mode .product-image {
+  border-color: #334155;
+}
+
 .product-details {
   display: flex;
   flex-direction: column;
@@ -634,9 +926,17 @@ onMounted(() => {
   margin-bottom: 2px;
 }
 
+.dark-mode .product-name {
+  color: #f1f5f9;
+}
+
 .product-id {
   font-size: 0.7rem;
   color: #94a3b8;
+}
+
+.dark-mode .product-id {
+  color: #64748b;
 }
 
 /* Vendor Info */
@@ -649,6 +949,10 @@ onMounted(() => {
 .vendor-name {
   font-weight: 500;
   color: #475569;
+}
+
+.dark-mode .vendor-name {
+  color: #94a3b8;
 }
 
 .verified-badge {
@@ -664,6 +968,10 @@ onMounted(() => {
   font-weight: 700;
 }
 
+.dark-mode .verified-badge {
+  background: #2dd4bf;
+}
+
 /* Category Badge */
 .category-badge {
   display: inline-block;
@@ -673,6 +981,11 @@ onMounted(() => {
   font-size: 0.8rem;
   color: #475569;
   font-weight: 600;
+}
+
+.dark-mode .category-badge {
+  background: #334155;
+  color: #94a3b8;
 }
 
 /* Price Info */
@@ -687,10 +1000,18 @@ onMounted(() => {
   font-size: 1rem;
 }
 
+.dark-mode .current-price {
+  color: #2dd4bf;
+}
+
 .old-price {
   font-size: 0.8rem;
   color: #94a3b8;
   text-decoration: line-through;
+}
+
+.dark-mode .old-price {
+  color: #64748b;
 }
 
 /* Status Badge */
@@ -707,9 +1028,19 @@ onMounted(() => {
   color: #856404;
 }
 
+.dark-mode .status-badge.pending {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
 .status-badge.approved {
   background: #d4edda;
   color: #155724;
+}
+
+.dark-mode .status-badge.approved {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
 }
 
 .status-badge.rejected {
@@ -717,20 +1048,9 @@ onMounted(() => {
   color: #721c24;
 }
 
-/* Likes Info */
-.likes-info {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.likes-icon {
-  font-size: 0.9rem;
-}
-
-.likes-count {
-  font-weight: 600;
-  color: #d40025;
+.dark-mode .status-badge.rejected {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
 }
 
 /* Action Buttons */
@@ -756,24 +1076,44 @@ onMounted(() => {
   color: #475569;
 }
 
+.dark-mode .action-btn.view {
+  background: #334155;
+  color: #94a3b8;
+}
+
 .action-btn.view:hover {
   background: #cbd5e1;
   transform: translateY(-2px);
 }
 
-.action-btn.edit {
-  background: #08717f;
+.action-btn.approve {
+  background: #10b981;
   color: white;
 }
 
-.action-btn.edit:hover {
-  background: #065a69;
+.action-btn.approve:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+.action-btn.reject {
+  background: #f59e0b;
+  color: white;
+}
+
+.action-btn.reject:hover {
+  background: #d97706;
   transform: translateY(-2px);
 }
 
 .action-btn.delete {
   background: #fee2e2;
   color: #ef4444;
+}
+
+.dark-mode .action-btn.delete {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
 }
 
 .action-btn.delete:hover {
@@ -796,6 +1136,10 @@ onMounted(() => {
   border-top: 1px solid #e2e8f0;
 }
 
+.dark-mode .pagination {
+  border-top-color: #334155;
+}
+
 .pagination-btn {
   padding: 8px 16px;
   background: white;
@@ -805,6 +1149,12 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.dark-mode .pagination-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
 }
 
 .pagination-btn:hover:not(:disabled) {
@@ -840,6 +1190,10 @@ onMounted(() => {
   margin-bottom: 10px;
 }
 
+.dark-mode .empty-state h3 {
+  color: #f1f5f9;
+}
+
 .empty-state p {
   color: #64748b;
 }
@@ -867,6 +1221,10 @@ onMounted(() => {
   animation: slideUp 0.3s ease;
 }
 
+.modal-content.dark-mode {
+  background: #1e293b;
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -886,9 +1244,17 @@ onMounted(() => {
   border-bottom: 1px solid #e2e8f0;
 }
 
+.dark-mode .modal-header {
+  border-bottom-color: #334155;
+}
+
 .modal-header h3 {
   font-size: 1.2rem;
   color: #1e293b;
+}
+
+.dark-mode .modal-header h3 {
+  color: #f1f5f9;
 }
 
 .close-btn {
@@ -902,6 +1268,11 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
+.dark-mode .close-btn {
+  background: #334155;
+  color: #94a3b8;
+}
+
 .close-btn:hover {
   background: #d40025;
   color: white;
@@ -912,6 +1283,14 @@ onMounted(() => {
   text-align: center;
 }
 
+.modal-body p {
+  color: #1e293b;
+}
+
+.dark-mode .modal-body p {
+  color: #cbd5e1;
+}
+
 .product-name-highlight {
   font-size: 1.2rem;
   font-weight: 700;
@@ -919,10 +1298,36 @@ onMounted(() => {
   margin: 10px 0;
 }
 
+.dark-mode .product-name-highlight {
+  color: #ff6b6b;
+}
+
 .warning-text {
   color: #64748b;
   font-size: 0.9rem;
   margin-top: 10px;
+}
+
+.reject-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  resize: vertical;
+  font-family: inherit;
+  margin-top: 10px;
+}
+
+.dark-mode .reject-textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.reject-textarea:focus {
+  outline: none;
+  border-color: #08717f;
 }
 
 .modal-footer {
@@ -932,8 +1337,13 @@ onMounted(() => {
   border-top: 1px solid #e2e8f0;
 }
 
+.dark-mode .modal-footer {
+  border-top-color: #334155;
+}
+
 .btn-cancel,
-.btn-delete {
+.btn-delete,
+.btn-reject {
   flex: 1;
   padding: 12px;
   border: none;
@@ -949,6 +1359,11 @@ onMounted(() => {
   color: #64748b;
 }
 
+.dark-mode .btn-cancel {
+  background: #334155;
+  color: #94a3b8;
+}
+
 .btn-cancel:hover {
   background: #e2e8f0;
 }
@@ -961,7 +1376,16 @@ onMounted(() => {
 .btn-delete:hover {
   background: #b00020;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(212, 0, 37, 0.3);
+}
+
+.btn-reject {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-reject:hover {
+  background: #d97706;
+  transform: translateY(-2px);
 }
 
 /* Toast */
@@ -982,16 +1406,16 @@ onMounted(() => {
   animation: slideInRight 0.3s ease;
 }
 
+.toast-notification.dark-mode {
+  background: #1e293b;
+}
+
 .toast-notification.success {
   border-right-color: #10b981;
 }
 
 .toast-notification.error {
   border-right-color: #ef4444;
-}
-
-.toast-notification.info {
-  border-right-color: #08717f;
 }
 
 @keyframes slideInRight {
@@ -1012,6 +1436,10 @@ onMounted(() => {
 .toast-message {
   color: #1e293b;
   font-size: 0.95rem;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9;
 }
 
 /* Responsive */
@@ -1051,7 +1479,8 @@ onMounted(() => {
   }
 
   .action-buttons {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
   }
 
   .toast-notification {
@@ -1062,10 +1491,6 @@ onMounted(() => {
 }
 
 @media (max-width: 480px) {
-  .page-title {
-    font-size: 1.5rem;
-  }
-
   .product-info {
     flex-direction: column;
     align-items: flex-start;

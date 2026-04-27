@@ -26,7 +26,7 @@ const Product = {
   },
 
   async addImages(productId, images) {
-    const values = images.map((url, index) => `(${productId}, '${url}', ${index})`).join(',');
+    const values = images.map((url, index) => `(${productId}, '${url.replace(/'/g, "\\'")}', ${index})`).join(',');
     const sql = `INSERT INTO productImages (productId, imageUrl, displayOrder) VALUES ${values}`;
     await db.query(sql);
   },
@@ -38,6 +38,7 @@ const Product = {
              u.name as vendorUserName,
              u.avatar as vendorAvatar,
              (SELECT COUNT(*) FROM likes WHERE productId = p.id) as likesCount,
+             (SELECT COUNT(*) FROM comments WHERE productId = p.id) as commentsCount,
              (SELECT JSON_ARRAYAGG(imageUrl) FROM productImages WHERE productId = p.id ORDER BY displayOrder) as images
       FROM products p
       JOIN vendors v ON p.vendorId = v.id
@@ -58,24 +59,16 @@ const Product = {
       SELECT p.*, 
              v.shopName as vendorName,
              (SELECT COUNT(*) FROM likes WHERE productId = p.id) as likesCount,
+             (SELECT COUNT(*) FROM comments WHERE productId = p.id) as commentsCount,
              (SELECT imageUrl FROM productImages WHERE productId = p.id ORDER BY displayOrder LIMIT 1) as mainImage
       FROM products p
       JOIN vendors v ON p.vendorId = v.id
       WHERE 1=1
     `;
     const params = [];
-    if (categoryId) {
-      sql += ' AND p.categoryId = ?';
-      params.push(categoryId);
-    }
-    if (status) {
-      sql += ' AND p.status = ?';
-      params.push(status);
-    }
-    if (vendorId) {
-      sql += ' AND p.vendorId = ?';
-      params.push(vendorId);
-    }
+    if (categoryId) { sql += ' AND p.categoryId = ?'; params.push(categoryId); }
+    if (status) { sql += ' AND p.status = ?'; params.push(status); }
+    if (vendorId) { sql += ' AND p.vendorId = ?'; params.push(vendorId); }
     if (search) {
       sql += ' AND (p.name LIKE ? OR p.description LIKE ?)';
       const s = `%${search}%`;
@@ -102,9 +95,7 @@ const Product = {
     for (const key of allowedFields) {
       if (updates[key] !== undefined) {
         let value = updates[key];
-        if (key === 'colors' || key === 'tags') {
-          value = JSON.stringify(value);
-        }
+        if (key === 'colors' || key === 'tags') value = JSON.stringify(value);
         fields.push(`${key} = ?`);
         values.push(value);
       }
@@ -119,7 +110,7 @@ const Product = {
   async updateImages(productId, images) {
     await db.query('DELETE FROM productImages WHERE productId = ?', [productId]);
     if (images && images.length > 0) {
-      const values = images.map((url, index) => `(${productId}, '${url}', ${index})`).join(',');
+      const values = images.map((url, index) => `(${productId}, '${url.replace(/'/g, "\\'")}', ${index})`).join(',');
       const sql = `INSERT INTO productImages (productId, imageUrl, displayOrder) VALUES ${values}`;
       await db.query(sql);
     }
@@ -136,6 +127,9 @@ const Product = {
   },
 
   async delete(id) {
+    await db.query('DELETE FROM productImages WHERE productId = ?', [id]);
+    await db.query('DELETE FROM likes WHERE productId = ?', [id]);
+    await db.query('DELETE FROM comments WHERE productId = ?', [id]);
     await db.query('DELETE FROM products WHERE id = ?', [id]);
     return true;
   },
@@ -143,10 +137,7 @@ const Product = {
   async count(status = null) {
     let sql = 'SELECT COUNT(*) as count FROM products';
     const params = [];
-    if (status) {
-      sql += ' WHERE status = ?';
-      params.push(status);
-    }
+    if (status) { sql += ' WHERE status = ?'; params.push(status); }
     const result = await db.getOne(sql, params);
     return result?.count || 0;
   },
@@ -156,10 +147,7 @@ const Product = {
   },
 
   async toggleLike(userId, productId) {
-    const exists = await db.exists(
-      'SELECT 1 FROM likes WHERE userId = ? AND productId = ?',
-      [userId, productId]
-    );
+    const exists = await db.exists('SELECT 1 FROM likes WHERE userId = ? AND productId = ?', [userId, productId]);
     if (exists) {
       await db.query('DELETE FROM likes WHERE userId = ? AND productId = ?', [userId, productId]);
       return { liked: false };
@@ -174,14 +162,39 @@ const Product = {
   },
 
   async getCategoryDistribution() {
-    const sql = `
-      SELECT categoryId, COUNT(*) as count
-      FROM products
-      WHERE status = 'approved'
-      GROUP BY categoryId
-      ORDER BY count DESC
-    `;
+    const sql = `SELECT categoryId, COUNT(*) as count FROM products WHERE status = 'approved' GROUP BY categoryId ORDER BY count DESC`;
     return db.query(sql);
+  },
+
+  // ===== GESTION DES COMMENTAIRES =====
+  async addComment(userId, productId, text, rating = null) {
+    const sql = 'INSERT INTO comments (userId, productId, text, rating, createdAt, updatedAt) VALUES (?, ?, ?, ?, NOW(), NOW())';
+    const commentId = await db.insert(sql, [userId, productId, text, rating]);
+    const comment = await db.getOne(`SELECT c.*, u.name as userName, u.avatar as userAvatar FROM comments c JOIN users u ON c.userId = u.id WHERE c.id = ?`, [commentId]);
+    await this.updateProductRating(productId);
+    return comment;
+  },
+
+  async getComments(productId, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+    const sql = `SELECT c.*, u.name as userName, u.avatar as userAvatar FROM comments c JOIN users u ON c.userId = u.id WHERE c.productId = ? ORDER BY c.createdAt DESC LIMIT ? OFFSET ?`;
+    const comments = await db.query(sql, [productId, limit, offset]);
+    const total = await db.getOne('SELECT COUNT(*) as count FROM comments WHERE productId = ?', [productId]);
+    return { comments, total: total?.count || 0 };
+  },
+
+  async deleteComment(commentId, userId, isAdmin = false) {
+    const comment = await db.getOne('SELECT id, userId, productId FROM comments WHERE id = ?', [commentId]);
+    if (!comment) return false;
+    if (!isAdmin && comment.userId !== userId) return false;
+    await db.query('DELETE FROM comments WHERE id = ?', [commentId]);
+    await this.updateProductRating(comment.productId);
+    return true;
+  },
+
+  async updateProductRating(productId) {
+    const stats = await db.getOne('SELECT COUNT(*) as commentsCount, AVG(rating) as averageRating FROM comments WHERE productId = ? AND rating IS NOT NULL', [productId]);
+    await db.query('UPDATE products SET reviewsCount = ?, rating = ? WHERE id = ?', [stats.commentsCount || 0, stats.averageRating ? parseFloat(stats.averageRating).toFixed(1) : 0, productId]);
   }
 };
 

@@ -1,183 +1,324 @@
-// backend/src/models/Order.js
 const db = require('./db');
+
+const normalizeItem = (item) => ({
+  productId: item.productId ?? item.id ?? null,
+  productName: item.productName ?? item.name ?? 'Produit',
+  price: Number(item.price ?? 0),
+  quantity: Number(item.quantity ?? 1),
+  image: item.image ?? null
+});
+
+const attachItemsToOrders = async (orders) => {
+  if (!orders.length) return orders;
+
+  const ids = orders.map(o => o.id);
+  const placeholders = ids.map(() => '?').join(',');
+
+  // CORRECTION: Utiliser order_items au lieu de orderItems
+  const items = await db.query(
+    `SELECT id, order_id as orderId, product_id as productId, 
+            product_name as productName, price, quantity, image
+     FROM order_items
+     WHERE order_id IN (${placeholders})
+     ORDER BY id ASC`,
+    ids
+  );
+
+  const grouped = {};
+  for (const item of items) {
+    if (!grouped[item.orderId]) grouped[item.orderId] = [];
+    grouped[item.orderId].push({
+      id: item.id,
+      productId: item.productId,
+      name: item.productName,
+      productName: item.productName,
+      price: Number(item.price),
+      quantity: Number(item.quantity),
+      image: item.image
+    });
+  }
+
+  return orders.map(order => ({
+    ...order,
+    items: grouped[order.id] || []
+  }));
+};
 
 const Order = {
   generateOrderNumber() {
-    const date = new Date();
-    const year = date.getFullYear().toString().slice(-2);
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `ORD-${year}${month}${day}-${random}`;
+    const d = new Date();
+    const y = d.getFullYear().toString().slice(-2);
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const rand = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+    return `ORD-${y}${m}${day}-${rand}`;
   },
 
-  async create(orderData) {
-    const {
-      userId, customerName, customerEmail, customerPhone1, customerPhone2,
-      governorate, delegation, postalCode, address,
-      subtotal, shipping, total, paymentMethod, notes
-    } = orderData;
+  async createWithItems(orderData) {
+    const pool = db.getPool();
+    const connection = await pool.getConnection();
 
-    const orderNumber = this.generateOrderNumber();
-    const sql = `
-      INSERT INTO orders 
-      (orderNumber, userId, customerName, customerEmail, customerPhone1, customerPhone2,
-       governorate, delegation, postalCode, address,
-       subtotal, shippingCost, total, paymentMethod, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    const orderId = await db.insert(sql, [
-      orderNumber, userId, customerName, customerEmail, customerPhone1, customerPhone2 || null,
-      governorate, delegation, postalCode || null, address,
-      subtotal, shipping || 0, total, paymentMethod || 'cash', notes || null
-    ]);
-    return this.findById(orderId);
-  },
+    try {
+      await connection.beginTransaction();
 
-  async addItems(orderId, items) {
-    const values = items.map(item => 
-      `(${orderId}, ${item.productId || 'NULL'}, '${item.name}', ${item.price}, ${item.quantity}, '${item.image || ''}')`
-    ).join(',');
-    const sql = `
-      INSERT INTO orderItems (orderId, productId, productName, price, quantity, image)
-      VALUES ${values}
-    `;
-    await db.query(sql);
+      const orderNumber = this.generateOrderNumber();
+
+      // CORRECTION: Utiliser les noms de colonnes corrects (snake_case)
+      const [result] = await connection.execute(
+        `INSERT INTO orders
+        (orderNumber, userId, customerName, customerEmail, customerPhone1, customerPhone2,
+         governorate, delegation, postalCode, address, subtotal, shippingCost, total, paymentMethod, notes, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          orderNumber,
+          orderData.userId,
+          orderData.customerName,
+          orderData.customerEmail,
+          orderData.customerPhone1,
+          orderData.customerPhone2 || null,
+          orderData.governorate,
+          orderData.delegation,
+          orderData.postalCode || null,
+          orderData.address,
+          orderData.subtotal,
+          orderData.shipping,
+          orderData.total,
+          orderData.paymentMethod || 'cash_on_delivery',
+          orderData.notes || null,
+          'pending'
+        ]
+      );
+
+      const orderId = result.insertId;
+
+      for (const rawItem of orderData.items) {
+        const item = normalizeItem(rawItem);
+
+        // CORRECTION: Utiliser order_items au lieu de orderItems
+        await connection.execute(
+          `INSERT INTO order_items
+          (order_id, product_id, product_name, price, quantity, image)
+          VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            orderId,
+            item.productId,
+            item.productName,
+            item.price,
+            item.quantity,
+            item.image || null
+          ]
+        );
+      }
+
+      await connection.commit();
+      return this.findById(orderId);
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   },
 
   async findById(id) {
-    const sql = `
-      SELECT o.*, u.name as userName, u.email as userEmail
-      FROM orders o
-      JOIN users u ON o.userId = u.id
-      WHERE o.id = ?
-    `;
-    const order = await db.getOne(sql, [id]);
-    if (order) {
-      order.items = await db.query('SELECT * FROM orderItems WHERE orderId = ?', [id]);
-    }
+    // CORRECTION: Utiliser les noms de colonnes corrects
+    const order = await db.getOne(
+      `SELECT o.*, u.name as userName, u.email as userEmail
+       FROM orders o
+       LEFT JOIN users u ON o.userId = u.id
+       WHERE o.id = ?`,
+      [id]
+    );
+
+    if (!order) return null;
+
+    // CORRECTION: Utiliser order_items
+    const items = await db.query(
+      `SELECT id, order_id, product_id, product_name, price, quantity, image
+       FROM order_items
+       WHERE order_id = ?
+       ORDER BY id ASC`,
+      [id]
+    );
+
+    order.items = items.map(item => ({
+      id: item.id,
+      productId: item.product_id,
+      name: item.product_name,
+      productName: item.product_name,
+      price: Number(item.price),
+      quantity: Number(item.quantity),
+      image: item.image
+    }));
+
     return order;
   },
 
-  async getAll({ page = 1, limit = 20, search = null, status = null, fromDate = null, toDate = null }) {
-    let sql = `
-      SELECT o.*, u.name as userName
-      FROM orders o
-      JOIN users u ON o.userId = u.id
-      WHERE 1=1
-    `;
-    const params = [];
-    if (status) {
-      sql += ' AND o.status = ?';
-      params.push(status);
-    }
-    if (fromDate) {
-      sql += ' AND o.createdAt >= ?';
-      params.push(fromDate);
-    }
-    if (toDate) {
-      sql += ' AND o.createdAt <= ?';
-      params.push(toDate);
-    }
-    if (search) {
-      sql += ' AND (o.orderNumber LIKE ? OR o.customerName LIKE ? OR o.customerEmail LIKE ? OR o.customerPhone1 LIKE ?)';
-      const s = `%${search}%`;
-      params.push(s, s, s, s);
-    }
-    sql += ' ORDER BY o.createdAt DESC';
-    return db.paginate(sql, params, page, limit);
+  async getByUser(userId, { page = 1, limit = 10 }) {
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 10);
+    const offset = (pageNum - 1) * limitNum;
+
+    const countRow = await db.getOne(
+      `SELECT COUNT(*) as total FROM orders WHERE userId = ?`,
+      [userId]
+    );
+    const total = Number(countRow?.total || 0);
+
+    const rows = await db.query(
+      `SELECT *
+       FROM orders
+       WHERE userId = ?
+       ORDER BY createdAt DESC
+       LIMIT ? OFFSET ?`,
+      [userId, limitNum, offset]
+    );
+
+    const orders = await attachItemsToOrders(rows);
+
+    return {
+      orders,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    };
   },
 
-  async updateStatus(id, { status, trackingNumber, notes, cancellationReason }) {
-    const fields = ['status = ?'];
-    const values = [status];
-    if (trackingNumber) {
+  async getAll({ page = 1, limit = 20, status = '', search = '' }) {
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 20);
+    const offset = (pageNum - 1) * limitNum;
+
+    let where = ' WHERE 1=1 ';
+    const params = [];
+
+    if (status) {
+      where += ' AND o.status = ? ';
+      params.push(status);
+    }
+
+    if (search) {
+      where += ` AND (
+        o.orderNumber LIKE ? OR
+        o.customerName LIKE ? OR
+        o.customerEmail LIKE ? OR
+        o.customerPhone1 LIKE ?
+      ) `;
+      const term = `%${search}%`;
+      params.push(term, term, term, term);
+    }
+
+    const countRow = await db.getOne(
+      `SELECT COUNT(*) as total
+       FROM orders o
+       LEFT JOIN users u ON o.userId = u.id
+       ${where}`,
+      params
+    );
+    const total = Number(countRow?.total || 0);
+
+    const rows = await db.query(
+      `SELECT o.*, u.name as userName, u.email as userEmail
+       FROM orders o
+       LEFT JOIN users u ON o.userId = u.id
+       ${where}
+       ORDER BY o.createdAt DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limitNum, offset]
+    );
+
+    const orders = await attachItemsToOrders(rows);
+
+    return {
+      orders,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    };
+  },
+
+  async updateStatus(id, { status, trackingNumber, adminNotes, cancellationReason }) {
+    const fields = [];
+    const values = [];
+
+    if (status !== undefined) {
+      fields.push('status = ?');
+      values.push(status);
+    }
+
+    if (trackingNumber !== undefined) {
       fields.push('trackingNumber = ?');
       values.push(trackingNumber);
     }
-    if (notes) {
+
+    if (adminNotes !== undefined) {
       fields.push('adminNotes = ?');
-      values.push(notes);
+      values.push(adminNotes);
     }
+
     if (status === 'delivered') {
       fields.push('deliveredAt = NOW()');
-    } else if (status === 'cancelled') {
+    }
+
+    if (status === 'cancelled') {
       fields.push('cancelledAt = NOW()');
       fields.push('cancellationReason = ?');
       values.push(cancellationReason || null);
     }
+
+    if (!fields.length) return this.findById(id);
+
     values.push(id);
-    const sql = `UPDATE orders SET ${fields.join(', ')} WHERE id = ?`;
-    await db.query(sql, values);
+
+    await db.update(
+      `UPDATE orders SET ${fields.join(', ')} WHERE id = ?`,
+      values
+    );
+
     return this.findById(id);
   },
 
-  async getByUser(userId, { page = 1, limit = 10 }) {
-    const sql = `
-      SELECT o.*
-      FROM orders o
-      WHERE o.userId = ?
-      ORDER BY o.createdAt DESC
-    `;
-    return db.paginate(sql, [userId], page, limit);
-  },
-
-  async delete(id) {
-    const order = await this.findById(id);
-    if (!order) return false;
-    if (order.status !== 'cancelled') {
-      throw new Error('Seules les commandes annulées peuvent être supprimées');
-    }
-    await db.query('DELETE FROM orders WHERE id = ?', [id]);
-    return true;
-  },
-
   async getStats() {
-    const [total, pending, processing, shipped, delivered, cancelled, revenue] = await Promise.all([
-      db.count('SELECT COUNT(*) as count FROM orders'),
-      db.count('SELECT COUNT(*) as count FROM orders WHERE status = "pending"'),
-      db.count('SELECT COUNT(*) as count FROM orders WHERE status = "processing"'),
-      db.count('SELECT COUNT(*) as count FROM orders WHERE status = "shipped"'),
-      db.count('SELECT COUNT(*) as count FROM orders WHERE status = "delivered"'),
-      db.count('SELECT COUNT(*) as count FROM orders WHERE status = "cancelled"'),
-      db.getOne('SELECT COALESCE(SUM(total), 0) as total FROM orders WHERE status != "cancelled"')
-    ]);
+    const row = await db.getOne(
+      `SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing,
+        SUM(CASE WHEN status = 'shipped' THEN 1 ELSE 0 END) as shipped,
+        SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
+        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
+        COALESCE(SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END), 0) as revenue
+       FROM orders`
+    );
+
     return {
-      total,
-      pending,
-      processing,
-      shipped,
-      delivered,
-      cancelled,
-      revenue: revenue?.total || 0
+      total: Number(row?.total || 0),
+      pending: Number(row?.pending || 0),
+      processing: Number(row?.processing || 0),
+      shipped: Number(row?.shipped || 0),
+      delivered: Number(row?.delivered || 0),
+      cancelled: Number(row?.cancelled || 0),
+      revenue: Number(row?.revenue || 0)
     };
   },
 
   async getRecent(limit = 5) {
-    const sql = `
-      SELECT o.id, o.orderNumber, o.customerName, o.total, o.status, o.createdAt,
-             u.name as userName
-      FROM orders o
-      JOIN users u ON o.userId = u.id
-      ORDER BY o.createdAt DESC
-      LIMIT ?
-    `;
-    return db.query(sql, [limit]);
-  },
-
-  async getOrdersByDateRange(startDate, endDate, groupBy = 'day') {
-    let format;
-    if (groupBy === 'day') format = 'DATE(createdAt)';
-    else if (groupBy === 'month') format = 'DATE_FORMAT(createdAt, "%Y-%m")';
-    else format = 'DATE(createdAt)';
-    const sql = `
-      SELECT ${format} as date, COUNT(*) as count, COALESCE(SUM(total), 0) as revenue
-      FROM orders
-      WHERE createdAt BETWEEN ? AND ?
-      GROUP BY ${format}
-      ORDER BY date ASC
-    `;
-    return db.query(sql, [startDate, endDate]);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 5);
+    return db.query(
+      `SELECT o.id, o.orderNumber, o.customerName, o.total, o.status, o.createdAt,
+              u.name as userName
+       FROM orders o
+       LEFT JOIN users u ON o.userId = u.id
+       ORDER BY o.createdAt DESC
+       LIMIT ?`,
+      [limitNum]
+    );
   }
 };
 

@@ -1,40 +1,73 @@
 // backend/src/controllers/admin/CategoryController.js
-const Category = require('../../models/Category');
-const db = require('../../models/db');
 
-// ===== RÉCUPÉRER TOUTES LES CATÉGORIES =====
+const Category = require('../../models/Category');
+const cloudinary = require('../../config/cloudinary');
+
+/**
+ * @desc    Récupérer toutes les catégories (Admin)
+ * @route   GET /api/admin/categories
+ * @access  Private/Admin
+ */
 exports.getAllCategories = async (req, res) => {
   try {
-    const categories = await Category.getAll();
+    const { includeInactive = 'true' } = req.query;
+
+    const categories = await Category.getAll({
+      includeChildren: true,
+      activeOnly: includeInactive !== 'true'
+    });
 
     res.json({
       success: true,
+      count: categories.length,
       data: { categories }
     });
+
   } catch (error) {
     console.error('❌ Erreur admin getAllCategories:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: 'Erreur lors du chargement des catégories'
     });
   }
 };
 
-// ===== CRÉER UNE CATÉGORIE =====
+/**
+ * @desc    Créer une catégorie (Admin)
+ * @route   POST /api/admin/categories
+ * @access  Private/Admin
+ */
 exports.createCategory = async (req, res) => {
   try {
-    const { name, nameAr, slug, icon, description, parentId, sortOrder } = req.body;
+    const {
+      name,
+      nameAr,
+      nameFr,
+      slug,
+      icon,
+      imageUrl,
+      description,
+      parentId,
+      sortOrder
+    } = req.body;
 
-    if (!name || !slug) {
+    // Validation
+    const errors = [];
+    if (!name) errors.push('Le nom est requis');
+    if (!nameAr) errors.push('Le nom arabe est requis');
+    if (!slug) errors.push('Le slug est requis');
+
+    if (errors.length > 0) {
       return res.status(400).json({
         success: false,
-        message: 'Nom et slug requis'
+        message: 'Validation échouée',
+        errors
       });
     }
 
-    // Vérifier si le slug existe déjà
-    const exists = await Category.slugExists(slug);
-    if (exists) {
+    // Vérifier le slug
+    const slugExists = await Category.slugExists(slug);
+    if (slugExists) {
       return res.status(400).json({
         success: false,
         message: 'Ce slug existe déjà'
@@ -43,9 +76,11 @@ exports.createCategory = async (req, res) => {
 
     const category = await Category.create({
       name,
-      nameAr,
+      nameAr: nameAr || name,
+      nameFr: nameFr || name,
       slug,
       icon,
+      imageUrl,
       description,
       parentId,
       sortOrder
@@ -56,74 +91,75 @@ exports.createCategory = async (req, res) => {
       message: 'Catégorie créée avec succès',
       data: { category }
     });
+
   } catch (error) {
-    console.error('❌ Erreur admin createCategory:', error);
+    console.error('❌ Erreur createCategory:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Erreur lors de la création'
     });
   }
 };
 
-// ===== METTRE À JOUR UNE CATÉGORIE =====
+/**
+ * @desc    Mettre à jour une catégorie (Admin)
+ * @route   PUT /api/admin/categories/:id
+ * @access  Private/Admin
+ */
 exports.updateCategory = async (req, res) => {
   try {
-    const { name, nameAr, icon, description, parentId, sortOrder, isActive } = req.body;
+    const { id } = req.params;
+    const updates = req.body;
 
-    const category = await Category.findById(req.params.id);
+    const category = await Category.update(id, updates);
+
     if (!category) {
       return res.status(404).json({
         success: false,
         message: 'Catégorie non trouvée'
       });
     }
-
-    const updated = await Category.update(req.params.id, {
-      name,
-      nameAr,
-      icon,
-      description,
-      parentId,
-      sortOrder,
-      isActive
-    });
 
     res.json({
       success: true,
       message: 'Catégorie mise à jour avec succès',
-      data: { category: updated }
+      data: { category }
     });
+
   } catch (error) {
-    console.error('❌ Erreur admin updateCategory:', error);
+    console.error('❌ Erreur updateCategory:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Erreur lors de la mise à jour'
     });
   }
 };
 
-// ===== SUPPRIMER UNE CATÉGORIE =====
+/**
+ * @desc    Supprimer une catégorie (Admin)
+ * @route   DELETE /api/admin/categories/:id
+ * @access  Private/Admin
+ */
 exports.deleteCategory = async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id);
-    if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: 'Catégorie non trouvée'
-      });
-    }
+    const { id } = req.params;
 
-    await Category.delete(req.params.id);
+    await Category.delete(id);
 
     res.json({
       success: true,
       message: 'Catégorie supprimée avec succès'
     });
+
   } catch (error) {
-    console.error('❌ Erreur admin deleteCategory:', error);
-    res.status(500).json({
+    console.error('❌ Erreur deleteCategory:', error);
+    
+    // Déterminer le code d'erreur approprié
+    const statusCode = error.message.includes('Impossible') ? 400 : 500;
+    
+    res.status(statusCode).json({
       success: false,
-      message: error.message
+      message: error.message || 'Erreur lors de la suppression'
     });
   }
 };

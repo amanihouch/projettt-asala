@@ -1,28 +1,23 @@
-<!-- src/views/admin/PendingPosts.vue -->
+<!-- src/views/admin/PendingPosts.vue - Version FINALE FONCTIONNELLE -->
 <template>
-  <div class="admin-page">
-    <header class="page-header">
-      <h1 class="page-title">إدارة المنشورات</h1>
-      <p class="page-subtitle">مراجعة واعتماد منشورات البائعين</p>
-    </header>
-
+  <div class="admin-page" :class="{ 'dark-mode': isDarkMode }">
     <!-- Stats Cards -->
     <div class="stats-cards">
-      <div class="stat-card">
+      <div class="stat-card pending">
         <span class="stat-icon">⏳</span>
         <div class="stat-info">
           <span class="stat-value">{{ pendingCount }}</span>
           <span class="stat-label">في انتظار المراجعة</span>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card approved">
         <span class="stat-icon">✅</span>
         <div class="stat-info">
           <span class="stat-value">{{ approvedCount }}</span>
           <span class="stat-label">منشورات معتمدة</span>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card rejected">
         <span class="stat-icon">❌</span>
         <div class="stat-info">
           <span class="stat-value">{{ rejectedCount }}</span>
@@ -33,27 +28,15 @@
 
     <!-- Tabs -->
     <div class="tabs">
-      <button
-        class="tab-btn"
-        :class="{ active: activeTab === 'pending' }"
-        @click="activeTab = 'pending'"
-      >
+      <button class="tab-btn" :class="{ active: activeTab === 'pending' }" @click="activeTab = 'pending'">
         في انتظار المراجعة
         <span class="tab-count">{{ pendingCount }}</span>
       </button>
-      <button
-        class="tab-btn"
-        :class="{ active: activeTab === 'approved' }"
-        @click="activeTab = 'approved'"
-      >
+      <button class="tab-btn" :class="{ active: activeTab === 'approved' }" @click="activeTab = 'approved'">
         منشورات معتمدة
         <span class="tab-count">{{ approvedCount }}</span>
       </button>
-      <button
-        class="tab-btn"
-        :class="{ active: activeTab === 'rejected' }"
-        @click="activeTab = 'rejected'"
-      >
+      <button class="tab-btn" :class="{ active: activeTab === 'rejected' }" @click="activeTab = 'rejected'">
         منشورات مرفوضة
         <span class="tab-count">{{ rejectedCount }}</span>
       </button>
@@ -63,14 +46,6 @@
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <p>جاري تحميل المنشورات...</p>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if="error" class="error-state">
-      <span class="error-icon">⚠️</span>
-      <h3>حدث خطأ</h3>
-      <p>{{ error }}</p>
-      <button class="btn-retry" @click="loadData">إعادة المحاولة</button>
     </div>
 
     <!-- Pending Posts -->
@@ -84,11 +59,7 @@
       <div v-else v-for="post in pendingPosts" :key="post.id" class="post-card pending">
         <div class="post-header">
           <div class="vendor-info">
-            <img
-              :src="post.vendorAvatar || 'https://i.pravatar.cc/100'"
-              :alt="post.vendorName"
-              class="vendor-avatar"
-            />
+            <img :src="post.vendorAvatar || 'https://i.pravatar.cc/100'" :alt="post.vendorName" class="vendor-avatar" />
             <div>
               <h4 class="vendor-name">{{ post.vendorName || 'بائع' }}</h4>
               <span class="post-date">{{ formatDate(post.createdAt) }}</span>
@@ -105,13 +76,17 @@
             <span class="current-price">{{ formatPrice(post.price) }} د.ت</span>
           </div>
 
-          <!-- Actions -->
+          <div v-if="post.images && post.images.length" class="post-images">
+            <img v-for="(img, idx) in post.images.slice(0, 3)" :key="idx" :src="img" class="post-thumb" />
+            <span v-if="post.images.length > 3" class="more-images">+{{ post.images.length - 3 }}</span>
+          </div>
+
           <div class="post-actions">
-            <button class="action-btn approve" @click="approvePost(post)">
+            <button class="action-btn approve" @click="approvePost(post)" :disabled="submitting === post.id">
               <span class="btn-icon">✅</span>
-              قبول
+              {{ submitting === post.id ? 'جاري...' : 'قبول' }}
             </button>
-            <button class="action-btn reject" @click="openRejectModal(post)">
+            <button class="action-btn reject" @click="openRejectModal(post)" :disabled="submitting === post.id">
               <span class="btn-icon">❌</span>
               رفض
             </button>
@@ -120,27 +95,86 @@
       </div>
     </div>
 
+    <!-- Approved Posts -->
+    <div v-else-if="activeTab === 'approved'" class="posts-grid">
+      <div v-if="approvedPosts.length === 0" class="empty-state">
+        <span class="empty-icon">📝</span>
+        <h3>لا توجد منشورات معتمدة</h3>
+        <p>سيتم عرض المنشورات المعتمدة هنا</p>
+      </div>
+
+      <div v-else v-for="post in approvedPosts" :key="post.id" class="post-card approved">
+        <div class="post-header">
+          <div class="vendor-info">
+            <img :src="post.vendorAvatar || 'https://i.pravatar.cc/100'" :alt="post.vendorName" class="vendor-avatar" />
+            <div>
+              <h4 class="vendor-name">{{ post.vendorName || 'بائع' }}</h4>
+              <span class="post-date">{{ formatDate(post.createdAt) }}</span>
+            </div>
+          </div>
+          <span class="status-badge approved">معتمد</span>
+        </div>
+
+        <div class="post-content">
+          <h3 class="post-title">{{ post.productName || 'منتج' }}</h3>
+          <p class="post-description">{{ post.description || 'لا يوجد وصف' }}</p>
+          <div class="post-price">
+            <span class="current-price">{{ formatPrice(post.price) }} د.ت</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rejected Posts -->
+    <div v-else-if="activeTab === 'rejected'" class="posts-grid">
+      <div v-if="rejectedPosts.length === 0" class="empty-state">
+        <span class="empty-icon">✅</span>
+        <h3>لا توجد منشورات مرفوضة</h3>
+        <p>سيتم عرض المنشورات المرفوضة هنا</p>
+      </div>
+
+      <div v-else v-for="post in rejectedPosts" :key="post.id" class="post-card rejected">
+        <div class="post-header">
+          <div class="vendor-info">
+            <img :src="post.vendorAvatar || 'https://i.pravatar.cc/100'" :alt="post.vendorName" class="vendor-avatar" />
+            <div>
+              <h4 class="vendor-name">{{ post.vendorName || 'بائع' }}</h4>
+              <span class="post-date">{{ formatDate(post.createdAt) }}</span>
+            </div>
+          </div>
+          <span class="status-badge rejected">مرفوض</span>
+        </div>
+
+        <div class="post-content">
+          <h3 class="post-title">{{ post.productName || 'منتج' }}</h3>
+          <p class="post-description">{{ post.description || 'لا يوجد وصف' }}</p>
+          <div class="post-price">
+            <span class="current-price">{{ formatPrice(post.price) }} د.ت</span>
+          </div>
+          <div v-if="post.rejectionReason" class="rejection-reason">
+            <span class="reason-label">سبب الرفض:</span>
+            <span class="reason-text">{{ post.rejectionReason }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Reject Modal -->
     <transition name="modal">
       <div v-if="showRejectModal" class="modal-overlay" @click.self="closeRejectModal">
-        <div class="modal-content">
+        <div class="modal-content" :class="{ 'dark-mode': isDarkMode }">
           <div class="modal-header">
             <h3>رفض المنشور</h3>
             <button class="close-btn" @click="closeRejectModal">✕</button>
           </div>
           <div class="modal-body">
             <p>الرجاء إدخال سبب رفض هذا المنشور:</p>
-            <textarea
-              v-model="rejectReason"
-              class="reject-textarea"
-              rows="4"
-              placeholder="سبب الرفض..."
-            ></textarea>
+            <textarea v-model="rejectReason" class="reject-textarea" rows="4" placeholder="سبب الرفض..."></textarea>
           </div>
           <div class="modal-footer">
             <button class="btn-cancel" @click="closeRejectModal">إلغاء</button>
-            <button class="btn-reject" @click="confirmReject" :disabled="!rejectReason.trim()">
-              تأكيد الرفض
+            <button class="btn-reject" @click="confirmReject" :disabled="!rejectReason.trim() || submitting">
+              {{ submitting ? 'جاري...' : 'تأكيد الرفض' }}
             </button>
           </div>
         </div>
@@ -149,7 +183,7 @@
 
     <!-- Toast Notification -->
     <transition name="toast">
-      <div v-if="toast.show" class="toast-notification" :class="toast.type">
+      <div v-if="toast.show" class="toast-notification" :class="[toast.type, { 'dark-mode': isDarkMode }]">
         <span class="toast-icon">{{ toast.icon }}</span>
         <span class="toast-message">{{ toast.message }}</span>
       </div>
@@ -158,32 +192,29 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useThemeStore } from '../../stores/theme'
 import { usePostStore } from '../../stores/postStore'
 
-const router = useRouter()
+const themeStore = useThemeStore()
 const postStore = usePostStore()
+
+// ===== DARK MODE =====
+const isDarkMode = computed(() => themeStore.isDarkMode)
 
 // ===== STATE =====
 const activeTab = ref('pending')
-const loading = ref(false)
-const error = ref(null)
 const showRejectModal = ref(false)
 const currentPost = ref(null)
 const rejectReason = ref('')
-const toast = ref({
-  show: false,
-  message: '',
-  type: 'success',
-  icon: '✅',
-})
+const submitting = ref(null)
+const loading = ref(false)
+const toast = ref({ show: false, message: '', type: 'success', icon: '✅' })
 
 // ===== COMPUTED =====
 const pendingPosts = computed(() => postStore.pendingPosts || [])
-const approvedPosts = computed(() => postStore.posts || [])
+const approvedPosts = computed(() => postStore.approvedPosts || [])
 const rejectedPosts = computed(() => postStore.rejectedPosts || [])
-
 const pendingCount = computed(() => pendingPosts.value.length)
 const approvedCount = computed(() => approvedPosts.value.length)
 const rejectedCount = computed(() => rejectedPosts.value.length)
@@ -191,44 +222,54 @@ const rejectedCount = computed(() => rejectedPosts.value.length)
 // ===== METHODS =====
 const showNotification = (message, type = 'success') => {
   const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' }
-  toast.value = { show: true, message, type, icon: icons[type] }
+  toast.value = { show: true, message, type, icon: icons[type] || '✅' }
   setTimeout(() => (toast.value.show = false), 3000)
 }
 
 const formatPrice = (price) => {
-  return new Intl.NumberFormat('ar-TN').format(price || 0)
+  if (!price && price !== 0) return '0'
+  return new Intl.NumberFormat('ar-TN').format(price)
 }
 
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('ar-TN')
+  try {
+    return new Date(dateStr).toLocaleDateString('ar-TN')
+  } catch {
+    return dateStr
+  }
 }
 
 const loadData = async () => {
   loading.value = true
-  error.value = null
   try {
-    await postStore.fetchPendingPosts()
-    console.log('✅ Posts chargés:', {
-      pending: pendingPosts.value.length,
-      approved: approvedPosts.value.length,
-      rejected: rejectedPosts.value.length
-    })
-  } catch (err) {
-    console.error('❌ Erreur:', err)
-    error.value = err.message || 'Erreur de chargement'
+    await Promise.all([
+      postStore.fetchPendingPosts(),
+      postStore.fetchApprovedPosts(),
+      postStore.fetchRejectedPosts()
+    ])
+    console.log('✅ Toutes les données chargées')
+  } catch (error) {
+    console.error('❌ Erreur chargement:', error)
+    showNotification('حدث خطأ أثناء تحميل البيانات', 'error')
   } finally {
     loading.value = false
   }
 }
 
 const approvePost = async (post) => {
+  if (!post || !post.id) return
   if (!confirm(`هل أنت متأكد من قبول المنشور "${post.productName}"؟`)) return
+
+  submitting.value = post.id
   try {
     await postStore.approvePost(post.id)
     showNotification('✅ تم قبول المنشور بنجاح')
-  } catch (err) {
-    showNotification('❌ ' + err.message, 'error')
+  } catch (error) {
+    console.error('❌ Erreur approvePost:', error)
+    showNotification(error?.response?.data?.message || 'حدث خطأ أثناء قبول المنشور', 'error')
+  } finally {
+    submitting.value = null
   }
 }
 
@@ -246,53 +287,100 @@ const closeRejectModal = () => {
 
 const confirmReject = async () => {
   if (!currentPost.value || !rejectReason.value.trim()) return
+
+  submitting.value = currentPost.value.id
   try {
     await postStore.rejectPost(currentPost.value.id, rejectReason.value)
     showNotification('❌ تم رفض المنشور')
     closeRejectModal()
-  } catch (err) {
-    showNotification('❌ ' + err.message, 'error')
+  } catch (error) {
+    console.error('❌ Erreur rejectPost:', error)
+    showNotification(error?.response?.data?.message || 'حدث خطأ أثناء رفض المنشور', 'error')
+  } finally {
+    submitting.value = null
   }
 }
 
-// ===== LIFECYCLE =====
-onMounted(async () => {
-  const token = localStorage.getItem('token')
-  console.log('🔑 Token présent:', token ? 'Oui' : 'Non')
-
-  if (!token) {
-    error.value = '❌ يجب تسجيل الدخول أولاً'
-    setTimeout(() => router.push('/login'), 2000)
-    return
+// ===== WATCHERS =====
+watch(isDarkMode, (newValue) => {
+  if (newValue) {
+    document.documentElement.classList.add('dark-mode')
+    document.body.classList.add('dark-mode')
+  } else {
+    document.documentElement.classList.remove('dark-mode')
+    document.body.classList.remove('dark-mode')
   }
-  await loadData()
+}, { immediate: true })
+
+// ===== LIFECYCLE =====
+onMounted(() => {
+  loadData()
 })
 </script>
 
+<style>
+/* ===== IMPORT POLICE AMIRI ===== */
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@400;500;600;700;800&display=swap');
+</style>
+
 <style scoped>
+/* ===== APPLICATION DE LA POLICE AMIRI ===== */
 .admin-page {
+  font-family: 'Amiri', 'Cairo', serif;
   padding: 30px;
   background: #f8fafc;
   min-height: 100vh;
-  font-family: 'Cairo', sans-serif;
   direction: rtl;
+  transition: all 0.3s ease;
 }
 
-.page-header {
-  margin-bottom: 30px;
+.admin-page * {
+  font-family: 'Amiri', 'Cairo', serif;
 }
 
-.page-title {
-  font-size: 2rem;
-  color: #1e293b;
-  margin-bottom: 5px;
+.admin-page.dark-mode {
+  background: #0f172a;
 }
 
-.page-subtitle {
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 16px;
+}
+
+.dark-mode .loading-state {
+  background: #1e293b;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #08717f;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-state p {
   color: #64748b;
   font-size: 1rem;
 }
 
+.dark-mode .loading-state p {
+  color: #94a3b8;
+}
+
+/* Stats Cards */
 .stats-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -308,7 +396,21 @@ onMounted(async () => {
   align-items: center;
   gap: 15px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
 }
+
+.dark-mode .stat-card {
+  background: #1e293b;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.stat-card.pending .stat-value { color: #f59e0b; }
+.stat-card.approved .stat-value { color: #10b981; }
+.stat-card.rejected .stat-value { color: #ef4444; }
+
+.dark-mode .stat-card.pending .stat-value { color: #fbbf24; }
+.dark-mode .stat-card.approved .stat-value { color: #34d399; }
+.dark-mode .stat-card.rejected .stat-value { color: #f87171; }
 
 .stat-icon {
   font-size: 2.5rem;
@@ -322,15 +424,19 @@ onMounted(async () => {
   display: block;
   font-size: 1.8rem;
   font-weight: 800;
-  color: #08717f;
   line-height: 1.2;
 }
 
 .stat-label {
   color: #64748b;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
+.dark-mode .stat-label {
+  color: #94a3b8;
+}
+
+/* Tabs */
 .tabs {
   display: flex;
   gap: 10px;
@@ -340,6 +446,12 @@ onMounted(async () => {
   border-radius: 50px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   max-width: 600px;
+  transition: all 0.3s ease;
+}
+
+.dark-mode .tabs {
+  background: #1e293b;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .tab-btn {
@@ -351,12 +463,16 @@ onMounted(async () => {
   padding: 12px 20px;
   border: none;
   border-radius: 40px;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #64748b;
   background: transparent;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.dark-mode .tab-btn {
+  color: #94a3b8;
 }
 
 .tab-btn.active {
@@ -371,51 +487,7 @@ onMounted(async () => {
   font-size: 0.8rem;
 }
 
-.loading-state {
-  text-align: center;
-  padding: 60px 20px;
-}
-
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #e2e8f0;
-  border-top: 4px solid #08717f;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.error-state {
-  text-align: center;
-  padding: 60px 20px;
-  background: white;
-  border-radius: 16px;
-}
-
-.error-icon {
-  font-size: 3rem;
-  display: block;
-  margin-bottom: 15px;
-}
-
-.btn-retry {
-  margin-top: 20px;
-  padding: 12px 30px;
-  background: #08717f;
-  color: white;
-  border: none;
-  border-radius: 30px;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
+/* Posts Grid */
 .posts-grid {
   display: flex;
   flex-direction: column;
@@ -428,11 +500,17 @@ onMounted(async () => {
   padding: 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   border-right: 4px solid transparent;
+  transition: all 0.3s ease;
 }
 
-.post-card.pending {
-  border-right-color: #f59e0b;
+.dark-mode .post-card {
+  background: #1e293b;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
+
+.post-card.pending { border-right-color: #f59e0b; }
+.post-card.approved { border-right-color: #10b981; }
+.post-card.rejected { border-right-color: #ef4444; }
 
 .post-header {
   display: flex;
@@ -441,6 +519,10 @@ onMounted(async () => {
   margin-bottom: 15px;
   padding-bottom: 15px;
   border-bottom: 1px solid #f1f5f9;
+}
+
+.dark-mode .post-header {
+  border-bottom-color: #334155;
 }
 
 .vendor-info {
@@ -457,28 +539,39 @@ onMounted(async () => {
 }
 
 .vendor-name {
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: #1e293b;
   margin-bottom: 3px;
   font-weight: 700;
 }
 
+.dark-mode .vendor-name {
+  color: #f1f5f9;
+}
+
 .post-date {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: #64748b;
+}
+
+.dark-mode .post-date {
+  color: #94a3b8;
 }
 
 .status-badge {
   padding: 5px 15px;
   border-radius: 30px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
-.status-badge.pending {
-  background: #fff3cd;
-  color: #856404;
-}
+.status-badge.pending { background: #fff3cd; color: #856404; }
+.status-badge.approved { background: #d4edda; color: #155724; }
+.status-badge.rejected { background: #f8d7da; color: #721c24; }
+
+.dark-mode .status-badge.pending { background: rgba(255, 243, 205, 0.2); color: #ffd966; }
+.dark-mode .status-badge.approved { background: rgba(212, 237, 218, 0.2); color: #6fbf4c; }
+.dark-mode .status-badge.rejected { background: rgba(248, 215, 218, 0.2); color: #ff6b6b; }
 
 .post-content {
   display: flex;
@@ -487,20 +580,87 @@ onMounted(async () => {
 }
 
 .post-title {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: #1e293b;
+}
+
+.dark-mode .post-title {
+  color: #f1f5f9;
 }
 
 .post-description {
   color: #64748b;
-  font-size: 0.9rem;
+  font-size: 1rem;
   line-height: 1.6;
 }
 
+.dark-mode .post-description {
+  color: #94a3b8;
+}
+
 .post-price {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 800;
   color: #d40025;
+}
+
+.dark-mode .post-price {
+  color: #ff6b6b;
+}
+
+.post-images {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.post-thumb {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+}
+
+.more-images {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 70px;
+  height: 70px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.rejection-reason {
+  background: #fef2f2;
+  padding: 12px;
+  border-radius: 8px;
+  border-right: 3px solid #ef4444;
+}
+
+.dark-mode .rejection-reason {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.reason-label {
+  font-weight: 600;
+  color: #991b1b;
+  margin-left: 8px;
+}
+
+.dark-mode .reason-label {
+  color: #f87171;
+}
+
+.reason-text {
+  color: #dc2626;
+}
+
+.dark-mode .reason-text {
+  color: #f87171;
 }
 
 .post-actions {
@@ -509,6 +669,10 @@ onMounted(async () => {
   margin-top: 10px;
   padding-top: 15px;
   border-top: 1px solid #e2e8f0;
+}
+
+.dark-mode .post-actions {
+  border-top-color: #334155;
 }
 
 .action-btn {
@@ -520,10 +684,15 @@ onMounted(async () => {
   padding: 10px;
   border: none;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .action-btn.approve {
@@ -531,8 +700,14 @@ onMounted(async () => {
   color: #155724;
 }
 
-.action-btn.approve:hover {
+.dark-mode .action-btn.approve {
+  background: rgba(212, 237, 218, 0.2);
+  color: #6fbf4c;
+}
+
+.action-btn.approve:hover:not(:disabled) {
   background: #c3e6cb;
+  transform: translateY(-2px);
 }
 
 .action-btn.reject {
@@ -540,19 +715,30 @@ onMounted(async () => {
   color: #721c24;
 }
 
-.action-btn.reject:hover {
+.dark-mode .action-btn.reject {
+  background: rgba(248, 215, 218, 0.2);
+  color: #ff6b6b;
+}
+
+.action-btn.reject:hover:not(:disabled) {
   background: #f5c6cb;
+  transform: translateY(-2px);
 }
 
 .btn-icon {
   font-size: 1rem;
 }
 
+/* Empty State */
 .empty-state {
   text-align: center;
   padding: 60px 20px;
   background: white;
   border-radius: 16px;
+}
+
+.dark-mode .empty-state {
+  background: #1e293b;
 }
 
 .empty-icon {
@@ -564,9 +750,23 @@ onMounted(async () => {
 
 .empty-state h3 {
   color: #64748b;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
 }
 
+.dark-mode .empty-state h3 {
+  color: #94a3b8;
+}
+
+.empty-state p {
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.dark-mode .empty-state p {
+  color: #94a3b8;
+}
+
+/* Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -586,6 +786,16 @@ onMounted(async () => {
   border-radius: 20px;
   width: 90%;
   max-width: 450px;
+  animation: slideUp 0.3s ease;
+}
+
+.modal-content.dark-mode {
+  background: #1e293b;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .modal-header {
@@ -596,9 +806,17 @@ onMounted(async () => {
   border-bottom: 1px solid #e2e8f0;
 }
 
+.dark-mode .modal-header {
+  border-bottom-color: #334155;
+}
+
 .modal-header h3 {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: #1e293b;
+}
+
+.dark-mode .modal-header h3 {
+  color: #f1f5f9;
 }
 
 .close-btn {
@@ -612,6 +830,11 @@ onMounted(async () => {
   transition: all 0.3s ease;
 }
 
+.dark-mode .close-btn {
+  background: #334155;
+  color: #f1f5f9;
+}
+
 .close-btn:hover {
   background: #d40025;
   color: white;
@@ -621,19 +844,37 @@ onMounted(async () => {
   padding: 25px;
 }
 
+.modal-body p {
+  color: #1e293b;
+  margin-bottom: 15px;
+  font-size: 1rem;
+}
+
+.dark-mode .modal-body p {
+  color: #f1f5f9;
+}
+
 .reject-textarea {
   width: 100%;
   padding: 15px;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 1rem;
   resize: vertical;
   font-family: inherit;
+  background: white;
+  color: #1e293b;
+}
+
+.dark-mode .reject-textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f1f5f9;
 }
 
 .reject-textarea:focus {
   outline: none;
-  border-color: #d40025;
+  border-color: #08717f;
 }
 
 .modal-footer {
@@ -643,13 +884,17 @@ onMounted(async () => {
   border-top: 1px solid #e2e8f0;
 }
 
+.dark-mode .modal-footer {
+  border-top-color: #334155;
+}
+
 .btn-cancel,
 .btn-reject {
   flex: 1;
   padding: 12px;
   border: none;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
 }
@@ -659,9 +904,23 @@ onMounted(async () => {
   color: #64748b;
 }
 
+.dark-mode .btn-cancel {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.btn-cancel:hover {
+  background: #e2e8f0;
+}
+
 .btn-reject {
   background: #d40025;
   color: white;
+}
+
+.btn-reject:hover:not(:disabled) {
+  background: #b0001f;
+  transform: translateY(-2px);
 }
 
 .btn-reject:disabled {
@@ -669,6 +928,7 @@ onMounted(async () => {
   cursor: not-allowed;
 }
 
+/* Toast */
 .toast-notification {
   position: fixed;
   bottom: 30px;
@@ -686,31 +946,39 @@ onMounted(async () => {
   animation: slideInRight 0.3s ease;
 }
 
-.toast-notification.success {
-  border-right-color: #10b981;
+.toast-notification.dark-mode {
+  background: #1e293b;
 }
 
-.toast-notification.error {
-  border-right-color: #ef4444;
-}
+.toast-notification.success { border-right-color: #10b981; }
+.toast-notification.error { border-right-color: #ef4444; }
+.toast-notification.info { border-right-color: #08717f; }
+.toast-notification.warning { border-right-color: #f59e0b; }
 
 @keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
-.toast-icon {
-  font-size: 1.3rem;
-}
+.toast-icon { font-size: 1.3rem; }
 
 .toast-message {
   color: #1e293b;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-page { padding: 20px; }
+  .stats-cards { grid-template-columns: 1fr; }
+  .tabs { flex-direction: column; border-radius: 16px; padding: 5px; }
+  .tab-btn { justify-content: center; }
+  .post-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .toast-notification { min-width: auto; width: calc(100% - 40px); right: 20px; }
 }
 </style>

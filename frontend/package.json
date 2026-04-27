@@ -9,12 +9,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lottiefiles/vue-lottie-player": "^1.1.0",
+    "@vueuse/core": "^14.2.1",
     "axios": "^1.13.6",
     "chart.js": "^4.5.1",
+    "cloudinary": "^1.41.3",
+    "multer": "^2.1.1",
+    "multer-storage-cloudinary": "^4.0.0",
+    "nodemailer": "^8.0.3",
     "pinia": "^2.3.1",
     "vue": "^3.3.11",
     "vue-i18n": "^9.14.5",
-    "vue-router": "^4.2.5"
+    "vue-router": "^4.2.5",
+    "vue3-lottie": "^3.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",

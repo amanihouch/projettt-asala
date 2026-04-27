@@ -3,36 +3,33 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const userController = require('../controllers/userController');
-const upload = require('../middleware/upload');
-
-// Middleware de debug
-router.use((req, res, next) => {
-  console.log(`📨 ${req.method} /api/v1/users${req.url}`);
-  next();
-});
-
-// Toutes les routes nécessitent une authentification
-router.use(protect);
+const { uploadAvatar } = require('../config/cloudinary');
 
 // ===== PROFIL =====
-router.get('/profile', userController.getProfile);
-router.patch('/profile', userController.updateProfile);
-router.put('/profile', userController.updateProfile);
+router.get('/profile', protect, userController.getProfile);
+router.put('/profile', protect, userController.updateProfile);
+router.patch('/avatar', protect, uploadAvatar.single('avatar'), userController.updateAvatar);
+router.patch('/change-password', protect, userController.changePassword);
 
-// ===== AVATAR =====
-router.post('/avatar', upload.single('avatar'), userController.updateAvatar);
+// ===== ROUTES ADDITIONNELLES POUR L'AVATAR (alias) =====
+router.post('/avatar', protect, uploadAvatar.single('avatar'), userController.updateAvatar);
+router.patch('/users/avatar', protect, uploadAvatar.single('avatar'), userController.updateAvatar);
+router.post('/users/avatar', protect, uploadAvatar.single('avatar'), userController.updateAvatar);
+router.patch('/profile/avatar', protect, uploadAvatar.single('avatar'), userController.updateAvatar);
+router.post('/profile/avatar', protect, uploadAvatar.single('avatar'), userController.updateAvatar);
+router.patch('/upload/avatar', protect, uploadAvatar.single('avatar'), userController.updateAvatar);
+router.post('/upload/avatar', protect, uploadAvatar.single('avatar'), userController.updateAvatar);
 
-// ===== MOT DE PASSE =====
-router.post('/change-password', userController.changePassword);
+// ===== WISHLIST =====
+router.get('/wishlist', protect, userController.getWishlist);
+router.post('/wishlist/:id', protect, userController.addToWishlist);
+router.delete('/wishlist/:id', protect, userController.removeFromWishlist);
 
-// ===== WISHLIST / LIKES =====
-router.get('/wishlist', userController.getWishlist);
-router.get('/likes', userController.getProductLikes);
-router.post('/likes/:productId', userController.toggleProductLike);
-router.delete('/likes/:productId', userController.toggleProductLike);
-
-router.get('/post-likes', userController.getPostLikes);
-router.post('/post-likes/:postId', userController.togglePostLike);
-router.delete('/post-likes/:postId', userController.togglePostLike);
+// ===== LIKES =====
+router.get('/likes', protect, userController.getUserLikes);
+router.get('/likes/products', protect, userController.getProductLikes);
+router.post('/likes/products/:productId', protect, userController.toggleProductLike);
+router.get('/likes/posts', protect, userController.getPostLikes);
+router.post('/likes/posts/:postId', protect, userController.togglePostLike);
 
 module.exports = router;

@@ -5,6 +5,13 @@ const User = require('../models/User');
 const { sendResetPasswordEmail } = require('../services/email');
 const db = require('../models/db');
 
+// ===== IMPORTER LE SERVICE SMS =====
+const { sendVerificationCode: sendSmsCode, formatPhoneNumber } = require('../services/sms');
+
+// Supprimer la fonction formatPhoneNumber locale car elle est importée
+// Supprimer la fonction sendSMS locale car elle est dans sms.js
+// Supprimer l'initialisation Twilio locale car elle est dans sms.js
+
 const generateToken = (id) => {
   return jwt.sign(
     { id },
@@ -33,11 +40,16 @@ exports.register = async (req, res) => {
       });
     }
 
+    let formattedPhone = null;
+    if (phone) {
+      formattedPhone = formatPhoneNumber(phone);
+    }
+
     const user = await User.create({
       name,
       email,
       password,
-      phone: phone || '',
+      phone: formattedPhone,
       role,
       address: address || '',
       avatar: avatar || null
@@ -73,7 +85,7 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log('📝 Tentative de connexion:', email);
+    console.log('📝 Tentative de connexion:', { email, password: '***' });
 
     if (!email || !password) {
       return res.status(400).json({
@@ -83,6 +95,7 @@ exports.login = async (req, res) => {
     }
 
     const user = await User.findByEmailWithPassword(email);
+    
     if (!user) {
       console.log('❌ Utilisateur non trouvé:', email);
       return res.status(401).json({
@@ -91,9 +104,10 @@ exports.login = async (req, res) => {
       });
     }
 
-    console.log('✅ Utilisateur trouvé, vérification mot de passe...');
+    console.log('✅ Utilisateur trouvé, vérification du mot de passe...');
 
     const isMatch = await bcrypt.compare(password, user.password);
+    
     if (!isMatch) {
       console.log('❌ Mot de passe incorrect pour:', email);
       return res.status(401).json({
@@ -104,25 +118,8 @@ exports.login = async (req, res) => {
 
     console.log('✅ Mot de passe correct');
 
-    // ❌ SUPPRIMEZ CE BLOC - La colonne is_active n'existe pas
-    // if (!user.is_active) {
-    //   return res.status(401).json({
-    //     success: false,
-    //     message: 'Compte désactivé'
-    //   });
-    // }
-
-    // Mettre à jour last_login
-    try {
-      await db.query('UPDATE users SET last_login = NOW() WHERE id = ?', [user.id]);
-    } catch (updateError) {
-      console.warn('⚠️ Erreur mise à jour last_login:', updateError);
-      // Non bloquant, on continue
-    }
-
     const token = generateToken(user.id);
-
-    console.log('✅ Connexion réussie pour:', email);
+    delete user.password;
 
     res.json({
       success: true,
@@ -151,6 +148,14 @@ exports.login = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+
     res.json({
       success: true,
       user
@@ -189,12 +194,11 @@ exports.forgotPassword = async (req, res) => {
     }
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     console.log(`🔐 Code généré pour ${email}: ${code}`);
 
     try {
-      // Créer la table si elle n'existe pas
       await db.query(`
         CREATE TABLE IF NOT EXISTS password_resets (
           id INT PRIMARY KEY AUTO_INCREMENT,
@@ -208,10 +212,8 @@ exports.forgotPassword = async (req, res) => {
         )
       `);
       
-      // Supprimer les anciens codes
       await db.query('DELETE FROM password_resets WHERE email = ?', [email]);
       
-      // Insérer le nouveau code
       await db.query(
         'INSERT INTO password_resets (email, code, expires_at) VALUES (?, ?, ?)',
         [email, code, expiresAt]
@@ -221,10 +223,8 @@ exports.forgotPassword = async (req, res) => {
       
     } catch (dbError) {
       console.error('❌ Erreur DB:', dbError);
-      // En développement, on continue
     }
 
-    // Envoyer l'email
     try {
       await sendResetPasswordEmail(email, code, user.name);
       console.log(`📧 Email envoyé à ${email}`);
@@ -235,7 +235,6 @@ exports.forgotPassword = async (req, res) => {
     res.json({
       success: true,
       message: 'Code envoyé à votre adresse email',
-      // En développement, renvoyer le code pour faciliter les tests
       devCode: process.env.NODE_ENV === 'development' ? code : undefined
     });
   } catch (error) {
@@ -248,7 +247,7 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-// ===== VÉRIFIER LE CODE =====
+// ===== VÉRIFIER LE CODE EMAIL =====
 exports.verifyCode = async (req, res) => {
   try {
     const { email, code } = req.body;
@@ -335,87 +334,35 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-// ===== SERVICE SMS AVEC TWILIO =====
-const twilio = require('twilio');
-
-// Initialisation de Twilio
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
-
-/**
- * Envoyer un SMS via Twilio
- */
-const sendSMS = async (to, message) => {
-  try {
-    // Formater le numéro (ajouter +216 si nécessaire)
-    const formattedNumber = to.startsWith('+') ? to : `+216${to}`;
-    
-    console.log(`📱 Envoi SMS à ${formattedNumber}: ${message}`);
-
-    // Envoyer via Twilio
-    const result = await twilioClient.messages.create({
-      body: message,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: formattedNumber
-    });
-
-    console.log(`✅ SMS envoyé! SID: ${result.sid}`);
-    console.log(`📱 Statut: ${result.status}`);
-    
-    return { 
-      success: true, 
-      sid: result.sid,
-      status: result.status 
-    };
-    
-  } catch (error) {
-    console.error('❌ Erreur Twilio:', error);
-    
-    // Gestion des erreurs spécifiques
-    if (error.code === 21211) {
-      console.error('❌ Numéro de téléphone invalide');
-    } else if (error.code === 21610) {
-      console.error('❌ Ce numéro est sur liste noire');
-    } else if (error.code === 30007) {
-      console.error('❌ Message trop long');
-    }
-    
-    throw error;
-  }
-};
-
 // ===== ENVOYER CODE DE VÉRIFICATION SMS =====
 exports.sendVerificationCode = async (req, res) => {
   try {
     const { phone } = req.body;
     const userId = req.user.id;
 
-    console.log(`📱 Demande de code pour utilisateur ${userId}, téléphone: +216${phone}`);
+    console.log(`📱 Demande de code pour utilisateur ${userId}, téléphone: ${phone}`);
 
     if (!phone) {
       return res.status(400).json({
         success: false,
-        message: 'Numéro de téléphone requis'
+        message: 'رقم الهاتف مطلوب'
       });
     }
 
-    // Vérifier le format (8 chiffres)
-    if (!/^\d{8}$/.test(phone)) {
+    const cleanPhone = String(phone).replace(/\D/g, '');
+    
+    if (!/^\d{8}$/.test(cleanPhone)) {
       return res.status(400).json({
         success: false,
-        message: 'Format de numéro invalide (8 chiffres requis)'
+        message: 'صيغة رقم الهاتف غير صالحة (8 أرقام مطلوبة)'
       });
     }
 
-    // Générer un code à 6 chiffres
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     console.log(`📱 Code généré: ${code}`);
 
-    // Créer la table phone_verifications si elle n'existe pas
     try {
       await db.query(`
         CREATE TABLE IF NOT EXISTS phone_verifications (
@@ -428,48 +375,43 @@ exports.sendVerificationCode = async (req, res) => {
           attempts INT DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           INDEX idx_user (user_id),
-          INDEX idx_phone (phone),
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+          INDEX idx_phone (phone)
         )
       `);
     } catch (err) {
-      console.log('ℹ️ Table phone_verifications déjà existante');
+      console.log('ℹ️ Table déjà existante');
     }
 
-    // Supprimer les anciens codes pour cet utilisateur
     await db.query('DELETE FROM phone_verifications WHERE user_id = ?', [userId]);
 
-    // Insérer le nouveau code
     await db.query(
       'INSERT INTO phone_verifications (user_id, phone, code, expires_at) VALUES (?, ?, ?, ?)',
-      [userId, phone, code, expiresAt]
+      [userId, cleanPhone, code, expiresAt]
     );
 
-    // ENVOI SMS AVEC TWILIO
+    // === ENVOI SMS RÉEL ===
     try {
-      await sendSMS(phone, `🔐 Votre code de vérification TURATH est: ${code}`);
-      console.log(`✅ SMS envoyé avec succès à +216${phone}`);
+      await sendSmsCode(cleanPhone, code);
+      console.log(`✅ SMS envoyé avec succès à +216${cleanPhone}`);
     } catch (smsError) {
-      console.error('❌ Erreur envoi SMS:', smsError);
+      console.error('❌ Échec envoi SMS:', smsError.message);
       
-      // En développement, on continue même si le SMS échoue
-      if (process.env.NODE_ENV !== 'development') {
-        throw smsError;
-      }
+      return res.status(500).json({
+        success: false,
+        message: smsError.message || 'فشل إرسال SMS. يرجى المحاولة لاحقاً.'
+      });
     }
 
     res.json({
       success: true,
-      message: 'Code de vérification envoyé par SMS',
-      devCode: process.env.NODE_ENV === 'development' ? code : undefined
+      message: 'تم إرسال رمز التحقق عبر SMS'
     });
 
   } catch (error) {
     console.error('❌ Erreur sendVerificationCode:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de l\'envoi du code',
-      error: error.message
+      message: 'حدث خطأ أثناء إرسال الرمز'
     });
   }
 };
@@ -480,93 +422,70 @@ exports.verifyPhoneCode = async (req, res) => {
     const { phone, code } = req.body;
     const userId = req.user.id;
 
-    console.log(`🔐 Vérification code pour utilisateur ${userId}, téléphone: +216${phone}`);
+    console.log(`🔐 Vérification pour utilisateur ${userId}`);
 
     if (!phone || !code) {
       return res.status(400).json({
         success: false,
-        message: 'Numéro et code requis'
+        message: 'رقم الهاتف والرمز مطلوبان'
       });
     }
 
-    // Vérifier le format du code
-    if (!/^\d{6}$/.test(code)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Code invalide (6 chiffres requis)'
-      });
-    }
+    const cleanPhone = String(phone).replace(/\D/g, '');
 
-    // Récupérer la vérification
     const verification = await db.getOne(
       `SELECT * FROM phone_verifications 
        WHERE user_id = ? AND phone = ? 
        AND expires_at > NOW() AND verified = FALSE`,
-      [userId, phone]
+      [userId, cleanPhone]
     );
 
     if (!verification) {
       return res.status(400).json({
         success: false,
-        message: 'Aucune demande de vérification active pour ce numéro'
+        message: 'لا توجد محاولة تحقق نشطة. يرجى طلب رمز جديد.'
       });
     }
 
-    // Vérifier le nombre de tentatives
     if (verification.attempts >= 3) {
       await db.query('DELETE FROM phone_verifications WHERE id = ?', [verification.id]);
       return res.status(400).json({
         success: false,
-        message: 'Trop de tentatives. Veuillez renvoyer un nouveau code.'
+        message: 'تجاوزت الحد الأقصى للمحاولات. يرجى طلب رمز جديد.'
       });
     }
 
-    // Vérifier le code
     if (verification.code !== code) {
       await db.query(
         'UPDATE phone_verifications SET attempts = attempts + 1 WHERE id = ?',
         [verification.id]
       );
       
-      const remainingAttempts = 2 - verification.attempts;
+      const remaining = 2 - verification.attempts;
       return res.status(400).json({
         success: false,
-        message: `Code incorrect. Il vous reste ${remainingAttempts} tentative(s)`
+        message: `الرمز غير صحيح. متبقي ${remaining} محاولة`
       });
     }
 
-    // Vérifier si le numéro est déjà utilisé par un autre utilisateur
-    const existingUser = await User.findByPhone(`+216${phone}`);
-    if (existingUser && existingUser.id !== userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Ce numéro est déjà utilisé par un autre compte'
-      });
-    }
-
-    // Marquer comme vérifié
     await db.query(
       'UPDATE phone_verifications SET verified = TRUE WHERE id = ?',
       [verification.id]
     );
 
-    // Mettre à jour le numéro de téléphone de l'utilisateur
-    const formattedPhone = `+216${phone}`;
+    const formattedPhone = formatPhoneNumber(cleanPhone);
     await User.update(userId, { phone: formattedPhone });
 
-    // Supprimer les anciens codes
     await db.query('DELETE FROM phone_verifications WHERE user_id = ? AND id != ?', [userId, verification.id]);
 
-    // Générer un nouveau token avec les infos mises à jour
-    const token = generateToken(userId);
     const updatedUser = await User.findById(userId);
+    delete updatedUser?.password;
 
-    console.log('✅ Numéro vérifié et mis à jour pour utilisateur:', userId);
+    console.log('✅ Numéro vérifié pour utilisateur:', userId);
 
     res.json({
       success: true,
-      message: 'Numéro de téléphone vérifié et mis à jour avec succès',
-      token,
+      message: 'تم التحقق من رقم الهاتف وتحديثه بنجاح',
       user: updatedUser
     });
 
@@ -574,8 +493,7 @@ exports.verifyPhoneCode = async (req, res) => {
     console.error('❌ Erreur verifyPhoneCode:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de la vérification',
-      error: error.message
+      message: 'حدث خطأ أثناء التحقق'
     });
   }
 };
@@ -586,27 +504,26 @@ exports.resendVerificationCode = async (req, res) => {
     const { phone } = req.body;
     const userId = req.user.id;
 
-    console.log(`📱 Renvoi de code pour utilisateur ${userId}, téléphone: +216${phone}`);
+    console.log(`📱 Renvoi de code pour utilisateur ${userId}`);
 
     if (!phone) {
       return res.status(400).json({
         success: false,
-        message: 'Numéro de téléphone requis'
+        message: 'رقم الهاتف مطلوب'
       });
     }
 
-    // Supprimer l'ancien code
-    await db.query('DELETE FROM phone_verifications WHERE user_id = ? AND phone = ?', [userId, phone]);
+    const cleanPhone = String(phone).replace(/\D/g, '');
 
-    // Renvoyer un nouveau code
+    await db.query('DELETE FROM phone_verifications WHERE user_id = ? AND phone = ?', [userId, cleanPhone]);
+
     return exports.sendVerificationCode(req, res);
 
   } catch (error) {
     console.error('❌ Erreur resendVerificationCode:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors du renvoi du code',
-      error: error.message
+      message: 'حدث خطأ أثناء إعادة إرسال الرمز'
     });
   }
 };

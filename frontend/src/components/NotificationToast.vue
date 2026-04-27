@@ -2,7 +2,11 @@
   <transition name="toast-slide">
     <div
       v-if="visible"
-      :class="['notification-toast', `toast-${type}`, { 'toast-with-action': actionText }]"
+      :class="[
+        'notification-toast',
+        `toast-${type}`,
+        { 'toast-with-action': actionText, 'dark-mode': isDarkMode }
+      ]"
       role="alert"
       aria-live="assertive"
       aria-atomic="true"
@@ -147,7 +151,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useThemeStore } from '../stores/theme'
 
 const props = defineProps({
   title: String,
@@ -163,6 +168,11 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'action'])
+
+const themeStore = useThemeStore()
+
+// ===== DARK MODE - Synchronized with global theme store (header) =====
+const isDarkMode = computed(() => themeStore.isDarkMode)
 
 const visible = ref(true)
 let timeoutId = null
@@ -230,6 +240,14 @@ defineExpose({
   overflow: hidden;
   border: 1px solid #e5e7eb;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.3s ease;
+}
+
+/* Dark mode */
+.notification-toast.dark-mode {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
 /* Position classes */
@@ -287,28 +305,56 @@ defineExpose({
   color: #10b981;
 }
 
+.notification-toast.dark-mode .toast-success .toast-icon {
+  color: #34d399;
+}
+
 .toast-error .toast-icon {
   color: #ef4444;
+}
+
+.notification-toast.dark-mode .toast-error .toast-icon {
+  color: #f87171;
 }
 
 .toast-warning .toast-icon {
   color: #f59e0b;
 }
 
+.notification-toast.dark-mode .toast-warning .toast-icon {
+  color: #fbbf24;
+}
+
 .toast-info .toast-icon {
   color: #3b82f6;
+}
+
+.notification-toast.dark-mode .toast-info .toast-icon {
+  color: #60a5fa;
 }
 
 .toast-cart .toast-icon {
   color: #06b6d4;
 }
 
+.notification-toast.dark-mode .toast-cart .toast-icon {
+  color: #22d3ee;
+}
+
 .toast-wishlist .toast-icon {
   color: #ec4899;
 }
 
+.notification-toast.dark-mode .toast-wishlist .toast-icon {
+  color: #f472b6;
+}
+
 .toast-order .toast-icon {
   color: #1e3a8a;
+}
+
+.notification-toast.dark-mode .toast-order .toast-icon {
+  color: #60a5fa;
 }
 
 /* Content styling */
@@ -328,11 +374,19 @@ defineExpose({
   line-height: 1.4;
 }
 
+.notification-toast.dark-mode .toast-title {
+  color: #f1f5f9;
+}
+
 .toast-message {
   margin: 0;
   font-size: 0.9rem;
   color: #6b7280;
   line-height: 1.5;
+}
+
+.notification-toast.dark-mode .toast-message {
+  color: #cbd5e1;
 }
 
 /* Close button */
@@ -357,6 +411,11 @@ defineExpose({
 .toast-close-btn:hover {
   color: #4b5563;
   background: #f3f4f6;
+}
+
+.notification-toast.dark-mode .toast-close-btn:hover {
+  background: #374151;
+  color: #e2e8f0;
 }
 
 .toast-close-btn svg {
@@ -385,6 +444,17 @@ defineExpose({
   transform: translateY(-1px);
 }
 
+.notification-toast.dark-mode .toast-action-btn {
+  background: #374151;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+.notification-toast.dark-mode .toast-action-btn:hover {
+  background: #4b5563;
+  color: #f1f5f9;
+}
+
 .toast-with-action .toast-container {
   padding-bottom: 3rem;
 }
@@ -400,6 +470,10 @@ defineExpose({
   overflow: hidden;
 }
 
+.notification-toast.dark-mode .toast-progress {
+  background: #374151;
+}
+
 .toast-progress-bar {
   height: 100%;
   background: currentColor;
@@ -411,28 +485,56 @@ defineExpose({
   background: #10b981;
 }
 
+.notification-toast.dark-mode .toast-success .toast-progress-bar {
+  background: #34d399;
+}
+
 .toast-error .toast-progress-bar {
   background: #ef4444;
+}
+
+.notification-toast.dark-mode .toast-error .toast-progress-bar {
+  background: #f87171;
 }
 
 .toast-warning .toast-progress-bar {
   background: #f59e0b;
 }
 
+.notification-toast.dark-mode .toast-warning .toast-progress-bar {
+  background: #fbbf24;
+}
+
 .toast-info .toast-progress-bar {
   background: #3b82f6;
+}
+
+.notification-toast.dark-mode .toast-info .toast-progress-bar {
+  background: #60a5fa;
 }
 
 .toast-cart .toast-progress-bar {
   background: #06b6d4;
 }
 
+.notification-toast.dark-mode .toast-cart .toast-progress-bar {
+  background: #22d3ee;
+}
+
 .toast-wishlist .toast-progress-bar {
   background: #ec4899;
 }
 
+.notification-toast.dark-mode .toast-wishlist .toast-progress-bar {
+  background: #f472b6;
+}
+
 .toast-order .toast-progress-bar {
   background: #1e3a8a;
+}
+
+.notification-toast.dark-mode .toast-order .toast-progress-bar {
+  background: #60a5fa;
 }
 
 /* Animations */
@@ -518,5 +620,34 @@ defineExpose({
 /* Order toast specific styles */
 .toast-order {
   border-left: 4px solid #1e3a8a;
+}
+
+/* Dark mode border colors */
+.notification-toast.dark-mode.toast-success {
+  border-left-color: #34d399;
+}
+
+.notification-toast.dark-mode.toast-error {
+  border-left-color: #f87171;
+}
+
+.notification-toast.dark-mode.toast-warning {
+  border-left-color: #fbbf24;
+}
+
+.notification-toast.dark-mode.toast-info {
+  border-left-color: #60a5fa;
+}
+
+.notification-toast.dark-mode.toast-cart {
+  border-left-color: #22d3ee;
+}
+
+.notification-toast.dark-mode.toast-wishlist {
+  border-left-color: #f472b6;
+}
+
+.notification-toast.dark-mode.toast-order {
+  border-left-color: #60a5fa;
 }
 </style>

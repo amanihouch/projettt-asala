@@ -1,6 +1,6 @@
 <!-- src/views/admin/PostEdit.vue -->
 <template>
-  <div class="admin-page">
+  <div class="admin-page" :class="{ 'dark-mode': isDarkMode }">
     <div class="page-header">
       <button class="back-btn" @click="goBack">
         <span class="back-icon">→</span>
@@ -27,7 +27,7 @@
             <option value="textiles">أقمشة وسجادات</option>
             <option value="pottery">أواني</option>
             <option value="beauty">عناية وتجميل</option>
-            <option value="food">أغدية</option>
+            <option value="food">أغذية</option>
             <option value="other">أخرى</option>
           </select>
         </div>
@@ -48,11 +48,11 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">السعر الحالي</label>
-            <input v-model.number="form.price" type="number" class="form-input" required />
+            <input v-model.number="form.price" type="number" class="form-input" required step="0.01" />
           </div>
           <div class="form-group">
             <label class="form-label">السعر القديم</label>
-            <input v-model.number="form.oldPrice" type="number" class="form-input" />
+            <input v-model.number="form.oldPrice" type="number" class="form-input" step="0.01" />
           </div>
         </div>
         <div v-if="form.oldPrice && form.price > form.oldPrice" class="validation-error">
@@ -137,7 +137,7 @@
 
     <!-- Toast -->
     <transition name="toast">
-      <div v-if="toast.show" class="toast-notification" :class="toast.type">
+      <div v-if="toast.show" class="toast-notification" :class="[toast.type, { 'dark-mode': isDarkMode }]">
         <span class="toast-icon">{{ toast.icon }}</span>
         <span class="toast-message">{{ toast.message }}</span>
       </div>
@@ -146,14 +146,22 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../../stores/auth'
+import { useThemeStore } from '../../stores/theme'
 import { usePostStore } from '../../stores/postStore'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
+const themeStore = useThemeStore()
 const postStore = usePostStore()
 
+// ===== DARK MODE - Synchronized with global theme store =====
+const isDarkMode = computed(() => themeStore.isDarkMode)
+
+// ===== STATE =====
 const loading = ref(true)
 const saving = ref(false)
 const post = ref(null)
@@ -186,6 +194,7 @@ const availableColors = [
   { name: 'Gris', code: '#64748b' },
 ]
 
+// ===== METHODS =====
 const showToast = (message, type = 'success') => {
   const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' }
   toast.value = { show: true, message, type, icon: icons[type] }
@@ -207,19 +216,49 @@ const savePost = async () => {
     showToast('⚠️ السعر الحالي يجب أن يكون أقل من السعر القديم', 'warning')
     return
   }
+
+  if (!form.productName.trim()) {
+    showToast('⚠️ الرجاء إدخال اسم المنتج', 'warning')
+    return
+  }
+
+  if (!form.category) {
+    showToast('⚠️ الرجاء اختيار التصنيف', 'warning')
+    return
+  }
+
   saving.value = true
   try {
     await postStore.updatePost(route.params.id, form)
     showToast('✅ تم حفظ التعديلات')
     setTimeout(() => router.push(`/admin/post/${route.params.id}`), 1500)
   } catch (error) {
+    console.error('❌ Erreur sauvegarde:', error)
     showToast('❌ حدث خطأ أثناء الحفظ', 'error')
   } finally {
     saving.value = false
   }
 }
 
+// ===== WATCHERS =====
+watch(isDarkMode, (newValue) => {
+  if (newValue) {
+    document.documentElement.classList.add('dark-mode')
+    document.body.classList.add('dark-mode')
+  } else {
+    document.documentElement.classList.remove('dark-mode')
+    document.body.classList.remove('dark-mode')
+  }
+}, { immediate: true })
+
+// ===== LIFECYCLE =====
 onMounted(async () => {
+  // Check authentication
+  if (!authStore.isAuthenticated || authStore.userRole !== 'admin') {
+    router.push('/login')
+    return
+  }
+
   const postId = route.params.id
   try {
     const data = await postStore.fetchPostById(postId)
@@ -229,7 +268,7 @@ onMounted(async () => {
       productName: data.productName,
       description: data.description || '',
       price: data.price,
-      oldPrice: data.oldPrice,
+      oldPrice: data.oldPrice || null,
       colors: data.colors || [],
       quantity: data.quantity || 1,
       unit: data.unit || 'piece',
@@ -238,7 +277,8 @@ onMounted(async () => {
       adminNotes: data.adminNotes || '',
     })
   } catch (error) {
-    console.error(error)
+    console.error('❌ Erreur chargement post:', error)
+    showToast('❌ حدث خطأ في تحميل المنشور', 'error')
   } finally {
     loading.value = false
   }
@@ -246,12 +286,21 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* Base styles */
 .admin-page {
   padding: 30px;
   background: #f8fafc;
   min-height: 100vh;
-  font-family: 'Cairo', sans-serif;
+  font-family: 'Amiri', 'Cairo', serif;
   direction: rtl;
+  transition: all 0.3s ease;
+}
+
+/* Dark mode styles */
+.admin-page.dark-mode {
+  background: #0f172a;
 }
 
 .page-header {
@@ -259,6 +308,7 @@ onMounted(async () => {
   align-items: center;
   gap: 20px;
   margin-bottom: 30px;
+  position: relative;
 }
 
 .back-btn {
@@ -274,6 +324,12 @@ onMounted(async () => {
   color: #475569;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.dark-mode .back-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
 }
 
 .back-btn:hover {
@@ -292,6 +348,10 @@ onMounted(async () => {
   margin: 0;
 }
 
+.dark-mode .page-title {
+  color: #f1f5f9;
+}
+
 /* Loading */
 .loading-state {
   text-align: center;
@@ -308,10 +368,23 @@ onMounted(async () => {
   margin: 0 auto 20px;
 }
 
+.dark-mode .spinner {
+  border-color: #334155;
+  border-top-color: #08717f;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
+}
+
+.loading-state p {
+  color: #64748b;
+}
+
+.dark-mode .loading-state p {
+  color: #94a3b8;
 }
 
 /* Form */
@@ -322,6 +395,12 @@ onMounted(async () => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   max-width: 800px;
   margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+.dark-mode .edit-form {
+  background: #1e293b;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .form-group {
@@ -335,6 +414,10 @@ onMounted(async () => {
   margin-bottom: 8px;
 }
 
+.dark-mode .form-label {
+  color: #f1f5f9;
+}
+
 .form-input,
 .form-select,
 .form-textarea {
@@ -344,6 +427,21 @@ onMounted(async () => {
   border-radius: 8px;
   font-size: 0.95rem;
   transition: all 0.3s ease;
+  background: white;
+  color: #1e293b;
+}
+
+.dark-mode .form-input,
+.dark-mode .form-select,
+.dark-mode .form-textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.dark-mode .form-input::placeholder,
+.dark-mode .form-textarea::placeholder {
+  color: #64748b;
 }
 
 .form-input:focus,
@@ -352,6 +450,12 @@ onMounted(async () => {
   outline: none;
   border-color: #08717f;
   box-shadow: 0 0 0 3px rgba(8, 113, 127, 0.1);
+}
+
+.dark-mode .form-input:focus,
+.dark-mode .form-select:focus,
+.dark-mode .form-textarea:focus {
+  box-shadow: 0 0 0 3px rgba(8, 113, 127, 0.3);
 }
 
 .form-row {
@@ -368,6 +472,11 @@ onMounted(async () => {
   border-radius: 8px;
   margin-top: -10px;
   margin-bottom: 20px;
+}
+
+.dark-mode .validation-error {
+  background: rgba(212, 0, 37, 0.2);
+  color: #ff6b6b;
 }
 
 /* Colors */
@@ -389,6 +498,12 @@ onMounted(async () => {
   transition: all 0.2s ease;
 }
 
+.dark-mode .color-option {
+  background: #0f172a;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
 .color-option:hover {
   border-color: #08717f;
 }
@@ -407,6 +522,10 @@ onMounted(async () => {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+.dark-mode .color-dot {
+  border-color: #1e293b;
+}
+
 .color-name {
   font-size: 0.8rem;
 }
@@ -423,6 +542,10 @@ onMounted(async () => {
   cursor: pointer;
 }
 
+.dark-mode .form-checkbox label {
+  color: #f1f5f9;
+}
+
 .form-checkbox input {
   width: 18px;
   height: 18px;
@@ -436,6 +559,10 @@ onMounted(async () => {
   margin-top: 30px;
   padding-top: 20px;
   border-top: 2px solid #f1f5f9;
+}
+
+.dark-mode .form-actions {
+  border-top-color: #334155;
 }
 
 .btn-cancel,
@@ -455,8 +582,17 @@ onMounted(async () => {
   color: #64748b;
 }
 
+.dark-mode .btn-cancel {
+  background: #334155;
+  color: #cbd5e1;
+}
+
 .btn-cancel:hover {
   background: #e2e8f0;
+}
+
+.dark-mode .btn-cancel:hover {
+  background: #475569;
 }
 
 .btn-save {
@@ -494,9 +630,17 @@ onMounted(async () => {
   margin: 0 auto;
 }
 
+.dark-mode .not-found {
+  background: #1e293b;
+}
+
 .not-found h2 {
   color: #1e293b;
   margin-bottom: 20px;
+}
+
+.dark-mode .not-found h2 {
+  color: #f1f5f9;
 }
 
 /* Toast */
@@ -517,12 +661,29 @@ onMounted(async () => {
   animation: slideInRight 0.3s ease;
 }
 
+.toast-notification.dark-mode {
+  background: #1e293b;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
 .toast-notification.success {
   border-right-color: #10b981;
 }
 
 .toast-notification.error {
   border-right-color: #ef4444;
+}
+
+.toast-notification.info {
+  border-right-color: #08717f;
+}
+
+.toast-notification.warning {
+  border-right-color: #f59e0b;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9;
 }
 
 @keyframes slideInRight {
@@ -569,5 +730,22 @@ onMounted(async () => {
     width: calc(100% - 40px);
     right: 20px;
   }
+}
+</style>
+
+<style>
+/* Global dark mode styles */
+html.dark-mode {
+  background-color: #0f172a;
+}
+
+html.dark-mode body {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+/* Smooth transitions for dark mode */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 </style>

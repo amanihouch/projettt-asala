@@ -28,8 +28,36 @@ const testConnection = async () => {
   }
 };
 
-// Exporter les deux
+// ===== FONCTIONS D'EXÉCUTION =====
+const execute = async (sql, params = []) => {
+  try {
+    const [rows] = await pool.execute(sql, params);
+    return rows;
+  } catch (error) {
+    console.error('❌ Erreur SQL:', error);
+    throw error;
+  }
+};
+
+const query = async (sql, params = []) => {
+  try {
+    const [rows] = await pool.query(sql, params);
+    return rows;
+  } catch (error) {
+    console.error('❌ Erreur SQL:', error);
+    throw error;
+  }
+};
+
+const getConnection = async () => {
+  return pool.getConnection();
+};
+
+// Exporter
 module.exports = {
   pool,
-  testConnection
+  testConnection,
+  execute,
+  query,
+  getConnection
 };

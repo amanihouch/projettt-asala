@@ -2,39 +2,38 @@
 const db = require('./db');
 
 const Post = {
-  // ===== CREATE =====
   async create(data) {
     console.log('📝 Post.create avec données:', data);
     
-    // ✅ Vérifier que vendorId existe
     if (!data.vendorId) {
-      const error = new Error('vendorId est requis');
-      console.error('❌', error.message);
-      throw error;
+      throw new Error('vendorId est requis');
     }
 
-    // ✅ Vérifier que le vendeur existe dans la base
-    const vendorExists = await db.getOne('SELECT id FROM vendors WHERE id = ?', [data.vendorId]);
-    if (!vendorExists) {
-      const error = new Error(`Vendeur avec ID ${data.vendorId} non trouvé`);
-      console.error('❌', error.message);
-      throw error;
+    const vendorInfo = await db.getOne(`
+      SELECT v.id, v.shopName, u.avatar 
+      FROM vendors v
+      LEFT JOIN users u ON v.userId = u.id
+      WHERE v.id = ?
+    `, [data.vendorId]);
+
+    if (!vendorInfo) {
+      throw new Error(`Vendeur avec ID ${data.vendorId} non trouvé`);
     }
 
-    // ✅ Vérifier les champs obligatoires
-    if (!data.productName) {
-      const error = new Error('productName est requis');
-      console.error('❌', error.message);
-      throw error;
+    let categoryId = data.categoryId || data.category;
+    
+    if (categoryId && isNaN(categoryId)) {
+      const category = await db.getOne(
+        'SELECT id FROM categories WHERE slug = ? OR nameAr = ? OR name = ?',
+        [categoryId, categoryId, categoryId]
+      );
+      if (category) {
+        categoryId = category.id;
+      } else {
+        categoryId = null;
+      }
     }
 
-    if (!data.price && data.price !== 0) {
-      const error = new Error('price est requis');
-      console.error('❌', error.message);
-      throw error;
-    }
-
-    // ✅ Traitement des images
     let imagesJson = '[]';
     if (data.images) {
       if (Array.isArray(data.images)) {
@@ -49,7 +48,6 @@ const Post = {
       }
     }
 
-    // ✅ Traitement des couleurs
     let colorsJson = '[]';
     if (data.colors) {
       if (Array.isArray(data.colors)) {
@@ -64,126 +62,127 @@ const Post = {
       }
     }
 
+    let sizesJson = '[]';
+    if (data.sizes) {
+      if (Array.isArray(data.sizes)) {
+        sizesJson = JSON.stringify(data.sizes);
+      } else if (typeof data.sizes === 'string') {
+        try {
+          JSON.parse(data.sizes);
+          sizesJson = data.sizes;
+        } catch {
+          sizesJson = JSON.stringify([data.sizes]);
+        }
+      }
+    }
+
     const sql = `
       INSERT INTO posts (
-        vendorId, productName, description, content, category,
-        price, oldPrice, images, colors, quantity, unit, inStock, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        vendorId, vendorName, vendorAvatar, vendorVerified,
+        productName, description, content, categoryId,
+        price, oldPrice, images, colors, sizes,
+        quantity, unit, inStock, status,
+        hasColors, hasShipping, shippingCost, shippingTime, stockStatus,
+        createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     `;
     
     const params = [
       data.vendorId,
+      vendorInfo.shopName || 'Vendeur',
+      vendorInfo.avatar || null,
+      0,
       data.productName,
       data.description || null,
       data.content || null,
-      data.category || null,
+      categoryId,
       data.price,
       data.oldPrice || null,
       imagesJson,
       colorsJson,
+      sizesJson,
       data.quantity ?? 1,
       data.unit || 'piece',
       data.inStock !== false ? 1 : 0,
-      'pending'
+      data.status || 'pending',
+      data.hasColors ? 1 : 0,
+      data.hasShipping ? 1 : 0,
+      data.shippingCost || null,
+      data.shippingTime || null,
+      data.stockStatus || 'in_stock'
     ];
 
-    console.log('📦 Paramètres SQL:', params);
-    
     try {
       const postId = await db.insert(sql, params);
-      console.log('✅ Post créé avec ID:', postId);
+      console.log('✅ Post créé avec ID:', postId, 'CategoryId:', categoryId);
       return this.findById(postId);
     } catch (error) {
       console.error('❌ Erreur SQL insert:', error);
-      console.error('📝 SQL:', sql);
-      console.error('📦 Params:', params);
       throw error;
     }
   },
 
-  // ===== FIND BY ID =====
   async findById(id) {
     const sql = `
       SELECT 
-        p.id,
-        p.vendorId,
-        p.productName,
-        p.description,
-        p.content,
-        p.category,
-        p.price,
-        p.oldPrice,
-        p.images,
-        p.colors,
-        p.quantity,
-        p.unit,
-        p.inStock,
-        p.status,
-        p.adminNotes,
-        p.likes,
-        p.commentsCount,
-        p.publishedAt,
-        p.createdAt,
-        v.shopName,
-        u.avatar AS vendorAvatar
+        p.id, p.vendorId, p.productName, p.description, p.content, p.categoryId,
+        p.price, p.oldPrice, p.images, p.colors, p.sizes,
+        p.quantity, p.unit, p.inStock, p.status, p.adminNotes,
+        p.likes, p.commentsCount, p.publishedAt, p.createdAt,
+        p.hasColors, p.hasShipping, p.shippingCost, p.shippingTime, p.stockStatus,
+        v.shopName as vendorName, u.avatar AS vendorAvatar,
+        c.id as catId, c.name as categoryName, c.nameAr as categoryNameAr, c.slug as categorySlug, c.icon as categoryIcon
       FROM posts p
       LEFT JOIN vendors v ON p.vendorId = v.id
       LEFT JOIN users u ON v.userId = u.id
+      LEFT JOIN categories c ON p.categoryId = c.id
       WHERE p.id = ?
     `;
     
     const post = await db.getOne(sql, [id]);
     if (post) {
-      // ✅ Parser les images
       try {
-        post.images = typeof post.images === 'string' 
-          ? JSON.parse(post.images) 
-          : (post.images || []);
+        post.images = typeof post.images === 'string' ? JSON.parse(post.images) : (post.images || []);
       } catch {
         post.images = post.images ? [post.images] : [];
       }
-      
-      // ✅ Parser les couleurs
       try {
         post.colors = JSON.parse(post.colors || '[]');
       } catch {
         post.colors = [];
       }
-      
+      try {
+        post.sizes = JSON.parse(post.sizes || '[]');
+      } catch {
+        post.sizes = [];
+      }
       post.inStock = Boolean(post.inStock);
+      post.hasColors = Boolean(post.hasColors);
+      post.hasShipping = Boolean(post.hasShipping);
     }
     return post;
   },
 
-  // ===== GET FEED (public, seulement approuvés) =====
   async getFeed(page = 1, limit = 10) {
     const offset = (page - 1) * limit;
     
     const sql = `
       SELECT 
-        p.id,
-        p.productName,
-        p.description,
-        p.price,
-        p.images,
-        p.createdAt,
-        v.shopName,
-        v.id as vendorId
+        p.id, p.productName, p.description, p.price, p.images, p.createdAt,
+        p.categoryId,
+        v.shopName, v.id as vendorId
       FROM posts p
       LEFT JOIN vendors v ON p.vendorId = v.id
       WHERE p.status = 'approved'
       ORDER BY p.createdAt DESC
-      LIMIT ${offset}, ${limit}
+      LIMIT ? OFFSET ?
     `;
     
-    const posts = await db.query(sql);
+    const posts = await db.query(sql, [limit, offset]);
     
-    // ✅ Parser les images pour chaque post
     posts.forEach(p => {
       try {
-        p.images = typeof p.images === 'string' 
-          ? JSON.parse(p.images) 
-          : (p.images || []);
+        p.images = typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []);
       } catch {
         p.images = p.images ? [p.images] : [];
       }
@@ -192,79 +191,54 @@ const Post = {
     return posts;
   },
 
-  // ===== GET PENDING (admin) =====
   async getPending(page = 1, limit = 20) {
     const offset = (page - 1) * limit;
-
     const sql = `
       SELECT 
-        p.id,
-        p.vendorId,
-        p.productName,
-        p.description,
-        p.price,
-        p.images,
-        p.colors,
-        p.category,
-        p.quantity,
-        p.unit,
-        p.createdAt,
-        v.shopName,
-        u.avatar as vendorAvatar,
-        u.name as userName,
-        u.email as userEmail
+        p.id, p.vendorId, p.productName, p.description, p.price, p.images, p.colors, p.sizes,
+        p.categoryId, p.quantity, p.unit, p.createdAt, p.hasColors, p.hasShipping,
+        p.shippingCost, p.shippingTime, p.stockStatus,
+        v.shopName, u.avatar as vendorAvatar, u.name as userName, u.email as userEmail
       FROM posts p
       LEFT JOIN vendors v ON p.vendorId = v.id
       LEFT JOIN users u ON v.userId = u.id
       WHERE p.status = 'pending'
       ORDER BY p.createdAt DESC
-      LIMIT ${offset}, ${limit}
+      LIMIT ? OFFSET ?
     `;
     
-    const posts = await db.query(sql);
+    const posts = await db.query(sql, [limit, offset]);
     
-    // ✅ Parser les images et couleurs
     posts.forEach(p => {
       try {
-        p.images = typeof p.images === 'string' 
-          ? JSON.parse(p.images) 
-          : (p.images || []);
+        p.images = typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []);
       } catch {
         p.images = p.images ? [p.images] : [];
       }
-      
       try {
         p.colors = JSON.parse(p.colors || '[]');
       } catch {
         p.colors = [];
+      }
+      try {
+        p.sizes = JSON.parse(p.sizes || '[]');
+      } catch {
+        p.sizes = [];
       }
     });
     
     return posts;
   },
 
-  // ===== GET BY VENDOR =====
   async getByVendor(vendorId, includePending = false, page = 1, limit = 20) {
     const offset = (page - 1) * limit;
     
     let sql = `
       SELECT 
-        p.id,
-        p.productName,
-        p.description,
-        p.content,
-        p.price,
-        p.oldPrice,
-        p.images,
-        p.colors,
-        p.quantity,
-        p.unit,
-        p.status,
-        p.likes,
-        p.commentsCount,
-        p.createdAt,
-        v.shopName,
-        u.avatar AS vendorAvatar
+        p.id, p.productName, p.description, p.content, p.price, p.oldPrice,
+        p.images, p.colors, p.sizes, p.quantity, p.unit, p.status,
+        p.likes, p.commentsCount, p.createdAt, p.categoryId,
+        v.shopName, u.avatar AS vendorAvatar
       FROM posts p
       LEFT JOIN vendors v ON p.vendorId = v.id
       LEFT JOIN users u ON v.userId = u.id
@@ -275,59 +249,49 @@ const Post = {
       sql += ` AND p.status = 'approved'`;
     }
     
-    sql += ` ORDER BY p.createdAt DESC LIMIT ${offset}, ${limit}`;
+    sql += ` ORDER BY p.createdAt DESC LIMIT ? OFFSET ?`;
     
-    try {
-      console.log('📝 SQL getByVendor:', sql);
-      console.log('📦 Params:', [vendorId]);
-      
-      const posts = await db.query(sql, [vendorId]);
-      
-      // ✅ Parser les images et couleurs pour chaque post
-      posts.forEach(p => {
-        try {
-          p.images = typeof p.images === 'string' 
-            ? JSON.parse(p.images) 
-            : (p.images || []);
-        } catch {
-          p.images = p.images ? [p.images] : [];
-        }
-        
-        try {
-          p.colors = JSON.parse(p.colors || '[]');
-        } catch {
-          p.colors = [];
-        }
-      });
-      
-      return posts;
-    } catch (error) {
-      console.error('❌ Erreur getByVendor:', error);
-      return [];
-    }
+    const posts = await db.query(sql, [vendorId, limit, offset]);
+    
+    posts.forEach(p => {
+      try {
+        p.images = typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []);
+      } catch {
+        p.images = p.images ? [p.images] : [];
+      }
+      try {
+        p.colors = JSON.parse(p.colors || '[]');
+      } catch {
+        p.colors = [];
+      }
+      try {
+        p.sizes = JSON.parse(p.sizes || '[]');
+      } catch {
+        p.sizes = [];
+      }
+    });
+    
+    return posts;
   },
 
-  // ===== UPDATE =====
   async update(id, data) {
     const fields = [];
     const values = [];
-    const allowed = ['productName', 'description', 'content', 'category', 'price', 'oldPrice', 'colors', 'quantity', 'unit', 'inStock'];
+    const allowed = ['productName', 'description', 'content', 'categoryId', 'price', 'oldPrice', 'colors', 'sizes', 'quantity', 'unit', 'inStock', 'hasColors', 'hasShipping', 'shippingCost', 'shippingTime', 'stockStatus'];
     
     for (const key of allowed) {
       if (data[key] !== undefined) {
         let val = data[key];
-        if (key === 'colors') {
-          val = JSON.stringify(val || []);
-        }
-        if (key === 'inStock') {
-          val = val ? 1 : 0;
-        }
+        if (key === 'colors') val = JSON.stringify(val || []);
+        if (key === 'sizes') val = JSON.stringify(val || []);
+        if (key === 'inStock') val = val ? 1 : 0;
+        if (key === 'hasColors') val = val ? 1 : 0;
+        if (key === 'hasShipping') val = val ? 1 : 0;
         fields.push(`${key} = ?`);
         values.push(val);
       }
     }
     
-    // ✅ Traitement des images
     if (data.images !== undefined) {
       let imagesJson = '[]';
       if (Array.isArray(data.images)) {
@@ -356,65 +320,63 @@ const Post = {
     return this.findById(id);
   },
 
-  // ===== DELETE =====
   async delete(id) {
     await db.query('DELETE FROM posts WHERE id = ?', [id]);
     return true;
   },
 
-  // ===== APPROVE =====
   async approve(id) {
     await db.query('UPDATE posts SET status = "approved", publishedAt = NOW() WHERE id = ?', [id]);
     return this.findById(id);
   },
 
-  // ===== REJECT =====
   async reject(id, reason) {
     await db.query('UPDATE posts SET status = "rejected", adminNotes = ? WHERE id = ?', [reason, id]);
     return this.findById(id);
   },
 
-  // ===== COUNT BY STATUS =====
   async countByStatus() {
-    const sql = `SELECT status, COUNT(*) as count FROM posts GROUP BY status`;
-    const rows = await db.query(sql);
+    const rows = await db.query('SELECT status, COUNT(*) as count FROM posts GROUP BY status');
     const stats = { pending: 0, approved: 0, rejected: 0 };
     rows.forEach(r => { stats[r.status] = r.count; });
     return stats;
   },
 
-  // ===== TOGGLE LIKE =====
   async toggleLike(postId, userId) {
     const exists = await db.getOne('SELECT id FROM post_likes WHERE postId = ? AND userId = ?', [postId, userId]);
     if (exists) {
       await db.query('DELETE FROM post_likes WHERE id = ?', [exists.id]);
       await db.query('UPDATE posts SET likes = likes - 1 WHERE id = ?', [postId]);
-      return { liked: false };
+      return { liked: false, likes: await this.getLikesCount(postId) };
     } else {
       await db.insert('INSERT INTO post_likes (postId, userId) VALUES (?, ?)', [postId, userId]);
       await db.query('UPDATE posts SET likes = likes + 1 WHERE id = ?', [postId]);
-      return { liked: true };
+      return { liked: true, likes: await this.getLikesCount(postId) };
     }
   },
 
-  // ===== ADD COMMENT =====
+  async getLikesCount(postId) {
+    const result = await db.getOne('SELECT likes FROM posts WHERE id = ?', [postId]);
+    return result?.likes || 0;
+  },
+
   async addComment(postId, userId, userName, userAvatar, comment) {
-    const sql = 'INSERT INTO comments (postId, userId, userName, userAvatar, comment) VALUES (?, ?, ?, ?, ?)';
-    const commentId = await db.insert(sql, [postId, userId, userName, userAvatar, comment]);
+    const commentId = await db.insert(
+      'INSERT INTO comments (postId, userId, userName, userAvatar, comment) VALUES (?, ?, ?, ?, ?)',
+      [postId, userId, userName, userAvatar, comment]
+    );
     await db.query('UPDATE posts SET commentsCount = commentsCount + 1 WHERE id = ?', [postId]);
     return db.getOne('SELECT * FROM comments WHERE id = ?', [commentId]);
   },
 
-  // ===== GET COMMENTS =====
   async getComments(postId) {
-    const sql = `
+    return db.query(`
       SELECT c.*, u.name as userName, u.avatar as userAvatar
       FROM comments c
       JOIN users u ON c.userId = u.id
       WHERE c.postId = ?
       ORDER BY c.createdAt DESC
-    `;
-    return db.query(sql, [postId]);
+    `, [postId]);
   }
 };
 

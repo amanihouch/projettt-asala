@@ -1,347 +1,580 @@
+// backend/src/models/User.js
 const db = require('./db');
 const bcrypt = require('bcryptjs');
 
-const User = {
-  // ===== MÉTHODES PRINCIPALES =====
-  
-  async create(userData) {
-    const { name, email, password, phone, role = 'customer', avatar, address } = userData;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const sql = `
-      INSERT INTO users (name, email, password, phone, role, avatar, address)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-    const result = await db.query(sql, [
+class User {
+  /**
+   * Trouver un utilisateur par ID
+   */
+  static async findById(id) {
+    try {
+      const user = await db.getOne(
+        `SELECT id, name, email, role, phone, address, avatar, googleId, facebookId, isActive, createdAt, updatedAt 
+         FROM users WHERE id = ?`,
+        [id]
+      );
+      return user || null;
+    } catch (error) {
+      console.error('❌ Erreur findById:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Trouver un utilisateur par email avec mot de passe (pour login)
+   */
+  static async findByEmailWithPassword(email) {
+    try {
+      const user = await db.getOne(
+        'SELECT id, name, email, password, role, phone, address, avatar, googleId, facebookId, isActive FROM users WHERE email = ?',
+        [email.toLowerCase()]
+      );
+      console.log(`🔍 Recherche utilisateur ${email}:`, user ? 'trouvé' : 'non trouvé');
+      return user || null;
+    } catch (error) {
+      console.error('❌ Erreur findByEmailWithPassword:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Trouver un utilisateur par email (sans mot de passe)
+   */
+  static async findByEmail(email) {
+    try {
+      const user = await db.getOne(
+        'SELECT id, name, email, role, phone, address, avatar, googleId, facebookId, isActive, createdAt FROM users WHERE email = ?',
+        [email.toLowerCase()]
+      );
+      return user || null;
+    } catch (error) {
+      console.error('❌ Erreur findByEmail:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Trouver un utilisateur par Google ID
+   */
+  static async findByGoogleId(googleId) {
+    try {
+      const user = await db.getOne(
+        'SELECT id, name, email, role, phone, address, avatar, googleId, facebookId, isActive, createdAt FROM users WHERE googleId = ?',
+        [googleId]
+      );
+      return user || null;
+    } catch (error) {
+      console.error('❌ Erreur findByGoogleId:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Trouver un utilisateur par Facebook ID
+   */
+  static async findByFacebookId(facebookId) {
+    try {
+      const user = await db.getOne(
+        'SELECT id, name, email, role, phone, address, avatar, googleId, facebookId, isActive, createdAt FROM users WHERE facebookId = ?',
+        [facebookId]
+      );
+      return user || null;
+    } catch (error) {
+      console.error('❌ Erreur findByFacebookId:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Trouver un utilisateur par téléphone
+   */
+  static async findByPhone(phone) {
+    try {
+      const user = await db.getOne(
+        'SELECT id, name, email, role, phone, address, avatar, createdAt FROM users WHERE phone = ?',
+        [phone]
+      );
+      return user || null;
+    } catch (error) {
+      console.error('❌ Erreur findByPhone:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Créer un nouvel utilisateur (standard ou OAuth)
+   */
+  static async create(userData) {
+    const { 
       name, 
       email, 
-      hashedPassword, 
-      phone || null, 
-      role, 
-      avatar || null,
-      address || null
-    ]);
+      password, 
+      role = 'customer', 
+      phone = null, 
+      address = null, 
+      avatar = null,
+      googleId = null,
+      facebookId = null
+    } = userData;
     
-    const insertId = result.insertId;
-    return this.findById(insertId);
-  },
-
-  async findById(id) {
-    const sql = `
-      SELECT id, name, email, phone, role, avatar, address, 
-             isActive, lastLogin, createdAt, updatedAt
-      FROM users WHERE id = ?
-    `;
-    const results = await db.query(sql, [id]);
-    return results[0] || null;
-  },
-
-  async findByEmail(email) {
-    const sql = `
-      SELECT id, name, email, phone, role, avatar, address, 
-             isActive, lastLogin, createdAt
-      FROM users WHERE email = ?
-    `;
-    const results = await db.query(sql, [email]);
-    return results[0] || null;
-  },
-
-  async findByEmailWithPassword(email) {
-    const sql = `
-      SELECT id, name, email, password, phone, role, avatar, address, isActive
-      FROM users WHERE email = ?
-    `;
-    const results = await db.query(sql, [email]);
-    return results[0] || null;
-  },
-
-  async findByPhone(phone) {
-    const sql = `
-      SELECT id, name, email, phone, role, avatar, address, isActive
-      FROM users WHERE phone = ?
-    `;
-    const results = await db.query(sql, [phone]);
-    return results[0] || null;
-  },
-
-  async update(id, updates) {
-    const fields = [];
-    const values = [];
-    const allowedFields = ['name', 'email', 'phone', 'avatar', 'address', 'isActive', 'lastLogin'];
-    
-    for (const key of allowedFields) {
-      if (updates[key] !== undefined) {
-        fields.push(`${key} = ?`);
-        values.push(updates[key]);
-      }
+    // Hasher le mot de passe seulement s'il est fourni
+    let hashedPassword = null;
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
     }
-    
-    if (fields.length === 0) return null;
-    
-    values.push(id);
-    const sql = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
-    await db.query(sql, values);
-    return this.findById(id);
-  },
 
-  async updatePassword(id, newPassword) {
-    const hashed = await bcrypt.hash(newPassword, 10);
-    await db.query('UPDATE users SET password = ? WHERE id = ?', [hashed, id]);
-    return true;
-  },
+    try {
+      const userId = await db.insert(
+        `INSERT INTO users (name, email, password, role, phone, address, avatar, googleId, facebookId, isActive, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())`,
+        [name, email.toLowerCase(), hashedPassword, role, phone, address, avatar, googleId, facebookId]
+      );
 
-  async verifyPassword(user, password) {
-    return bcrypt.compare(password, user.password);
-  },
-
-  // ===== GESTION DES TOKENS DE RÉINITIALISATION =====
-
-  async setResetToken(email, token, expires) {
-    await db.query(
-      'UPDATE users SET reset_password_token = ?, reset_password_expire = ? WHERE email = ?',
-      [token, expires, email]
-    );
-  },
-
-  async findByResetToken(token) {
-    const sql = `
-      SELECT id, email, name 
-      FROM users 
-      WHERE reset_password_token = ? AND reset_password_expire > NOW()
-    `;
-    const results = await db.query(sql, [token]);
-    return results[0] || null;
-  },
-
-  async clearResetToken(id) {
-    await db.query(
-      'UPDATE users SET reset_password_token = NULL, reset_password_expire = NULL WHERE id = ?', 
-      [id]
-    );
-  },
-
-  // ===== WISHLIST =====
-
-  async addToWishlist(userId, productId) {
-    const sql = `
-      INSERT INTO wishlist (userId, productId) 
-      VALUES (?, ?) 
-      ON DUPLICATE KEY UPDATE createdAt = NOW()
-    `;
-    await db.query(sql, [userId, productId]);
-    return true;
-  },
-
-  async removeFromWishlist(userId, productId) {
-    const sql = 'DELETE FROM wishlist WHERE userId = ? AND productId = ?';
-    await db.query(sql, [userId, productId]);
-    return true;
-  },
-
-  async isInWishlist(userId, productId) {
-    const sql = 'SELECT 1 FROM wishlist WHERE userId = ? AND productId = ?';
-    const results = await db.query(sql, [userId, productId]);
-    return results.length > 0;
-  },
-
-  async getWishlist(userId) {
-    const sql = `
-      SELECT p.*, w.createdAt as likedAt 
-      FROM wishlist w
-      JOIN products p ON w.productId = p.id
-      WHERE w.userId = ?
-      ORDER BY w.createdAt DESC
-    `;
-    return db.query(sql, [userId]);
-  },
-
-  // ===== PRODUCT LIKES (CORRIGÉ) =====
-
-  async likeProduct(userId, productId) {
-    const sql = `
-      INSERT INTO product_likes (userId, productId) 
-      VALUES (?, ?) 
-      ON DUPLICATE KEY UPDATE createdAt = NOW()
-    `;
-    await db.query(sql, [userId, productId]);
-    return true;
-  },
-
-  async unlikeProduct(userId, productId) {
-    const sql = 'DELETE FROM product_likes WHERE userId = ? AND productId = ?';
-    await db.query(sql, [userId, productId]);
-    return true;
-  },
-
-  async hasLikedProduct(userId, productId) {
-    const sql = 'SELECT 1 FROM product_likes WHERE userId = ? AND productId = ?';
-    const results = await db.query(sql, [userId, productId]);
-    return results.length > 0;
-  },
-
-  async getProductLikes(userId) {
-    // CORRECTION: Utiliser 'createdAt' au lieu de 'created_at'
-    const sql = `
-      SELECT p.*, pl.createdAt as likedAt 
-      FROM product_likes pl
-      JOIN products p ON pl.productId = p.id
-      WHERE pl.userId = ?
-      ORDER BY pl.createdAt DESC
-    `;
-    return db.query(sql, [userId]);
-  },
-
-  // ===== POST LIKES (CORRIGÉ) =====
-
-  async likePost(userId, postId) {
-    const sql = `
-      INSERT INTO post_likes (userId, postId) 
-      VALUES (?, ?) 
-      ON DUPLICATE KEY UPDATE createdAt = NOW()
-    `;
-    await db.query(sql, [userId, postId]);
-    return true;
-  },
-
-  async unlikePost(userId, postId) {
-    const sql = 'DELETE FROM post_likes WHERE userId = ? AND postId = ?';
-    await db.query(sql, [userId, postId]);
-    return true;
-  },
-
-  async hasLikedPost(userId, postId) {
-    const sql = 'SELECT 1 FROM post_likes WHERE userId = ? AND postId = ?';
-    const results = await db.query(sql, [userId, postId]);
-    return results.length > 0;
-  },
-
-  async getPostLikes(userId) {
-    // CORRECTION: Utiliser 'createdAt' au lieu de 'created_at'
-    const sql = `
-      SELECT p.*, pl.createdAt as likedAt 
-      FROM post_likes pl
-      JOIN posts p ON pl.postId = p.id
-      WHERE pl.userId = ?
-      ORDER BY pl.createdAt DESC
-    `;
-    return db.query(sql, [userId]);
-  },
-
-  // ===== AVATAR =====
-
-  async updateAvatar(id, avatarUrl) {
-    return this.update(id, { avatar: avatarUrl });
-  },
-
-  // ===== STATISTIQUES ET ADMIN =====
-
-  async getUserWithStats(id) {
-    const user = await this.findById(id);
-    if (!user) return null;
-    
-    const orderStats = await db.query(
-      'SELECT COUNT(*) as orderCount, COALESCE(SUM(total), 0) as orderTotal FROM orders WHERE userId = ?',
-      [id]
-    );
-    
-    const wishlistCount = await db.query(
-      'SELECT COUNT(*) as count FROM wishlist WHERE userId = ?',
-      [id]
-    );
-    
-    const likesCount = await db.query(
-      'SELECT COUNT(*) as count FROM product_likes WHERE userId = ?',
-      [id]
-    );
-    
-    return {
-      ...user,
-      ordersCount: orderStats[0]?.orderCount || 0,
-      ordersTotal: orderStats[0]?.orderTotal || 0,
-      wishlistCount: wishlistCount[0]?.count || 0,
-      likesCount: likesCount[0]?.count || 0
-    };
-  },
-
-  async getAll({ page = 1, limit = 20, search = null, role = null }) {
-    let sql = `
-      SELECT id, name, email, phone, role, avatar, address, isActive, createdAt
-      FROM users
-      WHERE 1=1
-    `;
-    const params = [];
-    
-    if (role && role !== 'all') {
-      sql += ' AND role = ?';
-      params.push(role);
+      return await this.findById(userId);
+    } catch (error) {
+      console.error('❌ Erreur create:', error);
+      throw error;
     }
-    
-    if (search) {
-      sql += ' AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)';
-      const s = `%${search}%`;
-      params.push(s, s, s);
-    }
-    
-    sql += ' ORDER BY createdAt DESC';
-    
-    const offset = (page - 1) * limit;
-    sql += ' LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), parseInt(offset));
-    
-    const users = await db.query(sql, params);
-    
-    let countSql = 'SELECT COUNT(*) as total FROM users WHERE 1=1';
-    const countParams = [];
-    
-    if (role && role !== 'all') {
-      countSql += ' AND role = ?';
-      countParams.push(role);
-    }
-    
-    if (search) {
-      countSql += ' AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)';
-      const s = `%${search}%`;
-      countParams.push(s, s, s);
-    }
-    
-    const countResult = await db.query(countSql, countParams);
-    const total = countResult[0]?.total || 0;
-    
-    return {
-      data: users,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    };
-  },
-
-  async delete(id) {
-    const orders = await db.query('SELECT 1 FROM orders WHERE userId = ? LIMIT 1', [id]);
-    if (orders.length > 0) {
-      throw new Error('Impossible de supprimer un utilisateur avec des commandes');
-    }
-    
-    await db.query('DELETE FROM wishlist WHERE userId = ?', [id]);
-    await db.query('DELETE FROM product_likes WHERE userId = ?', [id]);
-    await db.query('DELETE FROM post_likes WHERE userId = ?', [id]);
-    await db.query('DELETE FROM phone_verifications WHERE user_id = ?', [id]);
-    
-    await db.query('DELETE FROM users WHERE id = ?', [id]);
-    return true;
-  },
-
-  async count(role = null) {
-    let sql = 'SELECT COUNT(*) as count FROM users';
-    const params = [];
-    if (role) {
-      sql += ' WHERE role = ?';
-      params.push(role);
-    }
-    const results = await db.query(sql, params);
-    return results[0]?.count || 0;
   }
-};
+
+  /**
+   * Créer ou récupérer un utilisateur Google (OAuth)
+   */
+  static async findOrCreateGoogleUser(profile) {
+    try {
+      const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
+      const googleId = profile.id;
+      const name = profile.displayName;
+      const avatar = profile.photos && profile.photos[0] ? profile.photos[0].value : null;
+
+      if (!email) {
+        throw new Error('Email non fourni par Google');
+      }
+
+      // Chercher par email d'abord
+      let user = await this.findByEmail(email);
+
+      if (user) {
+        // Si l'utilisateur existe mais n'a pas de googleId, le lier
+        if (!user.googleId) {
+          await this.update(user.id, { googleId: googleId, avatar: avatar || user.avatar });
+          user = await this.findById(user.id);
+          console.log('✅ Compte existant lié à Google:', email);
+        }
+        return user;
+      }
+
+      // Chercher par Google ID
+      user = await this.findByGoogleId(googleId);
+      if (user) {
+        return user;
+      }
+
+      // Créer un nouvel utilisateur
+      const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+      
+      user = await this.create({
+        name: name,
+        email: email,
+        password: randomPassword,
+        role: 'customer',
+        avatar: avatar,
+        googleId: googleId
+      });
+
+      console.log('✅ Nouvel utilisateur Google créé:', email);
+      return user;
+
+    } catch (error) {
+      console.error('❌ Erreur findOrCreateGoogleUser:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Créer ou récupérer un utilisateur Facebook (OAuth)
+   */
+  static async findOrCreateFacebookUser(profile) {
+    try {
+      const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;
+      const facebookId = profile.id;
+      const name = profile.displayName;
+      const avatar = profile.photos && profile.photos[0] ? profile.photos[0].value : null;
+
+      if (!email) {
+        throw new Error('Email non fourni par Facebook');
+      }
+
+      // Chercher par email d'abord
+      let user = await this.findByEmail(email);
+
+      if (user) {
+        // Si l'utilisateur existe mais n'a pas de facebookId, le lier
+        if (!user.facebookId) {
+          await this.update(user.id, { facebookId: facebookId, avatar: avatar || user.avatar });
+          user = await this.findById(user.id);
+          console.log('✅ Compte existant lié à Facebook:', email);
+        }
+        return user;
+      }
+
+      // Chercher par Facebook ID
+      user = await this.findByFacebookId(facebookId);
+      if (user) {
+        return user;
+      }
+
+      // Créer un nouvel utilisateur
+      const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+      
+      user = await this.create({
+        name: name,
+        email: email,
+        password: randomPassword,
+        role: 'customer',
+        avatar: avatar,
+        facebookId: facebookId
+      });
+
+      console.log('✅ Nouvel utilisateur Facebook créé:', email);
+      return user;
+
+    } catch (error) {
+      console.error('❌ Erreur findOrCreateFacebookUser:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mettre à jour un utilisateur
+   */
+  static async update(id, updates) {
+    try {
+      const fields = [];
+      const values = [];
+
+      for (const [key, value] of Object.entries(updates)) {
+        if (value !== undefined && value !== null) {
+          fields.push(`${key} = ?`);
+          values.push(value);
+        }
+      }
+
+      if (fields.length === 0) return await this.findById(id);
+
+      values.push(id);
+      await db.query(
+        `UPDATE users SET ${fields.join(', ')}, updatedAt = NOW() WHERE id = ?`,
+        values
+      );
+
+      return await this.findById(id);
+    } catch (error) {
+      console.error('❌ Erreur update:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mettre à jour le mot de passe
+   */
+  static async updatePassword(id, newPassword) {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    try {
+      await db.query(
+        'UPDATE users SET password = ? WHERE id = ?',
+        [hashedPassword, id]
+      );
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur updatePassword:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mettre à jour la date de dernière connexion
+   */
+  static async updateLastLogin(id) {
+    try {
+      await db.query('UPDATE users SET lastLogin = NOW() WHERE id = ?', [id]);
+      return true;
+    } catch (error) {
+      console.log('⚠️ Colonne lastLogin non trouvée, mise à jour ignorée');
+      return false;
+    }
+  }
+
+  /**
+   * Récupérer la wishlist
+   */
+  static async getWishlist(userId) {
+    try {
+      // Vérifier si la colonne created_at existe
+      const columns = await db.query(`
+        SELECT COLUMN_NAME 
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'wishlist' AND COLUMN_NAME = 'created_at'
+      `);
+      
+      const hasCreatedAt = columns && columns.length > 0;
+      
+      let sql;
+      if (hasCreatedAt) {
+        sql = `
+          SELECT p.*, w.created_at as added_at
+          FROM wishlist w
+          JOIN products p ON w.product_id = p.id
+          WHERE w.user_id = ?
+          ORDER BY w.created_at DESC
+        `;
+      } else {
+        sql = `
+          SELECT p.*
+          FROM wishlist w
+          JOIN products p ON w.product_id = p.id
+          WHERE w.user_id = ?
+        `;
+      }
+      
+      const rows = await db.query(sql, [userId]);
+      return rows || [];
+    } catch (error) {
+      console.error('❌ Erreur getWishlist:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Vérifier si un produit est dans la wishlist
+   */
+  static async isInWishlist(userId, productId) {
+    try {
+      const result = await db.getOne(
+        'SELECT * FROM wishlist WHERE user_id = ? AND product_id = ?',
+        [userId, productId]
+      );
+      return !!result;
+    } catch (error) {
+      console.error('❌ Erreur isInWishlist:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Récupérer les likes de produits
+   */
+  static async getProductLikes(userId) {
+    try {
+      const likes = await db.query(
+        `SELECT productId FROM product_likes WHERE userId = ?`,
+        [userId]
+      );
+      return (likes || []).map(row => row.productId);
+    } catch (error) {
+      console.error('❌ Erreur getProductLikes:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Vérifier si un utilisateur a liké un produit
+   */
+  static async hasLikedProduct(userId, productId) {
+    try {
+      const result = await db.getOne(
+        'SELECT * FROM product_likes WHERE userId = ? AND productId = ?',
+        [userId, productId]
+      );
+      return !!result;
+    } catch (error) {
+      console.error('❌ Erreur hasLikedProduct:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Liker un produit
+   */
+  static async likeProduct(userId, productId) {
+    try {
+      await db.insert(
+        'INSERT INTO product_likes (userId, productId) VALUES (?, ?) ON DUPLICATE KEY UPDATE createdAt = NOW()',
+        [userId, productId]
+      );
+      await db.query(
+        'UPDATE products SET likes_count = likes_count + 1 WHERE id = ?',
+        [productId]
+      );
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur likeProduct:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Enlever un like de produit
+   */
+  static async unlikeProduct(userId, productId) {
+    try {
+      await db.query(
+        'DELETE FROM product_likes WHERE userId = ? AND productId = ?',
+        [userId, productId]
+      );
+      await db.query(
+        'UPDATE products SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = ?',
+        [productId]
+      );
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur unlikeProduct:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Récupérer les likes de posts
+   */
+  static async getPostLikes(userId) {
+    try {
+      const likes = await db.query(
+        `SELECT postId FROM post_likes WHERE userId = ?`,
+        [userId]
+      );
+      return (likes || []).map(row => row.postId);
+    } catch (error) {
+      console.error('❌ Erreur getPostLikes:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Vérifier si un utilisateur a liké un post
+   */
+  static async hasLikedPost(userId, postId) {
+    try {
+      const result = await db.getOne(
+        'SELECT * FROM post_likes WHERE userId = ? AND postId = ?',
+        [userId, postId]
+      );
+      return !!result;
+    } catch (error) {
+      console.error('❌ Erreur hasLikedPost:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Liker un post
+   */
+  static async likePost(userId, postId) {
+    try {
+      await db.insert(
+        'INSERT INTO post_likes (userId, postId) VALUES (?, ?) ON DUPLICATE KEY UPDATE createdAt = NOW()',
+        [userId, postId]
+      );
+      await db.query(
+        'UPDATE posts SET likes_count = likes_count + 1 WHERE id = ?',
+        [postId]
+      );
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur likePost:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Enlever un like de post
+   */
+  static async unlikePost(userId, postId) {
+    try {
+      await db.query(
+        'DELETE FROM post_likes WHERE userId = ? AND postId = ?',
+        [userId, postId]
+      );
+      await db.query(
+        'UPDATE posts SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = ?',
+        [postId]
+      );
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur unlikePost:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Compter le nombre total d'utilisateurs
+   */
+  static async count() {
+    try {
+      const result = await db.getOne('SELECT COUNT(*) as total FROM users');
+      return result?.total || 0;
+    } catch (error) {
+      console.error('❌ Erreur count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Compter le nombre d'utilisateurs par rôle
+   */
+  static async countByRole(role) {
+    try {
+      const result = await db.getOne('SELECT COUNT(*) as total FROM users WHERE role = ?', [role]);
+      return result?.total || 0;
+    } catch (error) {
+      console.error('❌ Erreur countByRole:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Récupérer les utilisateurs récents
+   */
+  static async getRecent(limit = 10) {
+    try {
+      const users = await db.query(
+        `SELECT id, name, email, role, avatar, createdAt 
+         FROM users 
+         ORDER BY createdAt DESC 
+         LIMIT ?`,
+        [limit]
+      );
+      return users || [];
+    } catch (error) {
+      console.error('❌ Erreur getRecent:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Supprimer un utilisateur
+   */
+  static async delete(id) {
+    try {
+      const orderCount = await db.getOne(
+        'SELECT COUNT(*) as count FROM orders WHERE userId = ?',
+        [id]
+      );
+      
+      if (orderCount && orderCount.count > 0) {
+        throw new Error('Impossible de supprimer un utilisateur avec des commandes');
+      }
+      
+      const result = await db.query(
+        'DELETE FROM users WHERE id = ?',
+        [id]
+      );
+      
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('❌ Erreur delete:', error);
+      throw error;
+    }
+  }
+}
 
 module.exports = User;

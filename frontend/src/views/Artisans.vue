@@ -1,99 +1,112 @@
-<!-- views/Artisans.vue -->
+<!-- frontend/src/views/Artisans.vue - DESIGN AVANCÉ AVEC RECHERCHE ET ILLUSTRATION -->
 <template>
-  <div class="artisans-page">
-    <!-- Hero Section -->
-    <section class="artisans-hero">
+  <div class="artisans-page" :class="{ 'dark-mode': isDarkMode }">
+    <!-- Hero Section avec Illustration -->
+    <section class="hero-section">
       <div class="container">
-        <div class="hero-content">
-          <h1 class="hero-title">
-            <span class="title-icon">👨‍🎨</span>
-            <span class="title-text">الحرفيون</span>
-          </h1>
-          <p class="hero-subtitle">اكتشف أمهر الحرفيين التونسيين وتعرف على إبداعاتهم</p>
+        <div class="hero-grid">
+          <div class="hero-content">
+            <h1 class="hero-title">حرفيونا</h1>
+            <p class="hero-subtitle">اكتشف نخبة من أمهر الحرفيين التونسيين وأعمالهم الفريدة</p>
 
-          <!-- Search Bar -->
-          <div class="search-container">
-            <div class="search-box">
-              <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="ابحث عن حرفي، متجر، أو تخصص..."
-                class="search-input"
-                @input="handleSearch"
-              />
-              <button class="search-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <circle cx="11" cy="11" r="8" stroke-width="2"/>
-                  <path d="M21 21l-4.35-4.35" stroke-width="2"/>
+            <!-- Barre de Recherche dans le Hero -->
+            <div class="hero-search">
+              <div class="search-wrapper">
+                <input
+                  type="text"
+                  v-model="searchQuery"
+                  placeholder="ابحث عن حرفي بالاسم أو التخصص أو الموقع"
+                  class="search-input"
+                  @keyup.enter="handleSearch"
+                />
+                <button class="search-btn" @click="handleSearch">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="11" cy="11" r="8" stroke-width="2"/>
+                    <path d="M21 21l-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+              <button v-if="searchQuery" class="clear-search" @click="clearSearch">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <line x1="18" y1="6" x2="6" y2="18" stroke-width="2"/>
+                  <line x1="6" y1="6" x2="18" y2="18" stroke-width="2"/>
                 </svg>
               </button>
             </div>
           </div>
+          <div class="hero-illustration">
+            <img
+              src="/src/assets/images/artisan/artisan-hero.jpg"
+              alt="حرفي تونسي"
+              class="hero-image"
+              @error="handleHeroImageError"
+            />
+            <div class="illustration-frame"></div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-pattern"></div>
+    </section>
 
-          <!-- Quick Filters -->
-          <div class="quick-filters">
+    <!-- Filters Section -->
+    <div class="filters-section">
+      <div class="container">
+        <div class="filters-header">
+          <span class="filters-label">تصفية حسب</span>
+          <span class="results-info" v-if="filteredVendors.length > 0">
+            <span class="results-count">{{ filteredVendors.length }}</span>
+            <span>حرفي</span>
+          </span>
+        </div>
+        <div class="filters-wrapper">
+          <div class="filters-list">
             <button
+              v-for="filter in filterOptions"
+              :key="filter.value"
               class="filter-chip"
-              :class="{ active: activeFilter === 'all' }"
-              @click="setFilter('all')"
+              :class="{ active: activeFilter === filter.value }"
+              @click="setFilter(filter.value)"
             >
-              <span class="chip-icon">👥</span>
-              <span class="chip-text">الجميع</span>
-              <span class="chip-count">{{ vendors.length }}</span>
-            </button>
-            <button
-              class="filter-chip"
-              :class="{ active: activeFilter === 'verified' }"
-              @click="setFilter('verified')"
-            >
-              <span class="chip-icon">✓</span>
-              <span class="chip-text">موثوقون</span>
-              <span class="chip-count">{{ verifiedCount }}</span>
-            </button>
-            <button
-              class="filter-chip"
-              :class="{ active: activeFilter === 'new' }"
-              @click="setFilter('new')"
-            >
-              <span class="chip-icon">🆕</span>
-              <span class="chip-text">جدد</span>
-              <span class="chip-count">{{ newVendorsCount }}</span>
+              <span class="chip-label">{{ filter.label }}</span>
+              <span class="filter-badge">{{ getFilterCount(filter.value) }}</span>
             </button>
           </div>
         </div>
       </div>
-
-      <!-- Floating Elements -->
-      <div class="floating-element float-1">🏺</div>
-      <div class="floating-element float-2">🧵</div>
-      <div class="floating-element float-3">💍</div>
-      <div class="floating-element float-4">🪵</div>
-    </section>
+    </div>
 
     <!-- Main Content -->
     <main class="main-content">
       <div class="container">
-        <!-- Loading State -->
-        <div v-if="loading" class="loading-state">
+        <!-- Loading -->
+        <div v-if="loading" class="loading-container">
           <div class="loading-spinner"></div>
-          <p>جاري تحميل الحرفيين...</p>
+          <p>جاري تحميل الحرفيين</p>
         </div>
 
-        <!-- Empty State -->
-        <div v-else-if="filteredVendors.length === 0" class="empty-state">
-          <div class="empty-illustration">
-            <svg width="160" height="160" viewBox="0 0 200 200" fill="none">
-              <circle cx="100" cy="80" r="40" stroke="#08717f" stroke-width="8"/>
-              <path d="M30 160c0-30 40-50 70-50s70 20 70 50" stroke="#08717f" stroke-width="8" stroke-linecap="round"/>
+        <!-- Empty -->
+        <div v-else-if="filteredVendors.length === 0" class="empty-container">
+          <div class="empty-symbol">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M12 2L15 9H22L16 14L19 21L12 16.5L5 21L8 14L2 9H9L12 2Z" stroke-width="1.5" stroke-linejoin="round"/>
             </svg>
           </div>
-          <div class="empty-content">
-            <h3>لا يوجد حرفيون بعد</h3>
-            <p v-if="searchQuery">لا توجد نتائج تطابق بحثك "{{ searchQuery }}"</p>
-            <p v-else>كن أول من ينضم كحرفي في منصتنا</p>
+          <h3>لا يوجد حرفيون</h3>
+          <p v-if="searchQuery">لم نجد حرفيين يطابقون "{{ searchQuery }}"</p>
+          <p v-else>لم يتم العثور على حرفيين حالياً</p>
+          <div class="empty-actions">
+            <button v-if="searchQuery || activeFilter !== 'all'" class="btn-reset" @click="resetFilters">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M3 12L21 12M3 12L7 8M3 12L7 16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>إعادة تعيين</span>
+            </button>
             <router-link to="/become-vendor" class="btn-join">
               <span>انضم كحرفي</span>
-              <span class="btn-icon">←</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M5 12L19 12" stroke-width="2" stroke-linecap="round"/>
+                <path d="M12 5L19 12L12 19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </router-link>
           </div>
         </div>
@@ -109,374 +122,534 @@
             <!-- Cover Image -->
             <div class="card-cover">
               <img
-                :src="vendor.coverImage || 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400'"
+                :src="getCoverImage(vendor)"
                 :alt="vendor.shopName"
-                class="cover-image"
+                class="cover-img"
+                @error="handleCoverError"
               />
-
-              <!-- Verified Badge -->
-              <div v-if="vendor.verified" class="verified-badge" title="حرفي موثوق">
-                <span class="verified-icon">✓</span>
-              </div>
-
-              <!-- New Badge -->
-              <div v-if="isNewVendor(vendor)" class="new-badge">
-                <span class="badge-text">🆕 جديد</span>
+              <div class="cover-gradient"></div>
+              <div v-if="vendor.verified || vendor.approved === 1" class="verified-mark">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <polyline points="20 6 9 17 4 12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </div>
             </div>
 
-            <!-- Vendor Info -->
+            <!-- Avatar -->
+            <div class="avatar-wrapper">
+              <img
+                :src="getAvatarImage(vendor, authStore.user)"
+                :alt="vendor.shopName"
+                class="avatar-img"
+                @error="handleAvatarError"
+              />
+            </div>
+
+            <!-- Card Info -->
             <div class="card-info">
-              <div class="vendor-avatar-wrapper">
-                <img
-                  :src="vendor.avatar || 'https://i.pravatar.cc/150'"
-                  :alt="vendor.shopName"
-                  class="vendor-avatar"
-                />
+              <h3 class="shop-name">{{ vendor.shopName || 'حرفي' }}</h3>
+              <p class="owner-name">{{ vendor.name || vendor.fullName || '' }}</p>
+
+              <div class="specialty-tag">
+                <span>{{ getSpecialtyName(vendor.specialty) }}</span>
               </div>
 
-              <h3 class="vendor-shop">{{ vendor.shopName || vendor.name }}</h3>
-              <p class="vendor-name">{{ vendor.name }}</p>
-              <p class="vendor-specialty">{{ vendor.specialty || 'حرفي' }}</p>
-
               <!-- Stats -->
-              <div class="vendor-stats">
-                <div class="stat">
-                  <span class="stat-icon">📦</span>
-                  <span class="stat-value">{{ vendor.products || 0 }}</span>
+              <div class="stats-row">
+                <div class="stat-item">
+                  <span class="stat-value">{{ vendor.productsCount || 0 }}</span>
+                  <span class="stat-label">منتج</span>
                 </div>
-                <div class="stat">
-                  <span class="stat-icon">❤️</span>
-                  <span class="stat-value">{{ vendor.followers || 0 }}</span>
-                </div>
-                <div class="stat">
-                  <span class="stat-icon">⭐</span>
-                  <span class="stat-value">{{ vendor.rating || '0.0' }}</span>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                  <span class="stat-value">{{ vendor.followersCount || 0 }}</span>
+                  <span class="stat-label">متابع</span>
                 </div>
               </div>
 
               <!-- Location -->
-              <div v-if="vendor.location" class="vendor-location">
-                <span class="location-icon">📍</span>
-                <span class="location-text">{{ vendor.location }}</span>
-              </div>
-
-              <!-- Join Date -->
-              <div class="vendor-join-date">
-                <span class="date-icon">📅</span>
-                <span class="date-text">انضم في {{ formatDate(vendor.createdAt) }}</span>
+              <div v-if="vendor.location" class="location">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span>{{ vendor.location }}</span>
               </div>
 
               <!-- View Profile Button -->
-              <button class="view-profile-btn">
-                <span>عرض الملف الشخصي</span>
-                <span class="btn-arrow">←</span>
+              <button class="view-btn">
+                <span>عرض الملف</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M5 12L19 12" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M12 5L19 12L12 19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </button>
             </div>
           </div>
-        </div>
-
-        <!-- Results Info -->
-        <div v-if="filteredVendors.length > 0" class="results-info">
-          <p>عرض {{ filteredVendors.length }} من {{ vendors.length }} حرفي</p>
         </div>
       </div>
     </main>
 
     <!-- Toast Notification -->
-    <transition name="toast">
+    <Transition name="toast">
       <div v-if="toast.show" class="toast-notification" :class="toast.type">
-        <div class="toast-icon">{{ toast.icon }}</div>
-        <div class="toast-message">{{ toast.message }}</div>
-        <button @click="toast.show = false" class="toast-close">×</button>
+        <span class="toast-message">{{ toast.message }}</span>
+        <div class="toast-progress"></div>
       </div>
-    </transition>
+    </Transition>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useVendorStore } from '../stores/vendorStore'
+import { useAuthStore } from '../stores/auth'
+import { useThemeStore } from '../stores/theme'
+import api from '../services/api'
+import {
+  getCoverImage,
+  getAvatarImage,
+  DEFAULT_AVATAR,
+  DEFAULT_COVER
+} from '../utils/image'
 
 const router = useRouter()
-const vendorStore = useVendorStore()
+const themeStore = useThemeStore()
+const authStore = useAuthStore()
+
+const isDarkMode = computed(() => themeStore.isDarkMode)
 
 // State
-const loading = ref(false)
+const loading = ref(true)
 const searchQuery = ref('')
 const activeFilter = ref('all')
+const vendorsList = ref([])
+
+// Filter options
+const filterOptions = [
+  { value: 'all', label: 'الكل' },
+  { value: 'verified', label: 'موثوق' },
+  { value: 'new', label: 'حديث' },
+  { value: 'popular', label: 'الأكثر متابعة' }
+]
 
 // Toast
-const toast = ref({
-  show: false,
-  message: '',
-  type: 'success',
-  icon: '✅'
-})
+const toast = ref({ show: false, message: '', type: 'success' })
 
 // Computed
-const vendors = computed(() => vendorStore.vendors || [])
+const vendors = computed(() => vendorsList.value)
 
 const filteredVendors = computed(() => {
   let result = [...vendors.value]
 
-  // Search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(v =>
-      v.shopName?.toLowerCase().includes(query) ||
-      v.name?.toLowerCase().includes(query) ||
-      v.specialty?.toLowerCase().includes(query) ||
-      v.location?.toLowerCase().includes(query)
+      (v.shopName && v.shopName.toLowerCase().includes(query)) ||
+      (v.name && v.name.toLowerCase().includes(query)) ||
+      (v.specialty && v.specialty.toLowerCase().includes(query)) ||
+      (v.location && v.location.toLowerCase().includes(query))
     )
   }
 
-  // Category filter
   switch (activeFilter.value) {
     case 'verified':
-      result = result.filter(v => v.verified)
+      result = result.filter(v => v.verified === true || v.verified === 1 || v.approved === 1)
       break
     case 'new':
       result = result.filter(v => isNewVendor(v))
+      break
+    case 'popular':
+      result = [...result].sort((a, b) => (b.followersCount || 0) - (a.followersCount || 0))
       break
   }
 
   return result
 })
 
-const verifiedCount = computed(() => {
-  return vendors.value.filter(v => v.verified).length
-})
-
-const newVendorsCount = computed(() => {
-  return vendors.value.filter(v => isNewVendor(v)).length
-})
-
 // Methods
-const isNewVendor = (vendor) => {
-  if (!vendor.createdAt) return false
-  const created = new Date(vendor.createdAt)
-  const now = new Date()
-  const diffDays = Math.floor((now - created) / (1000 * 60 * 60 * 24))
-  return diffDays <= 30
+const getFilterCount = (filter) => {
+  switch (filter) {
+    case 'verified': return vendors.value.filter(v => v.verified === true || v.verified === 1 || v.approved === 1).length
+    case 'new': return vendors.value.filter(v => isNewVendor(v)).length
+    default: return vendors.value.length
+  }
 }
 
-const formatDate = (dateString) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24))
+const getSpecialtyName = (specialty) => {
+  const specialties = {
+    pottery: 'فخار وسيراميك',
+    textiles: 'منسوجات وسجاد',
+    jewelry: 'مجوهرات وحلي',
+    woodwork: 'أعمال خشبية',
+    metalwork: 'أعمال معدنية',
+    leather: 'منتجات جلدية',
+    other: 'حرف أخرى'
+  }
+  return specialties[specialty] || specialty || 'حرفي'
+}
 
-  if (diffDays === 0) return 'اليوم'
-  if (diffDays === 1) return 'أمس'
-  if (diffDays < 7) return `منذ ${diffDays} أيام`
-  if (diffDays < 30) return `منذ ${Math.floor(diffDays / 7)} أسابيع`
-  return date.toLocaleDateString('ar-TN')
+const isNewVendor = (vendor) => {
+  if (!vendor.createdAt) return false
+  try {
+    const created = new Date(vendor.createdAt)
+    const now = new Date()
+    const diffDays = Math.floor((now - created) / (1000 * 60 * 60 * 24))
+    return diffDays <= 30
+  } catch (e) {
+    return false
+  }
 }
 
 const handleSearch = () => {
-  // Search is reactive via computed
+  // La recherche est déjà réactive via computed
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
 }
 
 const setFilter = (filter) => {
   activeFilter.value = filter
 }
 
+const resetFilters = () => {
+  searchQuery.value = ''
+  activeFilter.value = 'all'
+}
+
 const goToVendor = (vendorId) => {
-  router.push(`/vendor/${vendorId}`)
+  if (vendorId) router.push(`/vendor/${vendorId}`)
+}
+
+const handleAvatarError = (event) => {
+  event.target.src = DEFAULT_AVATAR
+}
+
+const handleCoverError = (event) => {
+  event.target.src = DEFAULT_COVER
+}
+
+const handleHeroImageError = (event) => {
+  event.target.src = 'https://placehold.co/600x400/08717f/ffffff?text=حرفي+تونسي'
 }
 
 const showNotification = (message, type = 'success') => {
-  const icons = {
-    success: '✅',
-    error: '❌',
-    info: 'ℹ️'
-  }
-
-  toast.value = {
-    show: true,
-    message,
-    type,
-    icon: icons[type]
-  }
-
-  setTimeout(() => {
-    toast.value.show = false
-  }, 3000)
+  toast.value = { show: true, message, type }
+  setTimeout(() => { toast.value.show = false }, 3000)
 }
 
-// Lifecycle
-onMounted(() => {
+// Fetch vendors
+const fetchVendors = async () => {
   loading.value = true
+  try {
+    const response = await api.get('/vendors')
+    if (response.data.success) {
+      let vendorsData = response.data.data?.data || response.data.data || []
+      if (!Array.isArray(vendorsData)) vendorsData = []
 
-  // Simulate loading
-  setTimeout(() => {
-    loading.value = false
+      vendorsData = vendorsData.map(vendor => ({
+        ...vendor,
+        id: vendor.id || vendor.vendorId,
+        shopName: vendor.shopName || vendor.shop_name || vendor.name || 'حرفي',
+        name: vendor.name || vendor.fullName || vendor.user_name || '',
+        rating: parseFloat(vendor.rating) || 0,
+        productsCount: vendor.productsCount || vendor.products_count || 0,
+        followersCount: vendor.followersCount || vendor.followers_count || 0,
+        verified: vendor.verified === 1 || vendor.verified === true,
+        approved: vendor.approved === 1 || vendor.approved === true,
+        location: vendor.location || 'تونس',
+        createdAt: vendor.createdAt || vendor.created_at,
+        avatar: vendor.avatar,
+        coverImage: vendor.coverImage || vendor.cover_image,
+      }))
 
-    // Show welcome message if no vendors
-    if (vendors.value.length === 0) {
-      showNotification('لا يوجد حرفيين بعد', 'info')
+      vendorsList.value = vendorsData
     }
-  }, 500)
+  } catch (error) {
+    console.error('Error fetching vendors:', error)
+    showNotification('حدث خطأ', 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchVendors()
 })
 </script>
 
 <style scoped>
-/* ===== CSS Variables ===== */
+/* ===== IMPORT POLICE AMIRI ===== */
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* ===== ARTISANS PAGE - DESIGN AVANCÉ ===== */
 .artisans-page {
-  --primary-teal: #08717f;
-  --primary-teal-light: #0a94a6;
-  --primary-teal-dark: #065a69;
-  --primary-teal-soft: #e0f5f7;
-
-  --primary-red: #d40025;
-  --primary-red-light: #ff1744;
-  --primary-red-dark: #b00020;
-  --primary-red-soft: #ffe8ed;
-
-  --gradient-dual: linear-gradient(135deg, #08717f 0%, #d40025 100%);
-
-  --neutral-50: #f8fafc;
-  --neutral-100: #f1f5f9;
-  --neutral-200: #e2e8f0;
-  --neutral-300: #cbd5e1;
-  --neutral-400: #94a3b8;
-  --neutral-500: #64748b;
-  --neutral-600: #475569;
-  --neutral-700: #334155;
-  --neutral-800: #1e293b;
-  --neutral-900: #0f172a;
-
-  --shadow-sm: 0 1px 3px rgba(8, 113, 127, 0.08);
-  --shadow-md: 0 4px 6px rgba(8, 113, 127, 0.1);
-  --shadow-lg: 0 10px 15px rgba(212, 0, 37, 0.1);
-  --shadow-xl: 0 20px 25px rgba(8, 113, 127, 0.15);
-
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-.artisans-page {
-  direction: rtl;
-  text-align: right;
-  font-family: 'Cairo', sans-serif;
-  background: var(--neutral-50);
+  background: #fafbfc;
   min-height: 100vh;
+  font-family: 'Amiri', 'Cairo', serif;
+  direction: rtl;
+  transition: all 0.3s ease;
+}
+
+.artisans-page.dark-mode {
+  background: #0a0e14;
+  color: #e4e6eb;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 0 24px;
 }
 
-/* ===== HERO SECTION ===== */
-.artisans-hero {
+/* ===== HERO SECTION AVEC ILLUSTRATION ===== */
+.hero-section {
   position: relative;
-  background: var(--gradient-dual);
-  padding: 80px 0 60px;
-  color: white;
+  padding: 48px 0 40px;
+  background: linear-gradient(135deg, rgba(8, 113, 127, 0.03) 0%, rgba(212, 0, 37, 0.02) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   overflow: hidden;
+}
+
+.dark-mode .hero-section {
+  background: linear-gradient(135deg, rgba(8, 113, 127, 0.08) 0%, rgba(212, 0, 37, 0.05) 100%);
+  border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+
+.hero-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: radial-gradient(circle at 20% 30%, rgba(8, 113, 127, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 48px;
+  align-items: center;
+  position: relative;
+  z-index: 2;
 }
 
 .hero-content {
-  position: relative;
-  z-index: 2;
-  text-align: center;
-  max-width: 800px;
-  margin: 0 auto;
+  text-align: right;
 }
 
 .hero-title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 2.5rem;
-  font-weight: 800;
-  margin-bottom: 16px;
+  font-size: 3rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 12px;
+  font-family: 'Amiri', serif;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
-.title-icon {
-  font-size: 3rem;
+.dark-mode .hero-title {
+  color: #f0f0f0;
 }
 
 .hero-subtitle {
-  font-size: 1.2rem;
-  opacity: 0.95;
-  margin-bottom: 30px;
+  font-size: 1.1rem;
+  color: #64748b;
+  font-weight: 300;
+  margin-bottom: 32px;
 }
 
-/* Floating Elements */
-.floating-element {
-  position: absolute;
-  font-size: 2.5rem;
-  opacity: 0.1;
-  animation: float 6s ease-in-out infinite;
-  z-index: 1;
+.dark-mode .hero-subtitle {
+  color: #94a3b8;
 }
 
-.float-1 { top: 20%; left: 10%; animation-delay: 0s; }
-.float-2 { bottom: 20%; right: 10%; animation-delay: 2s; }
-.float-3 { top: 30%; right: 20%; animation-delay: 4s; }
-.float-4 { bottom: 30%; left: 15%; animation-delay: 6s; }
-
-@keyframes float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(10deg); }
-}
-
-/* Search */
-.search-container {
-  max-width: 600px;
-  margin: 0 auto 30px;
-}
-
-.search-box {
+/* Barre de Recherche dans Hero */
+.hero-search {
   display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 500px;
+}
+
+.search-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
   background: white;
-  border-radius: 50px;
+  border-radius: 60px;
+  border: 1.5px solid rgba(8, 113, 127, 0.15);
+  transition: all 0.3s ease;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.dark-mode .search-wrapper {
+  background: #1f2937;
+  border-color: rgba(45, 212, 191, 0.15);
+}
+
+.search-wrapper:focus-within {
+  border-color: #08717f;
+  box-shadow: 0 0 0 4px rgba(8, 113, 127, 0.08);
+}
+
+.dark-mode .search-wrapper:focus-within {
+  border-color: #2dd4bf;
+  box-shadow: 0 0 0 4px rgba(45, 212, 191, 0.08);
 }
 
 .search-input {
   flex: 1;
-  padding: 16px 24px;
+  padding: 16px 20px;
   border: none;
+  background: transparent;
   font-size: 1rem;
+  color: #1a1a2e;
+  font-family: 'Amiri', serif;
+}
+
+.dark-mode .search-input {
+  color: #f0f0f0;
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+  font-weight: 300;
+}
+
+.search-input:focus {
   outline: none;
-  font-family: 'Cairo', sans-serif;
 }
 
 .search-btn {
-  padding: 0 28px;
-  background: var(--primary-red);
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
   border: none;
-  color: white;
+  color: #08717f;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.3s ease;
 }
 
 .search-btn:hover {
-  background: var(--primary-red-dark);
+  color: #065a69;
 }
 
-/* Quick Filters */
-.quick-filters {
+.clear-search {
+  width: 44px;
+  height: 44px;
   display: flex;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.04);
+  border: none;
+  border-radius: 50%;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dark-mode .clear-search {
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+}
+
+.clear-search:hover {
+  background: rgba(212, 0, 37, 0.1);
+  color: #d40025;
+}
+
+/* Illustration */
+.hero-illustration {
+  position: relative;
+}
+
+.hero-image {
+  width: 100%;
+  height: auto;
+  border-radius: 32px;
+  object-fit: cover;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  border: 4px solid white;
+}
+
+.dark-mode .hero-image {
+  border-color: #1a1a2e;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.illustration-frame {
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  right: -12px;
+  bottom: -12px;
+  border: 2px dashed rgba(8, 113, 127, 0.2);
+  border-radius: 40px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ===== FILTERS SECTION ===== */
+.filters-section {
+  background: white;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 16px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.dark-mode .filters-section {
+  background: rgba(10, 14, 20, 0.95);
+  border-bottom-color: rgba(255, 255, 255, 0.04);
+}
+
+.filters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.filters-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #08717f;
+}
+
+.results-info {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.dark-mode .results-info {
+  color: #94a3b8;
+}
+
+.results-count {
+  font-weight: 700;
+  color: #08717f;
+  margin-left: 4px;
+  font-size: 1.1rem;
+}
+
+.filters-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.filters-list {
+  display: flex;
+  gap: 8px;
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -485,457 +658,624 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50px;
-  color: white;
+  padding: 8px 20px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 40px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #475569;
   cursor: pointer;
-  transition: var(--transition);
-  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  font-family: 'Amiri', serif;
+}
+
+.dark-mode .filter-chip {
+  background: #1e293b;
+  color: #94a3b8;
 }
 
 .filter-chip:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px);
+  background: #e2e8f0;
+  color: #1a1a2e;
+}
+
+.dark-mode .filter-chip:hover {
+  background: #334155;
+  color: #f0f0f0;
 }
 
 .filter-chip.active {
-  background: white;
-  color: var(--primary-teal-dark);
-  border-color: white;
+  background: #08717f;
+  color: white;
+  box-shadow: 0 4px 12px rgba(8, 113, 127, 0.2);
 }
 
-.chip-count {
-  background: rgba(255, 255, 255, 0.2);
+.chip-label {
+  font-weight: 500;
+}
+
+.filter-badge {
+  background: rgba(0, 0, 0, 0.06);
   padding: 2px 8px;
   border-radius: 20px;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
-.filter-chip.active .chip-count {
-  background: var(--primary-teal-soft);
-  color: var(--primary-teal);
+.filter-chip.active .filter-badge {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* ===== MAIN CONTENT ===== */
 .main-content {
-  padding: 60px 0;
+  padding: 32px 0 64px;
 }
 
-/* Loading State */
-.loading-state {
+/* Loading */
+.loading-container {
   text-align: center;
   padding: 80px 20px;
 }
 
 .loading-spinner {
-  width: 50px;
-  height: 50px;
-  margin: 0 auto 20px;
-  border: 4px solid var(--neutral-200);
-  border-top: 4px solid var(--primary-teal);
-  border-right: 4px solid var(--primary-red);
+  width: 44px;
+  height: 44px;
+  border: 2px solid rgba(8, 113, 127, 0.1);
+  border-top-color: #08717f;
+  border-right-color: #d40025;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 }
 
-/* Empty State */
-.empty-state {
+.loading-container p {
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.dark-mode .loading-container p {
+  color: #94a3b8;
+}
+
+/* Empty */
+.empty-container {
   text-align: center;
-  padding: 60px 20px;
+  padding: 80px 20px;
   background: white;
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--neutral-200);
+  border-radius: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
-.empty-illustration {
-  margin-bottom: 30px;
+.dark-mode .empty-container {
+  background: #111827;
+  border-color: rgba(255, 255, 255, 0.04);
 }
 
-.empty-illustration svg {
-  stroke: var(--neutral-300);
+.empty-symbol {
+  margin-bottom: 20px;
+  color: #cbd5e1;
 }
 
-.empty-content h3 {
-  font-size: 1.8rem;
-  color: var(--neutral-800);
-  margin-bottom: 10px;
+.empty-container h3 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+  font-family: 'Amiri', serif;
 }
 
-.empty-content p {
-  color: var(--neutral-600);
-  margin-bottom: 30px;
+.dark-mode .empty-container h3 {
+  color: #f0f0f0;
+}
+
+.empty-container p {
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+.dark-mode .empty-container p {
+  color: #94a3b8;
+}
+
+.empty-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.btn-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 40px;
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Amiri', serif;
+}
+
+.dark-mode .btn-reset {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+.btn-reset:hover {
+  background: #e2e8f0;
+  color: #1a1a2e;
 }
 
 .btn-join {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 32px;
-  background: var(--gradient-dual);
+  gap: 8px;
+  padding: 12px 28px;
+  background: #08717f;
   color: white;
   text-decoration: none;
-  border-radius: 50px;
-  font-weight: 700;
-  transition: var(--transition);
+  border-radius: 40px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-family: 'Amiri', serif;
 }
 
 .btn-join:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
+  background: #065a69;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(8, 113, 127, 0.2);
 }
 
-.btn-icon {
-  font-size: 1.2rem;
-  transition: transform 0.3s ease;
-}
-
-.btn-join:hover .btn-icon {
-  transform: translateX(5px);
-}
-
-/* Artisans Grid */
+/* ===== ARTISANS GRID ===== */
 .artisans-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 30px;
-  margin-bottom: 40px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 20px;
 }
 
-/* Artisan Card */
+/* Card */
 .artisan-card {
   background: white;
-  border-radius: var(--radius-xl);
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: var(--shadow-md);
   cursor: pointer;
-  transition: var(--transition);
-  border: 1px solid var(--neutral-200);
-  position: relative;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.dark-mode .artisan-card {
+  background: #111827;
+  border-color: rgba(255, 255, 255, 0.04);
 }
 
 .artisan-card:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-xl);
-  border-color: var(--primary-teal);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  border-color: rgba(8, 113, 127, 0.2);
 }
 
+/* Cover */
 .card-cover {
   position: relative;
-  height: 120px;
+  height: 100px;
   overflow: hidden;
 }
 
-.cover-image {
+.cover-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.5s ease;
 }
 
-.artisan-card:hover .cover-image {
-  transform: scale(1.1);
+.artisan-card:hover .cover-img {
+  transform: scale(1.05);
 }
 
-/* Badges */
-.verified-badge,
-.new-badge {
+.cover-gradient {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.3), transparent);
 }
 
-.verified-badge {
-  width: 30px;
-  height: 30px;
-  background: var(--primary-teal);
-  border: 2px solid white;
-  border-radius: 50%;
+/* Verified Badge */
+.verified-mark {
+  position: absolute;
+  top: 8px;
+  right: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #08717f;
+  border-radius: 50%;
   color: white;
-  font-weight: 700;
-  font-size: 1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  border: 2px solid white;
 }
 
-.new-badge {
-  left: 10px;
-  right: auto;
-  padding: 4px 12px;
-  background: var(--primary-red);
-  border: 2px solid white;
-  border-radius: 30px;
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+.dark-mode .verified-mark {
+  border-color: #111827;
+}
+
+/* Avatar */
+.avatar-wrapper {
+  width: 56px;
+  height: 56px;
+  margin: -28px auto 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.dark-mode .avatar-img {
+  border-color: #111827;
 }
 
 /* Card Info */
 .card-info {
-  padding: 20px;
+  padding: 0 12px 16px;
   text-align: center;
-  position: relative;
 }
 
-.vendor-avatar-wrapper {
-  position: relative;
-  width: 90px;
-  height: 90px;
-  margin: -55px auto 10px;
-}
-
-.vendor-avatar {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 4px solid white;
-  box-shadow: var(--shadow-md);
-  object-fit: cover;
-}
-
-.vendor-shop {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: var(--neutral-900);
-  margin-bottom: 4px;
-}
-
-.vendor-name {
-  color: var(--neutral-600);
+.shop-name {
   font-size: 0.9rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Amiri', serif;
+}
+
+.dark-mode .shop-name {
+  color: #f0f0f0;
+}
+
+.owner-name {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dark-mode .owner-name {
+  color: #94a3b8;
+}
+
+/* Specialty Tag */
+.specialty-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(8, 113, 127, 0.08);
+  border-radius: 20px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #08717f;
+  margin-bottom: 10px;
+}
+
+.dark-mode .specialty-tag {
+  background: rgba(45, 212, 191, 0.08);
+  color: #2dd4bf;
+}
+
+/* Stats */
+.stats-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   margin-bottom: 8px;
 }
 
-.vendor-specialty {
-  display: inline-block;
-  padding: 4px 16px;
-  background: var(--primary-teal-soft);
-  color: var(--primary-teal-dark);
-  border-radius: 30px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-bottom: 15px;
+.dark-mode .stats-row {
+  border-color: rgba(255, 255, 255, 0.04);
 }
 
-/* Vendor Stats */
-.vendor-stats {
+.stat-item {
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-bottom: 15px;
-}
-
-.stat {
-  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  color: var(--neutral-700);
-  font-size: 0.9rem;
-}
-
-.stat-icon {
-  font-size: 1rem;
 }
 
 .stat-value {
+  font-size: 0.75rem;
   font-weight: 700;
+  color: #1a1a2e;
+}
+
+.dark-mode .stat-value {
+  color: #f0f0f0;
+}
+
+.stat-label {
+  font-size: 0.5rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.dark-mode .stat-label {
+  color: #94a3b8;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.dark-mode .stat-divider {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* Location */
-.vendor-location {
+.location {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  color: var(--neutral-600);
-  font-size: 0.85rem;
-  margin-bottom: 8px;
+  gap: 4px;
+  font-size: 0.6rem;
+  color: #64748b;
+  margin-bottom: 10px;
 }
 
-.location-icon {
-  font-size: 0.9rem;
+.location svg {
+  stroke: #08717f;
 }
 
-/* Join Date */
-.vendor-join-date {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  color: var(--neutral-500);
-  font-size: 0.8rem;
-  margin-bottom: 15px;
+.dark-mode .location svg {
+  stroke: #2dd4bf;
 }
 
-.date-icon {
-  font-size: 0.85rem;
-}
-
-/* View Profile Button */
-.view-profile-btn {
+/* View Button */
+.view-btn {
   width: 100%;
-  padding: 12px;
-  background: var(--gradient-dual);
-  color: white;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(8, 113, 127, 0.06);
+  border: none;
+  border-radius: 30px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #08717f;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Amiri', serif;
 }
 
-.view-profile-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+.dark-mode .view-btn {
+  background: rgba(45, 212, 191, 0.06);
+  color: #2dd4bf;
 }
 
-.btn-arrow {
-  font-size: 1.1rem;
-  transition: transform 0.3s ease;
+.view-btn:hover {
+  background: #08717f;
+  color: white;
+  gap: 10px;
 }
 
-.view-profile-btn:hover .btn-arrow {
-  transform: translateX(5px);
+.dark-mode .view-btn:hover {
+  background: #2dd4bf;
+  color: #0a0e14;
 }
 
-/* Results Info */
-.results-info {
-  text-align: center;
-  color: var(--neutral-600);
-  font-size: 0.9rem;
-  padding: 20px 0;
-}
-
-/* Toast Notification */
+/* ===== TOAST ===== */
 .toast-notification {
   position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 24px;
+  bottom: 32px;
+  right: 32px;
   background: white;
-  border-radius: 50px;
-  box-shadow: var(--shadow-xl);
-  z-index: 9999;
-  border: 1px solid var(--neutral-200);
-  min-width: 350px;
+  padding: 12px 24px;
+  border-radius: 40px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  font-size: 0.85rem;
+  border-right: 4px solid #08717f;
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
+}
+
+.dark-mode .toast-notification {
+  background: #1f2937;
 }
 
 .toast-notification.success {
-  border-right: 4px solid var(--primary-teal);
+  border-right-color: #10b981;
 }
 
 .toast-notification.error {
-  border-right: 4px solid var(--primary-red);
-}
-
-.toast-notification.info {
-  border-right: 4px solid var(--primary-teal-light);
-}
-
-.toast-icon {
-  font-size: 1.3rem;
+  border-right-color: #ef4444;
 }
 
 .toast-message {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--neutral-800);
+  color: #1a1a2e;
+  font-weight: 500;
 }
 
-.toast-close {
-  background: none;
-  border: none;
-  color: var(--neutral-500);
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
+.dark-mode .toast-message {
+  color: #f0f0f0;
 }
 
-.toast-close:hover {
-  color: var(--neutral-900);
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #08717f, #d40025);
+  animation: toastProgress 3s linear forwards;
 }
 
-/* Responsive */
+@keyframes toastProgress {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== TRANSITIONS ===== */
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .artisans-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 1000px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .hero-illustration {
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .hero-content {
+    text-align: center;
+  }
+
+  .hero-search {
+    margin: 0 auto;
+  }
+
+  .artisans-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
-  .artisans-hero {
-    padding: 60px 0 40px;
-  }
-
   .hero-title {
-    font-size: 2rem;
+    font-size: 2.2rem;
   }
 
-  .hero-subtitle {
-    font-size: 1rem;
+  .artisans-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 
-  .quick-filters {
+  .filters-list {
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding: 10px 0;
+    justify-content: flex-start;
+    padding-bottom: 4px;
   }
 
   .filter-chip {
     flex-shrink: 0;
   }
 
-  .artisans-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .toast-notification {
-    min-width: auto;
-    width: calc(100% - 32px);
-  }
-}
-
-@media (max-width: 480px) {
   .container {
     padding: 0 16px;
   }
 
-  .search-input {
-    padding: 14px 18px;
+  .hero-section {
+    padding: 32px 0 32px;
   }
 
-  .vendor-shop {
-    font-size: 1.2rem;
+  .hero-search {
+    max-width: 100%;
   }
 
-  .vendor-stats {
-    gap: 15px;
+  .search-wrapper {
+    max-width: 100%;
+  }
+
+  .filters-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
 
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+@media (max-width: 480px) {
+  .artisans-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-cover {
+    height: 120px;
+  }
+
+  .avatar-wrapper {
+    width: 64px;
+    height: 64px;
+    margin-top: -32px;
+  }
+
+  .shop-name {
+    font-size: 1rem;
+  }
+
+  .hero-title {
+    font-size: 1.8rem;
+  }
+
+  .empty-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-reset,
+  .btn-join {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

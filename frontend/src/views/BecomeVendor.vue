@@ -1,466 +1,305 @@
-<!-- frontend/src/views/BecomeVendor.vue -->
+<!-- frontend/src/views/BecomeVendor.vue - Version avec champs complètement vides -->
 <template>
-  <div class="become-vendor-page">
-    <!-- Background Particles -->
-    <div class="bg-particles"></div>
-
-    <!-- Header -->
-    <header class="page-header">
-      <div class="container">
-        <div class="header-content">
-          <h1 class="page-title">انضم كبائع</h1>
-          <p class="page-subtitle">ابدأ رحلتك معنا وشارك إبداعاتك</p>
+  <div class="become-vendor-page" :class="{ 'dark-mode': isDarkMode }">
+    <div class="vendor-wrapper">
+      <!-- Left Column - Branding -->
+      <div class="brand-column">
+        <div class="brand-content">
+          <img src="/src/assets/asala logo.svg" alt="ASALA" class="brand-logo" />
+          <div class="welcome-message">
+            <h2 class="welcome-title">انضم إلينا كحرفي</h2>
+            <p class="welcome-text">شارك إبداعاتك مع العالم</p>
+            <p class="welcome-subtext">انضم إلى مجتمع الحرفيين التونسيين</p>
+          </div>
         </div>
       </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="main-content">
-      <div class="container">
-        <div class="form-card glass-effect">
+      <!-- Right Column - Form -->
+      <div class="form-column">
+        <div class="form-card">
           <!-- Progress Steps -->
           <div class="progress-container">
             <div class="progress-steps">
-              <div v-for="(step, index) in steps" :key="index" class="step-wrapper">
-                <div
-                  class="step"
-                  :class="{
-                    active: currentStep >= index + 1,
-                    completed: currentStep > index + 1,
-                  }"
-                >
+              <div v-for="(step, idx) in steps" :key="idx" class="step-wrapper">
+                <div class="step" :class="{ active: currentStep >= idx + 1, completed: currentStep > idx + 1 }">
                   <div class="step-number">
-                    <span v-if="currentStep > index + 1" class="check-icon">✓</span>
-                    <span v-else>{{ index + 1 }}</span>
+                    <span v-if="currentStep > idx + 1">✓</span>
+                    <span v-else>{{ idx + 1 }}</span>
                   </div>
                   <div class="step-label">{{ step }}</div>
                 </div>
-                <div
-                  v-if="index < steps.length - 1"
-                  class="step-line"
-                  :class="{ active: currentStep > index + 1 }"
-                ></div>
+                <div v-if="idx < steps.length - 1" class="step-line" :class="{ active: currentStep > idx + 1 }"></div>
               </div>
             </div>
           </div>
 
-          <!-- Step 1: Personal Information -->
-          <div v-if="currentStep === 1" class="form-step" key="step1">
-            <h2 class="step-title">
-              <span class="title-icon">👤</span>
-              المعلومات الشخصية
-            </h2>
-            <p class="step-description">أدخل معلوماتك الأساسية لإنشاء الحساب</p>
+          <!-- Step 1: Personal Info -->
+          <!-- Step 1: Personal Info -->
+<div v-if="currentStep === 1" class="form-step">
+  <div class="step-header">
+    <div class="step-badge">
+      <span>👤</span>
+      <span>الخطوة 1/3</span>
+    </div>
+    <h2 class="step-title">المعلومات الشخصية</h2>
+    <p class="step-description">أدخل معلوماتك الأساسية</p>
+  </div>
 
-            <form @submit.prevent="validateStep1" class="elegant-form">
-              <!-- Full Name -->
-              <div class="form-group" :class="{ 'has-error': errors.fullName }">
-                <label class="form-label">
-                  <span class="label-icon">👤</span>
-                  الاسم الكامل
-                  <span class="required">*</span>
-                </label>
-                <div class="input-wrapper">
-                  <input
-                    type="text"
-                    v-model="form.fullName"
-                    class="form-input"
-                    placeholder="أدخل اسمك الكامل"
-                  />
-                  <div class="input-border"></div>
-                </div>
-                <span v-if="errors.fullName" class="error-message">{{ errors.fullName }}</span>
-              </div>
+  <form @submit.prevent="validateStep1" class="auth-form" autocomplete="off">
+    <!-- Champ: الاسم الكامل -->
+    <div class="form-group" :class="{ 'has-error': errors.fullName }">
+      <label class="form-label">
+        <span>👤</span>
+        الاسم الكامل
+        <span class="required">*</span>
+      </label>
+      <input
+        type="text"
+        v-model="form.fullName"
+        class="form-input"
+        autocomplete="off"
+      />
+      <span v-if="errors.fullName" class="error-message">
+        {{ errors.fullName }}
+      </span>
+    </div>
 
-              <!-- Email -->
-              <div class="form-group" :class="{ 'has-error': errors.email }">
-                <label class="form-label">
-                  <span class="label-icon">📧</span>
-                  البريد الإلكتروني
-                  <span class="required">*</span>
-                </label>
-                <div class="input-wrapper">
-                  <input
-                    type="email"
-                    v-model="form.email"
-                    class="form-input"
-                    placeholder="example@email.com"
-                    dir="ltr"
-                  />
-                  <div class="input-border"></div>
-                </div>
-                <span v-if="errors.email" class="error-message">{{ errors.email }}</span>
-              </div>
+    <!-- Champ: البريد الإلكتروني -->
+    <div class="form-group" :class="{ 'has-error': errors.email }">
+      <label class="form-label">
+        <span>📧</span>
+        البريد الإلكتروني
+        <span class="required">*</span>
+      </label>
+      <input
+        type="email"
+        v-model="form.email"
+        class="form-input"
+        dir="ltr"
+        autocomplete="off"
+      />
+      <span v-if="errors.email" class="error-message">
+        {{ errors.email }}
+      </span>
+    </div>
 
-              <!-- Phone -->
-              <div class="form-group" :class="{ 'has-error': errors.phone }">
-                <label class="form-label">
-                  <span class="label-icon">📞</span>
-                  رقم الهاتف
-                  <span class="required">*</span>
-                </label>
-                <div class="input-wrapper phone-input">
-                  <span class="phone-code">+216</span>
-                  <input
-                    type="tel"
-                    v-model="form.phone"
-                    class="form-input phone-field"
-                    placeholder="XX XXX XXX"
-                    maxlength="8"
-                  />
-                  <div class="input-border"></div>
-                </div>
-                <span v-if="errors.phone" class="error-message">{{ errors.phone }}</span>
-              </div>
+    <!-- Champ: رقم الهاتف -->
+    <div class="form-group" :class="{ 'has-error': errors.phone }">
+      <label class="form-label">
+        <span>📞</span>
+        رقم الهاتف
+        <span class="required">*</span>
+      </label>
+      <div class="phone-input-wrapper">
+        <span class="country-code">+216</span>
+        <input
+          type="tel"
+          v-model="form.phone"
+          class="form-input phone-field"
+          maxlength="8"
+          autocomplete="off"
+        />
+      </div>
+      <span v-if="errors.phone" class="error-message">
+        {{ errors.phone }}
+      </span>
+    </div>
 
-              <!-- Address -->
-              <div class="form-group" :class="{ 'has-error': errors.address }">
-                <label class="form-label">
-                  <span class="label-icon">📍</span>
-                  العنوان
-                  <span class="required">*</span>
-                </label>
-                <div class="input-wrapper">
-                  <input
-                    type="text"
-                    v-model="form.address"
-                    class="form-input"
-                    placeholder="أدخل عنوانك الكامل"
-                  />
-                  <div class="input-border"></div>
-                </div>
-                <span v-if="errors.address" class="error-message">{{ errors.address }}</span>
-              </div>
+    <!-- Champ: العنوان -->
+    <div class="form-group" :class="{ 'has-error': errors.address }">
+      <label class="form-label">
+        <span>📍</span>
+        العنوان
+        <span class="required">*</span>
+      </label>
+      <input
+        type="text"
+        v-model="form.address"
+        class="form-input"
+        autocomplete="off"
+      />
+      <span v-if="errors.address" class="error-message">
+        {{ errors.address }}
+      </span>
+    </div>
 
-              <!-- Password -->
-              <div class="form-group" :class="{ 'has-error': errors.password }">
-                <label class="form-label">
-                  <span class="label-icon">🔒</span>
-                  كلمة المرور
-                  <span class="required">*</span>
-                </label>
-                <div class="input-wrapper password-wrapper">
-                  <input
-                    :type="showPassword ? 'text' : 'password'"
-                    v-model="form.password"
-                    class="form-input"
-                    placeholder="********"
-                  />
-                  <button
-                    type="button"
-                    class="toggle-password"
-                    @click="showPassword = !showPassword"
-                  >
-                    <span v-if="!showPassword">👁️</span>
-                    <span v-else>👁️‍🗨️</span>
-                  </button>
-                  <div class="input-border"></div>
-                </div>
-                <span v-if="errors.password" class="error-message">{{ errors.password }}</span>
-              </div>
+    <!-- Champ: كلمة المرور -->
+    <div class="form-group" :class="{ 'has-error': errors.password }">
+      <label class="form-label">
+        <span>🔒</span>
+        كلمة المرور
+        <span class="required">*</span>
+      </label>
+      <div class="password-wrapper">
+        <input
+          :type="showPassword ? 'text' : 'password'"
+          v-model="form.password"
+          class="form-input"
+          autocomplete="new-password"
+        />
+        <button
+          type="button"
+          class="toggle-password"
+          @click="showPassword = !showPassword"
+        >
+          {{ showPassword ? '🙈' : '👁️' }}
+        </button>
+      </div>
+      <span v-if="errors.password" class="error-message">
+        {{ errors.password }}
+      </span>
+    </div>
 
-              <!-- Confirm Password -->
-              <div class="form-group" :class="{ 'has-error': errors.confirmPassword }">
-                <label class="form-label">
-                  <span class="label-icon">🔒</span>
-                  تأكيد كلمة المرور
-                  <span class="required">*</span>
-                </label>
-                <div class="input-wrapper password-wrapper">
-                  <input
-                    :type="showConfirmPassword ? 'text' : 'password'"
-                    v-model="form.confirmPassword"
-                    class="form-input"
-                    placeholder="********"
-                  />
-                  <button
-                    type="button"
-                    class="toggle-password"
-                    @click="showConfirmPassword = !showConfirmPassword"
-                  >
-                    <span v-if="!showConfirmPassword">👁️</span>
-                    <span v-else>👁️‍🗨️</span>
-                  </button>
-                  <div class="input-border"></div>
-                </div>
-                <span v-if="errors.confirmPassword" class="error-message">{{
-                  errors.confirmPassword
-                }}</span>
-              </div>
+    <!-- Champ: تأكيد كلمة المرور -->
+    <div class="form-group" :class="{ 'has-error': errors.confirmPassword }">
+      <label class="form-label">
+        <span>🔒</span>
+        تأكيد كلمة المرور
+        <span class="required">*</span>
+      </label>
+      <div class="password-wrapper">
+        <input
+          :type="showConfirmPassword ? 'text' : 'password'"
+          v-model="form.confirmPassword"
+          class="form-input"
+          autocomplete="new-password"
+        />
+        <button
+          type="button"
+          class="toggle-password"
+          @click="showConfirmPassword = !showConfirmPassword"
+        >
+          {{ showConfirmPassword ? '🙈' : '👁️' }}
+        </button>
+      </div>
+      <span v-if="errors.confirmPassword" class="error-message">
+        {{ errors.confirmPassword }}
+      </span>
+    </div>
 
-              <div class="form-actions">
-                <button type="submit" class="btn-next">
-                  <span class="btn-text">التالي</span>
-                  <span class="btn-icon">←</span>
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <!-- Step 2: Store Information -->
-          <div v-if="currentStep === 2" class="form-step" key="step2">
-            <h2 class="step-title">
-              <span class="title-icon">🏪</span>
-              معلومات المتجر
-            </h2>
-            <p class="step-description">أخبرنا عن متجرك ومنتجاتك</p>
-
-            <form @submit.prevent="validateStep2" class="elegant-form">
-              <!-- Shop Name -->
+    <!-- Actions -->
+    <div class="form-actions">
+      <button type="submit" class="btn-next">
+        <span>التالي</span>
+        <span>←</span>
+      </button>
+    </div>
+  </form>
+</div>
+          <!-- Step 2: Store Info -->
+          <div v-if="currentStep === 2" class="form-step">
+            <div class="step-header">
+              <div class="step-badge"><span>🏪</span><span>الخطوة 2/3</span></div>
+              <h2 class="step-title">معلومات المتجر</h2>
+              <p class="step-description">أخبرنا عن متجرك</p>
+            </div>
+            <form @submit.prevent="validateStep2" class="auth-form">
               <div class="form-group" :class="{ 'has-error': errors.shopName }">
-                <label class="form-label">
-                  <span class="label-icon">🏷️</span>
-                  اسم المتجر
-                  <span class="required">*</span>
-                </label>
-                <div class="input-wrapper">
-                  <input
-                    type="text"
-                    v-model="form.shopName"
-                    class="form-input"
-                    placeholder="اختر اسماً مميزاً لمتجرك"
-                  />
-                  <div class="input-border"></div>
-                </div>
+                <label class="form-label"><span>🏷️</span>اسم المتجر<span class="required">*</span></label>
+                <input type="text" v-model="form.shopName" class="form-input" />
                 <span v-if="errors.shopName" class="error-message">{{ errors.shopName }}</span>
               </div>
 
-              <!-- Specialty -->
               <div class="form-group" :class="{ 'has-error': errors.specialty }">
-                <label class="form-label">
-                  <span class="label-icon">🎨</span>
-                  التخصص
-                  <span class="required">*</span>
-                </label>
-                <div class="select-wrapper">
-                  <select v-model="form.specialty" class="form-select">
-                    <option value="" disabled selected>اختر تخصصك</option>
-                    <option value="pottery">🏺 فخار وسيراميك</option>
-                    <option value="textiles">🧵 منسوجات وسجاد</option>
-                    <option value="jewelry">💍 مجوهرات</option>
-                    <option value="woodwork">🪵 أعمال خشبية</option>
-                    <option value="metalwork">⚒️ أعمال معدنية</option>
-                    <option value="leather">👜 منتجات جلدية</option>
-                    <option value="other">🎨 أخرى</option>
-                  </select>
-                  <div class="select-arrow">▼</div>
-                </div>
+                <label class="form-label"><span>🎨</span>التخصص<span class="required">*</span></label>
+                <select v-model="form.specialty" class="form-select">
+                  <option value="" disabled>اختر تخصصك</option>
+                  <option value="pottery">🏺 فخار</option>
+                  <option value="textiles">🧵 منسوجات</option>
+                  <option value="jewelry">💍 مجوهرات</option>
+                  <option value="woodwork">🪵 خشب</option>
+                  <option value="metalwork">⚒️ معادن</option>
+                  <option value="leather">👜 جلود</option>
+                  <option value="other">🎨 أخرى</option>
+                </select>
                 <span v-if="errors.specialty" class="error-message">{{ errors.specialty }}</span>
               </div>
 
-              <!-- Experience & Products -->
               <div class="form-row">
                 <div class="form-group">
-                  <label class="form-label">
-                    <span class="label-icon">⏳</span>
-                    سنوات الخبرة
-                  </label>
-                  <div class="input-wrapper">
-                    <input
-                      type="number"
-                      v-model.number="form.experience"
-                      class="form-input"
-                      placeholder="0"
-                      min="0"
-                    />
-                    <div class="input-border"></div>
-                  </div>
+                  <label class="form-label"><span>⏳</span>سنوات الخبرة</label>
+                  <input type="number" v-model.number="form.experience" class="form-input" min="0" />
                 </div>
-
                 <div class="form-group">
-                  <label class="form-label">
-                    <span class="label-icon">📦</span>
-                    عدد المنتجات
-                  </label>
-                  <div class="input-wrapper">
-                    <input
-                      type="number"
-                      v-model.number="form.productsCount"
-                      class="form-input"
-                      placeholder="0"
-                      min="1"
-                    />
-                    <div class="input-border"></div>
-                  </div>
+                  <label class="form-label"><span>📦</span>عدد المنتجات</label>
+                  <input type="number" v-model.number="form.productsCount" class="form-input" min="1" />
                 </div>
               </div>
 
-              <!-- Description -->
               <div class="form-group" :class="{ 'has-error': errors.description }">
-                <label class="form-label">
-                  <span class="label-icon">📝</span>
-                  وصف النشاط
-                  <span class="required">*</span>
-                </label>
-                <div class="textarea-wrapper">
-                  <textarea
-                    v-model="form.description"
-                    class="form-textarea"
-                    rows="4"
-                    placeholder="صف منتجاتك، تقنياتك، المواد التي تستخدمها..."
-                  ></textarea>
-                  <div class="input-border"></div>
-                </div>
-                <span v-if="errors.description" class="error-message">{{
-                  errors.description
-                }}</span>
+                <label class="form-label"><span>📝</span>وصف النشاط<span class="required">*</span></label>
+                <textarea v-model="form.description" class="form-textarea" rows="3"></textarea>
                 <div class="char-counter">{{ form.description.length }}/200</div>
+                <span v-if="errors.description" class="error-message">{{ errors.description }}</span>
               </div>
 
               <div class="form-actions">
-                <button type="button" class="btn-prev" @click="currentStep = 1">
-                  <span class="btn-icon">→</span>
-                  <span class="btn-text">السابق</span>
-                </button>
-                <button type="submit" class="btn-next">
-                  <span class="btn-text">التالي</span>
-                  <span class="btn-icon">←</span>
-                </button>
+                <button type="button" class="btn-prev" @click="currentStep = 1"><span>→</span><span>السابق</span></button>
+                <button type="submit" class="btn-next"><span>التالي</span><span>←</span></button>
               </div>
             </form>
           </div>
 
           <!-- Step 3: Photos & Confirmation -->
-          <div v-if="currentStep === 3" class="form-step" key="step3">
-            <h2 class="step-title">
-              <span class="title-icon">📸</span>
-              الصور والتأكيد
-            </h2>
-            <p class="step-description">أضف صوراً لمتجرك (اختياري)</p>
+          <div v-if="currentStep === 3" class="form-step">
+            <div class="step-header">
+              <div class="step-badge"><span>📸</span><span>الخطوة 3/3</span></div>
+              <h2 class="step-title">الصور والتأكيد</h2>
+              <p class="step-description">أضف صوراً لمتجرك (اختياري)</p>
+            </div>
 
-            <form @submit.prevent="submitForm" class="elegant-form">
-              <!-- Profile Photo Upload -->
+            <form @submit.prevent="submitForm" class="auth-form">
+              <!-- Profile Photo -->
               <div class="upload-section">
-                <label class="form-label">
-                  <span class="label-icon">👤</span>
-                  الصورة الشخصية
-                  <span class="optional">(اختياري)</span>
-                </label>
-
-                <div
-                  class="upload-area profile-upload"
-                  :class="{ 'has-preview': profilePreview }"
-                  @click="triggerProfileUpload"
-                >
-                  <input
-                    type="file"
-                    ref="profileInput"
-                    @change="handleProfileUpload"
-                    accept="image/*"
-                    style="display: none"
-                  />
-
+                <label class="form-label"><span>👤</span>الصورة الشخصية<span class="optional">(اختياري)</span></label>
+                <div class="upload-area" :class="{ 'has-preview': profilePreview }" @click="triggerProfileUpload">
+                  <input type="file" ref="profileInput" @change="handleProfileUpload" accept="image/*" style="display:none" />
                   <div v-if="!profilePreview" class="upload-placeholder">
                     <div class="upload-icon">📸</div>
                     <p class="upload-text">انقر لإضافة الصورة</p>
-                    <p class="upload-hint">PNG, JPG - حجم أقصى 2MB</p>
+                    <p class="upload-hint">PNG, JPG - 5MB max</p>
                   </div>
-
                   <div v-else class="upload-preview">
                     <img :src="profilePreview" alt="Profile" />
-                    <button
-                      type="button"
-                      class="change-photo-btn"
-                      @click.stop="triggerProfileUpload"
-                    >
-                      <span class="change-icon">✏️</span>
-                      <span class="change-text">تغيير</span>
-                    </button>
+                    <button type="button" class="change-photo-btn" @click.stop="triggerProfileUpload">✏️ تغيير</button>
                   </div>
                 </div>
               </div>
 
-              <!-- Cover Photo Upload -->
+              <!-- Cover Photo -->
               <div class="upload-section">
-                <label class="form-label">
-                  <span class="label-icon">🖼️</span>
-                  صورة الغلاف
-                  <span class="optional">(اختياري)</span>
-                </label>
-
-                <div
-                  class="upload-area cover-upload"
-                  :class="{ 'has-preview': coverPreview }"
-                  @click="triggerCoverUpload"
-                >
-                  <input
-                    type="file"
-                    ref="coverInput"
-                    @change="handleCoverUpload"
-                    accept="image/*"
-                    style="display: none"
-                  />
-
+                <label class="form-label"><span>🖼️</span>صورة الغلاف<span class="optional">(اختياري)</span></label>
+                <div class="upload-area" :class="{ 'has-preview': coverPreview }" @click="triggerCoverUpload">
+                  <input type="file" ref="coverInput" @change="handleCoverUpload" accept="image/*" style="display:none" />
                   <div v-if="!coverPreview" class="upload-placeholder">
                     <div class="upload-icon">🌄</div>
                     <p class="upload-text">انقر لإضافة الغلاف</p>
-                    <p class="upload-hint">PNG, JPG - حجم أقصى 2MB</p>
+                    <p class="upload-hint">PNG, JPG - 5MB max</p>
                   </div>
-
-                  <div
-                    v-else
-                    class="upload-preview cover-preview"
-                    :style="{ backgroundImage: `url(${coverPreview})` }"
-                  >
-                    <button type="button" class="change-photo-btn" @click.stop="triggerCoverUpload">
-                      <span class="change-icon">✏️</span>
-                      <span class="change-text">تغيير</span>
-                    </button>
+                  <div v-else class="upload-preview cover-preview" :style="{ backgroundImage: `url(${coverPreview})` }">
+                    <button type="button" class="change-photo-btn" @click.stop="triggerCoverUpload">✏️ تغيير</button>
                   </div>
                 </div>
               </div>
 
-              <!-- Summary Cards -->
+              <!-- Summary -->
               <div class="summary-grid">
                 <div class="summary-card">
-                  <div class="summary-header">
-                    <span class="summary-icon">👤</span>
-                    <h3 class="summary-title">معلومات الحساب</h3>
-                  </div>
+                  <div class="summary-header"><span>👤</span><h3>معلومات الحساب</h3></div>
                   <div class="summary-content">
-                    <div class="summary-item">
-                      <span class="item-label">الاسم:</span>
-                      <span class="item-value">{{ form.fullName }}</span>
-                    </div>
-                    <div class="summary-item">
-                      <span class="item-label">البريد:</span>
-                      <span class="item-value">{{ form.email }}</span>
-                    </div>
-                    <div class="summary-item">
-                      <span class="item-label">الهاتف:</span>
-                      <span class="item-value">{{ form.phone }}</span>
-                    </div>
-                    <div class="summary-item">
-                      <span class="item-label">العنوان:</span>
-                      <span class="item-value">{{ form.address }}</span>
-                    </div>
+                    <div class="summary-item"><span>الاسم:</span><span>{{ form.fullName || '—' }}</span></div>
+                    <div class="summary-item"><span>البريد:</span><span>{{ form.email || '—' }}</span></div>
+                    <div class="summary-item"><span>الهاتف:</span><span>{{ form.phone || '—' }}</span></div>
+                    <div class="summary-item"><span>العنوان:</span><span>{{ truncateText(form.address, 25) || '—' }}</span></div>
                   </div>
                 </div>
-
                 <div class="summary-card">
-                  <div class="summary-header">
-                    <span class="summary-icon">🏪</span>
-                    <h3 class="summary-title">معلومات المتجر</h3>
-                  </div>
+                  <div class="summary-header"><span>🏪</span><h3>معلومات المتجر</h3></div>
                   <div class="summary-content">
-                    <div class="summary-item">
-                      <span class="item-label">اسم المتجر:</span>
-                      <span class="item-value">{{ form.shopName }}</span>
-                    </div>
-                    <div class="summary-item">
-                      <span class="item-label">التخصص:</span>
-                      <span class="item-value">{{ getSpecialtyName(form.specialty) }}</span>
-                    </div>
-                    <div class="summary-item">
-                      <span class="item-label">الخبرة:</span>
-                      <span class="item-value">{{ form.experience || 0 }} سنوات</span>
-                    </div>
-                    <div class="summary-item">
-                      <span class="item-label">الوصف:</span>
-                      <span class="item-value description">{{
-                        truncateText(form.description, 50)
-                      }}</span>
-                    </div>
+                    <div class="summary-item"><span>اسم المتجر:</span><span>{{ form.shopName || '—' }}</span></div>
+                    <div class="summary-item"><span>التخصص:</span><span>{{ getSpecialtyName(form.specialty) || '—' }}</span></div>
+                    <div class="summary-item"><span>الخبرة:</span><span>{{ form.experience || 0 }} سنوات</span></div>
+                    <div class="summary-item"><span>الوصف:</span><span>{{ truncateText(form.description, 35) || '—' }}</span></div>
                   </div>
                 </div>
               </div>
@@ -470,61 +309,113 @@
                 <label class="checkbox-label">
                   <input type="checkbox" v-model="form.acceptTerms" />
                   <span class="checkmark"></span>
-                  <span class="checkbox-text">
-                    أوافق على <a href="#" class="terms-link">الشروط والأحكام</a>
-                    <span class="required">*</span>
-                  </span>
+                  <span class="checkbox-text">أوافق على <a href="#" class="terms-link">الشروط والأحكام</a><span class="required">*</span></span>
                 </label>
               </div>
 
-              <!-- Actions -->
               <div class="form-actions">
-                <button type="button" class="btn-prev" @click="currentStep = 2">
-                  <span class="btn-icon">→</span>
-                  <span class="btn-text">السابق</span>
-                </button>
+                <button type="button" class="btn-prev" @click="currentStep = 2"><span>→</span><span>السابق</span></button>
                 <button type="submit" class="btn-submit" :disabled="isSubmitting">
-                  <span v-if="!isSubmitting" class="btn-text">تأكيد التسجيل</span>
+                  <span v-if="!isSubmitting">تأكيد التسجيل</span>
                   <div v-else class="loader"></div>
                 </button>
               </div>
             </form>
           </div>
         </div>
-      </div>
-    </main>
 
-    <!-- Toast Notification -->
-    <transition name="toast">
-      <div v-if="toast.show" class="toast-notification" :class="toast.type">
-        <div class="toast-content">
-          <span class="toast-icon">{{ toast.icon }}</span>
-          <span class="toast-message">{{ toast.message }}</span>
+        <div class="login-link">
+          <p>لديك حساب بالفعل؟</p>
+          <router-link to="/login" class="login-link-btn"><span>تسجيل الدخول</span><span>←</span></router-link>
         </div>
-        <div class="toast-progress" :style="{ animationDuration: '3s' }"></div>
+      </div>
+    </div>
+
+<!-- MODAL SUCCÈS STYLE POP-UP NOIR -->
+<transition name="modal">
+  <div v-if="showSuccessModal" class="pending-popup-overlay" @click.self="closeSuccessModal">
+    <div class="pending-popup" dir="rtl">
+      <button class="popup-close" @click="closeSuccessModal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+      <div class="popup-logo">
+        <img src="/src/assets/asala logo.svg" alt="أصالة" class="logo-img" />
+      </div>
+
+      <div class="popup-icon">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+      </div>
+
+      <h2 class="popup-title">تم إنشاء الحساب بنجاح</h2>
+      <p class="popup-subtitle">طلبك قيد المراجعة</p>
+
+      <div class="popup-message">
+        <span class="message-emoji">⏳</span>
+        <p>نرجو منكم التكرّم بالانتظار ريثما تقوم الإدارة بمراجعة طلبكم والموافقة عليه في غضون <strong class="text-gold">24 ساعة</strong>.</p>
+      </div>
+
+      <div class="popup-email-section">
+        <img src="/src/assets/img12.jpeg" alt="Success" class="email-image" @error="(e) => e.target.style.display = 'none'" />
+        <div class="email-content">
+          <div class="email-icon-row">
+            <span class="email-emoji">📧</span>
+            <p class="email-text">سيتم إشعاركم عبر البريد الإلكتروني</p>
+          </div>
+          <strong class="email-highlight">{{ form.email }}</strong>
+          <p class="email-subtext">فور إتمام عملية التفعيل</p>
+        </div>
+      </div>
+
+      <div class="popup-contact">
+        <div class="contact-row">
+          <span>📧</span><span>للتواصل مع الإدارة</span>
+        </div>
+        <a href="mailto:infinty.tunisia@gmail.com" class="contact-link">infinty.tunisia@gmail.com</a>
+        <p class="contact-hint">في حال عدم تلقيكم لأي رد، يُرجى التواصل معنا عبر البريد الإلكتروني أعلاه.</p>
+      </div>
+
+      <button @click="closeSuccessModal" class="popup-btn">
+        <span>🏠</span><span>العودة إلى الصفحة الرئيسية</span>
+      </button>
+    </div>
+  </div>
+</transition>
+    <!-- Toast -->
+    <transition name="toast">
+      <div v-if="toast.show" class="toast-notification" :class="[toast.type, { 'dark-mode': isDarkMode }]">
+        <div class="toast-content"><span>{{ toast.icon }}</span><span>{{ toast.message }}</span></div>
+        <div class="toast-progress"></div>
       </div>
     </transition>
 
-    <!-- Loading Overlay -->
+    <!-- Loading -->
     <transition name="fade">
-      <div v-if="isLoading" class="loading-overlay">
-        <div class="spinner"></div>
-        <p class="loading-text">جاري المعالجة...</p>
-      </div>
+      <div v-if="isLoading" class="loading-overlay"><div class="spinner"></div><p>جاري المعالجة...</p></div>
     </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { useVendorStore } from '../stores/vendorStore'
+import { useThemeStore } from '../stores/theme'
 import api from '../services/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const vendorStore = useVendorStore()
+const themeStore = useThemeStore()
+
+const isDarkMode = computed(() => themeStore.isDarkMode)
 
 // ===== STATE =====
 const currentStep = ref(1)
@@ -533,170 +424,116 @@ const isLoading = ref(false)
 const errors = ref({})
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
-
+const showSuccessModal = ref(false)
 const steps = ['المعلومات الشخصية', 'معلومات المتجر', 'الصور والتأكيد']
 
-// File inputs
+// File handlers
 const profileInput = ref(null)
 const coverInput = ref(null)
-
-// Previews
 const profilePreview = ref(null)
 const coverPreview = ref(null)
+const profileFile = ref(null)
+const coverFile = ref(null)
 
 // Toast
-const toast = ref({
-  show: false,
-  message: '',
-  type: 'success',
-  icon: '✅',
-})
+const toast = ref({ show: false, message: '', type: 'success', icon: '✅' })
 
-// Form Data
+// Form data - TOUTES LES VALEURS VIDES
 const form = reactive({
   fullName: '',
   email: '',
   phone: '',
   address: '',
-  password: '123456',
-  confirmPassword: '123456',
+  password: '',
+  confirmPassword: '',
   shopName: '',
   specialty: '',
   experience: 0,
-  productsCount: 0,
   description: '',
-  acceptTerms: false,
+  acceptTerms: false
 })
 
 // ===== UTILS =====
 const truncateText = (text, length) => {
-  if (!text) return ''
-  return text.length > length ? text.substring(0, length) + '...' : text
+  return text?.length > length ? text.substring(0, length) + '...' : text || '—'
 }
 
 const getSpecialtyName = (specialty) => {
   const specialties = {
-    pottery: '🏺 فخار وسيراميك',
-    textiles: '🧵 منسوجات وسجاد',
+    pottery: '🏺 فخار',
+    textiles: '🧵 منسوجات',
     jewelry: '💍 مجوهرات',
-    woodwork: '🪵 أعمال خشبية',
-    metalwork: '⚒️ أعمال معدنية',
-    leather: '👜 منتجات جلدية',
-    other: '🎨 أخرى',
+    woodwork: '🪵 خشب',
+    metalwork: '⚒️ معادن',
+    leather: '👜 جلود',
+    perfumes: '🌸 عطور',
+    other: '🎨 أخرى'
   }
   return specialties[specialty] || specialty
 }
 
-// ===== NOTIFICATION =====
 const showNotification = (message, type = 'success') => {
-  const icons = {
-    success: '✅',
-    error: '❌',
-    info: 'ℹ️',
-    warning: '⚠️',
-  }
-
-  toast.value = {
-    show: true,
-    message,
-    type,
-    icon: icons[type],
-  }
-
-  setTimeout(() => {
-    toast.value.show = false
-  }, 3000)
+  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' }
+  toast.value = { show: true, message, type, icon: icons[type] }
+  setTimeout(() => toast.value.show = false, 3000)
 }
 
-// ===== IMAGE COMPRESSION =====
-const compressImage = (base64, maxWidth = 400, maxSizeKB = 500) => {
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.src = base64
+// ===== RESET FORM - Vide tous les champs =====
+const resetForm = () => {
+  form.fullName = ''
+  form.email = ''
+  form.phone = ''
+  form.address = ''
+  form.password = ''
+  form.confirmPassword = ''
+  form.shopName = ''
+  form.specialty = ''
+  form.experience = 0
+  form.description = ''
+  form.acceptTerms = false
 
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      let width = img.width
-      let height = img.height
-      let quality = 0.9
+  profileFile.value = null
+  coverFile.value = null
+  profilePreview.value = null
+  coverPreview.value = null
+  currentStep.value = 1
+  errors.value = {}
+}
 
-      if (width > maxWidth) {
-        height = Math.round(height * (maxWidth / width))
-        width = maxWidth
-      }
-
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0, width, height)
-
-      let compressed = canvas.toDataURL('image/jpeg', quality)
-
-      while (compressed.length > maxSizeKB * 1024 && quality > 0.3) {
-        quality -= 0.1
-        compressed = canvas.toDataURL('image/jpeg', quality)
-      }
-
-      console.log(`📸 Image compressée: ${(compressed.length / 1024).toFixed(2)}KB (qualité: ${quality.toFixed(2)})`)
-      resolve(compressed)
-    }
-
-    img.onerror = () => {
-      resolve(base64)
-    }
+// ===== CRÉATION D'UN APERÇU LOCAL =====
+const createPreview = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
   })
 }
 
 // ===== UPLOAD HANDLERS =====
-const triggerProfileUpload = () => {
-  profileInput.value?.click()
-}
-
-const triggerCoverUpload = () => {
-  coverInput.value?.click()
-}
+const triggerProfileUpload = () => profileInput.value?.click()
+const triggerCoverUpload = () => coverInput.value?.click()
 
 const handleProfileUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) return
 
-  if (file.size > 2 * 1024 * 1024) {
-    showNotification('حجم الصورة يجب أن لا يتجاوز 2MB', 'error')
-    return
+  if (file.size > 5 * 1024 * 1024) {
+    return showNotification('حجم الصورة يجب أن لا يتجاوز 5MB', 'error')
   }
-
   if (!file.type.startsWith('image/')) {
-    showNotification('الرجاء اختيار صورة صالحة', 'error')
-    return
+    return showNotification('الرجاء اختيار صورة صالحة', 'error')
   }
 
   isLoading.value = true
-
   try {
-    const reader = new FileReader()
-
-    reader.onload = async (e) => {
-      try {
-        const compressed = await compressImage(e.target.result, 300, 300)
-        profilePreview.value = compressed
-        showNotification('✅ تم تحميل الصورة بنجاح', 'success')
-      } catch (error) {
-        console.error('Erreur compression:', error)
-        showNotification('❌ فشل تحميل الصورة', 'error')
-      } finally {
-        isLoading.value = false
-      }
-    }
-
-    reader.onerror = () => {
-      showNotification('❌ فشل قراءة الملف', 'error')
-      isLoading.value = false
-    }
-
-    reader.readAsDataURL(file)
+    profileFile.value = file
+    profilePreview.value = await createPreview(file)
+    showNotification('✅ تم تحميل الصورة بنجاح', 'success')
   } catch (error) {
-    console.error('Erreur upload:', error)
+    console.error('❌ Erreur preview:', error)
     showNotification('❌ فشل تحميل الصورة', 'error')
+  } finally {
     isLoading.value = false
   }
 }
@@ -705,44 +542,22 @@ const handleCoverUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) return
 
-  if (file.size > 2 * 1024 * 1024) {
-    showNotification('حجم الصورة يجب أن لا يتجاوز 2MB', 'error')
-    return
+  if (file.size > 5 * 1024 * 1024) {
+    return showNotification('حجم الصورة يجب أن لا يتجاوز 5MB', 'error')
   }
-
   if (!file.type.startsWith('image/')) {
-    showNotification('الرجاء اختيار صورة صالحة', 'error')
-    return
+    return showNotification('الرجاء اختيار صورة صالحة', 'error')
   }
 
   isLoading.value = true
-
   try {
-    const reader = new FileReader()
-
-    reader.onload = async (e) => {
-      try {
-        const compressed = await compressImage(e.target.result, 800, 400)
-        coverPreview.value = compressed
-        console.log(`✅ Image couverture prête: ${(compressed.length / 1024).toFixed(2)}KB`)
-        showNotification('✅ تم تحميل الغلاف بنجاح', 'success')
-      } catch (error) {
-        console.error('Erreur compression:', error)
-        showNotification('❌ فشل تحميل الغلاف', 'error')
-      } finally {
-        isLoading.value = false
-      }
-    }
-
-    reader.onerror = () => {
-      showNotification('❌ فشل قراءة الملف', 'error')
-      isLoading.value = false
-    }
-
-    reader.readAsDataURL(file)
+    coverFile.value = file
+    coverPreview.value = await createPreview(file)
+    showNotification('✅ تم تحميل الغلاف بنجاح', 'success')
   } catch (error) {
-    console.error('Erreur upload:', error)
+    console.error('❌ Erreur preview:', error)
     showNotification('❌ فشل تحميل الغلاف', 'error')
+  } finally {
     isLoading.value = false
   }
 }
@@ -753,20 +568,18 @@ const validateStep1 = () => {
 
   if (!form.fullName?.trim()) errors.value.fullName = 'الاسم الكامل مطلوب'
   if (!form.email?.trim()) errors.value.email = 'البريد الإلكتروني مطلوب'
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-    errors.value.email = 'بريد إلكتروني غير صحيح'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.value.email = 'بريد إلكتروني غير صحيح'
 
   if (!form.phone?.trim()) errors.value.phone = 'رقم الهاتف مطلوب'
-  else if (!/^\d{8,}$/.test(form.phone.replace(/\s/g, '')))
-    errors.value.phone = '8 أرقام على الأقل'
+  else if (!/^\d{8,}$/.test(form.phone.replace(/\s/g, ''))) errors.value.phone = '8 أرقام على الأقل'
 
   if (!form.address?.trim()) errors.value.address = 'العنوان مطلوب'
+
   if (!form.password) errors.value.password = 'كلمة المرور مطلوبة'
   else if (form.password.length < 6) errors.value.password = '6 أحرف على الأقل'
 
   if (!form.confirmPassword) errors.value.confirmPassword = 'تأكيد كلمة المرور مطلوب'
-  else if (form.password !== form.confirmPassword)
-    errors.value.confirmPassword = 'كلمة المرور غير متطابقة'
+  else if (form.password !== form.confirmPassword) errors.value.confirmPassword = 'كلمة المرور غير متطابقة'
 
   if (Object.keys(errors.value).length === 0) {
     currentStep.value = 2
@@ -790,167 +603,373 @@ const validateStep2 = () => {
   }
 }
 
-// ===== SUBMIT CORRIGÉ =====
+// ===== SUBMIT =====
+// Dans BecomeVendor.vue, remplacer la fonction submitForm existante
+// ✅ REMPLACE toute la fonction submitForm par celle-ci
 const submitForm = async () => {
   if (!form.acceptTerms) {
-    showNotification('يجب الموافقة على الشروط والأحكام', 'error')
-    return
+    return showNotification('يجب الموافقة على الشروط والأحكام', 'error')
   }
 
   isSubmitting.value = true
   isLoading.value = true
 
   try {
-    // Format phone
-    let formattedPhone = form.phone.replace(/\s/g, '')
-    if (!formattedPhone.startsWith('+') && !formattedPhone.startsWith('0')) {
-      formattedPhone = '+216' + formattedPhone
-    }
+    const formData = new FormData()
+    formData.append('fullName', form.fullName)
+    formData.append('email', form.email.toLowerCase().trim())
+    formData.append('phone', form.phone.replace(/\s/g, ''))
+    formData.append('address', form.address)
+    formData.append('password', form.password)
+    formData.append('shopName', form.shopName)
+    formData.append('specialty', form.specialty)
+    formData.append('description', form.description)
+    formData.append('location', 'تونس')
+    formData.append('experience', form.experience || 0)
 
-    // Préparer les images
-    const randomAvatarNum = Math.floor(Math.random() * 70) + 1
-    const defaultAvatar = `https://i.pravatar.cc/400?img=${randomAvatarNum}`
-    const defaultCover = 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1200&auto=format'
+    if (profileFile.value) formData.append('avatar', profileFile.value)
+    if (coverFile.value) formData.append('coverImage', coverFile.value)
 
-    // Utiliser les images uploadées ou les défauts
-    const avatar = profilePreview.value || defaultAvatar
-    let coverImage = coverPreview.value || defaultCover
-
-    console.log('📦 Tailles des images:', {
-      avatar: avatar ? `${(avatar.length / 1024).toFixed(2)}KB` : 'défaut',
-      coverImage: coverImage ? `${(coverImage.length / 1024).toFixed(2)}KB` : 'défaut'
+    const response = await api.post('/auth/register-vendor', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
 
-    // 1. Register user
-    const registerData = {
-      name: form.fullName,
-      email: form.email.toLowerCase().trim(),
-      phone: formattedPhone,
-      password: form.password,
-      address: form.address,
-      avatar: avatar,
-      role: 'vendor'
-    }
-
-    console.log('📤 Envoi inscription:', { ...registerData, avatar: '...[image]' })
-
-    const registerResponse = await api.post('/auth/register', registerData)
-
-    console.log('📦 Réponse register:', registerResponse.data)
-
-    const { token, user } = registerResponse.data
-
-    // 2. Sauvegarder dans authStore
-    authStore.setToken(token)
-    authStore.setUser(user)
-
-    // 3. Créer le profil vendeur
-    const vendorData = {
-      userId: user.id,
-      shopName: form.shopName,
-      specialty: form.specialty,
-      description: form.description,
-      location: 'تونس',
-      coverImage: coverImage,
-      experience: form.experience || 0,
-    }
-
-    console.log('📤 Création vendeur avec image de taille:', coverImage.length)
-
-    const vendorResponse = await api.post('/vendors', vendorData, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-
-    console.log('📦 Réponse vendeur:', vendorResponse.data)
-
-    if (!vendorResponse.data.success) {
-      throw new Error(vendorResponse.data.message || 'Erreur création vendeur')
-    }
-
-    // Extraire l'ID du vendeur
-    let vendorId = null
-    const vendorResult = vendorResponse.data.data || vendorResponse.data
-
-    if (vendorResult.vendor?.id) vendorId = vendorResult.vendor.id
-    else if (vendorResult.id) vendorId = vendorResult.id
-
-    if (!vendorId) {
-      console.error('❌ Structure réponse:', vendorResult)
-      throw new Error('ID du vendeur manquant')
-    }
-
-    console.log('✅ ID vendeur extrait:', vendorId)
-
-    // 4. Sauvegarder vendorId
-    authStore.setVendorId(vendorId)
-    localStorage.setItem('vendorId', vendorId)
-
-    // 5. Créer dans le store local
-    if (vendorStore && typeof vendorStore.createVendor === 'function') {
-      const newVendor = {
-        id: vendorId,
-        name: form.fullName,
-        shopName: form.shopName,
-        email: form.email,
-        phone: formattedPhone,
-        avatar: avatar,
-        coverImage: coverImage,
-        specialty: form.specialty,
-        description: form.description,
-        location: 'تونس',
-        experience: form.experience || 0,
-        verified: false,
-        productsCount: 0,
-        followersCount: 0,
-        createdAt: new Date().toISOString(),
+    if (response.data.success) {
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token)
+        api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
       }
-      vendorStore.createVendor(newVendor)
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user))
+        authStore.user = response.data.user
+        authStore.userRole = response.data.user.role || 'pending'
+      }
+
+      resetForm()
+
+      // ✅ AFFICHER LE POP-UP NOIR INTÉGRÉ
+      showSuccessModal.value = true
+      document.body.style.overflow = 'hidden'
+
+    } else {
+      throw new Error(response.data.message || 'Erreur lors de l\'inscription')
     }
-
-    showNotification('✅ تم إنشاء حسابك بنجاح!')
-
-    setTimeout(() => {
-      router.push(`/vendor/${vendorId}`)
-    }, 2000)
 
   } catch (error) {
-    console.error('❌ Erreur complète:', error)
-
-    if (error.response) {
-      console.error('❌ Réponse erreur:', error.response.data)
-
-      // Gestion des erreurs spécifiques
-      if (error.response.status === 400) {
-        if (error.response.data.message?.includes('avatar')) {
-          showNotification('صورة الملف الشخصي كبيرة جداً', 'error')
-        } else if (error.response.data.message?.includes('coverImage')) {
-          showNotification('صورة الغلاف كبيرة جداً', 'error')
-        } else {
-          showNotification(error.response.data.message || 'بيانات غير صحيحة', 'error')
-        }
-      } else if (error.response.status === 500) {
-        showNotification('خطأ في الخادم، يرجى المحاولة لاحقاً', 'error')
-      } else {
-        showNotification('حدث خطأ غير متوقع', 'error')
-      }
-    } else {
-      showNotification(error.message || 'حدث خطأ', 'error')
+    console.error('❌ Erreur submitForm:', error)
+    let errorMessage = 'حدث خطأ غير متوقع'
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message
+    } else if (error.message?.includes('duplicate') || error.message?.includes('already used')) {
+      errorMessage = '⚠️ هذا البريد الإلكتروني مسجل بالفعل'
     }
+    showNotification(errorMessage, 'error')
+    resetForm()
+    currentStep.value = 1
   } finally {
     isSubmitting.value = false
     isLoading.value = false
   }
 }
 
-// ===== LIFE CYCLE =====
+// ✅ MODIFIER closeSuccessModal pour le pop-up intégré
+const closeSuccessModal = () => {
+  showSuccessModal.value = false
+  document.body.style.overflow = ''
+  router.push('/')
+}
+
+// ✅ SUPPRIMER goToHome ou le laisser comme alias
+const goToHome = () => {
+  closeSuccessModal()
+}
+
+// ===== LIFECYCLE =====
 onMounted(() => {
-  console.log('BecomeVendor mounted')
-  console.log('AuthStore disponible:', !!authStore)
-  console.log('VendorStore disponible:', !!vendorStore)
+  resetForm()
+
+  if (authStore.isAuthenticated) {
+    const userRole = authStore.user?.role
+    if (userRole === 'vendor') {
+      router.push(`/vendor/${authStore.user?.vendorId}`)
+    } else if (userRole === 'pending') {
+      router.push('/pending-vendor')
+    } else {
+      router.push('/')
+    }
+  }
 })
 </script>
 
 <style scoped>
+/* Import Amiri font */
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+.become-vendor-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #08717f 0%, #d40025 100%);
+  font-family: 'Amiri', 'Cairo', serif;
+  direction: rtl;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* All text uses Amiri font */
+.become-vendor-page,
+.become-vendor-page * {
+  font-family: 'Amiri', 'Cairo', serif;
+}
+
+/* Layout */
+.vendor-wrapper {
+  display: flex;
+  max-width: 1400px;
+  width: 100%;
+  background: white;
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+}
+
+/* Left Column */
+.brand-column {
+  flex: 1;
+  background: linear-gradient(135deg, #08717f 0%, #d40025 100%);
+  padding: 48px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-column::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/src/assets/Gemini_Generated_Image_il5b9til5b9til5b.png');
+  background-size: cover;
+  opacity: 0.15;
+  animation: slowZoom 20s infinite alternate;
+}
+
+.brand-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.brand-logo { width: 120px; margin-bottom: 32px; filter: brightness(0) invert(1); animation: floatLogo 3s infinite; }
+
+.welcome-title { font-size: 2rem; font-weight: 800; color: white; margin-bottom: 12px; text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+.welcome-text { font-size: 1.1rem; color: white; opacity: 0.95; margin-bottom: 8px; }
+.welcome-subtext { font-size: 0.9rem; color: white; opacity: 0.85; }
+
+/* Right Column */
+.form-column { flex: 1; padding: 48px 40px; background: white; }
+
+/* Progress */
+.progress-container { margin-bottom: 40px; padding: 10px; background: #f1f5f9; border-radius: 60px; }
+.progress-steps { display: flex; align-items: center; justify-content: space-between; }
+.step-wrapper { display: flex; align-items: center; flex: 1; }
+.step { display: flex; flex-direction: column; align-items: center; }
+.step-number {
+  width: 44px; height: 44px; background: white; border: 2px solid #e2e8f0;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1.1rem; color: #64748b; margin-bottom: 8px;
+  transition: all 0.3s;
+}
+.step.active .step-number { background: linear-gradient(135deg, #08717f, #d40025); border-color: transparent; color: white; }
+.step.completed .step-number { background: #10b981; border-color: transparent; color: white; }
+.step-label { font-size: 0.7rem; color: #64748b; font-weight: 600; white-space: nowrap; }
+.step.active .step-label { color: #08717f; font-weight: 700; }
+.step-line { flex: 1; height: 2px; background: #e2e8f0; margin: 0 5px; margin-bottom: 25px; border-radius: 2px; }
+.step-line.active { background: linear-gradient(135deg, #08717f, #d40025); }
+
+/* Step Header */
+.step-header { margin-bottom: 30px; }
+.step-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: #f1f5f9; border-radius: 30px; font-size: 0.8rem; font-weight: 600; color: #08717f; margin-bottom: 15px; }
+.step-title { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
+.step-description { color: #64748b; font-size: 0.9rem; }
+
+/* Forms */
+.auth-form { display: flex; flex-direction: column; gap: 20px; }
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; color: #1e293b; }
+.required { color: #d40025; font-size: 0.75rem; }
+.optional { color: #64748b; font-size: 0.75rem; font-weight: normal; }
+
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 16px;
+  font-size: 0.95rem; transition: all 0.3s; background: white; color: #1e293b;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none; border-color: #08717f; box-shadow: 0 0 0 4px rgba(8,113,127,0.1);
+}
+
+.phone-input-wrapper { display: flex; align-items: center; border: 2px solid #e2e8f0; border-radius: 16px; overflow: hidden; }
+.phone-input-wrapper:focus-within { border-color: #08717f; box-shadow: 0 0 0 4px rgba(8,113,127,0.1); }
+.country-code { padding: 14px 18px; background: #f1f5f9; color: #08717f; font-weight: 700; border-left: 2px solid #e2e8f0; }
+.phone-field { flex: 1; border: none !important; }
+
+.password-wrapper { position: relative; }
+.toggle-password { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 1.1rem; }
+
+.select-wrapper { position: relative; }
+.select-arrow { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.form-select { appearance: none; padding-left: 40px; }
+
+.char-counter { text-align: left; font-size: 0.7rem; color: #64748b; margin-top: 5px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.has-error .form-input, .has-error .form-select, .has-error .form-textarea, .has-error .phone-input-wrapper { border-color: #ef4444; }
+.error-message { color: #ef4444; font-size: 0.75rem; margin-top: 4px; }
+
+/* Upload */
+.upload-section { margin-bottom: 20px; }
+.upload-area {
+  border: 2px dashed #e2e8f0; border-radius: 24px; padding: 30px; text-align: center;
+  cursor: pointer; transition: all 0.3s; background: #f8fafc; min-height: 160px;
+  display: flex; align-items: center; justify-content: center;
+}
+.upload-area:hover { border-color: #08717f; background: #f1f5f9; transform: translateY(-2px); }
+.upload-area.has-preview { border-style: solid; border-color: #08717f; }
+.upload-icon { font-size: 2.5rem; margin-bottom: 12px; animation: float 3s infinite; }
+.upload-text { color: #1e293b; font-weight: 600; margin-bottom: 5px; }
+.upload-hint { color: #64748b; font-size: 0.75rem; }
+.upload-preview { width: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+.upload-preview img { max-width: 100%; max-height: 150px; border-radius: 16px; }
+.cover-preview { width: 100%; height: 120px; background-size: cover; background-position: center; border-radius: 16px; }
+.change-photo-btn {
+  position: absolute; bottom: 10px; right: 10px; padding: 6px 12px;
+  background: rgba(255,255,255,0.9); border: none; border-radius: 30px;
+  cursor: pointer; display: flex; align-items: center; gap: 5px;
+  font-weight: 600; font-size: 0.75rem;
+}
+.change-photo-btn:hover { background: #08717f; color: white; }
+
+/* Summary */
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+.summary-card { background: #f8fafc; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0; transition: all 0.3s; }
+.summary-card:hover { border-color: #08717f; transform: translateY(-2px); }
+.summary-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; }
+.summary-header h3 { font-size: 0.9rem; color: #1e293b; font-weight: 700; }
+.summary-content { display: flex; flex-direction: column; gap: 10px; }
+.summary-item { display: flex; justify-content: space-between; font-size: 0.8rem; }
+.summary-item span:first-child { color: #64748b; font-weight: 600; }
+.summary-item span:last-child { color: #1e293b; font-weight: 600; }
+
+/* Terms */
+.terms-section { margin: 15px 0; padding: 15px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; }
+.checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; position: relative; }
+.checkbox-label input { position: absolute; opacity: 0; }
+.checkmark { width: 20px; height: 20px; border: 2px solid #e2e8f0; border-radius: 5px; background: white; transition: all 0.3s; }
+.checkbox-label input:checked ~ .checkmark { background: linear-gradient(135deg, #08717f, #d40025); border-color: transparent; }
+.checkbox-label input:checked ~ .checkmark::after { content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 0.7rem; }
+.checkbox-text { color: #334155; font-size: 0.85rem; }
+.terms-link { color: #08717f; text-decoration: none; font-weight: 600; }
+.terms-link:hover { color: #d40025; }
+
+/* Buttons */
+.form-actions { display: flex; gap: 15px; margin-top: 20px; }
+.btn-prev, .btn-next, .btn-submit {
+  flex: 1; padding: 14px; border: none; border-radius: 50px;
+  font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.btn-prev { background: #f1f5f9; color: #475569; }
+.btn-prev:hover { background: #e2e8f0; transform: translateX(5px); }
+.btn-next { background: linear-gradient(135deg, #08717f, #0a94a6); color: white; }
+.btn-next:hover { transform: translateX(-5px); }
+.btn-submit { background: linear-gradient(135deg, #d40025, #ff1744); color: white; }
+.btn-submit:hover:not(:disabled) { transform: translateY(-2px); }
+.btn-submit:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.login-link { margin-top: 30px; text-align: center; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+.login-link p { color: #64748b; margin-bottom: 10px; }
+.login-link-btn { display: inline-flex; align-items: center; gap: 8px; color: #08717f; text-decoration: none; font-weight: 600; transition: all 0.3s; }
+.login-link-btn:hover { color: #d40025; transform: translateX(-5px); }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+.success-modal { max-width: 550px; width: 90%; background: white; border-radius: 40px; overflow: hidden; text-align: center; padding: 0 30px 40px; }
+.success-logo { width: 80px; margin: 20px auto; }
+.success-gemini-image { width: 280px; max-width: 100%; border-radius: 20px; margin: 20px 0; }
+.success-title { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, #08717f, #d40025); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; }
+.success-message-arabic { background: #f8fafc; border-radius: 24px; padding: 20px; margin: 20px 0; border-right: 4px solid #08717f; text-align: right; }
+.success-message-arabic p { margin-bottom: 12px; color: #1e293b; }
+.contact-info { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px 0; padding: 10px; background: white; border-radius: 50px; }
+.contact-note { font-size: 0.8rem; color: #64748b; }
+.modal-close { position: absolute; top: 15px; left: 15px; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.05); border: none; cursor: pointer; }
+.btn-home { background: linear-gradient(135deg, #08717f, #065a69); color: white; border: none; padding: 14px 32px; border-radius: 50px; font-size: 1rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; margin-top: 20px; }
+
+/* Toast & Loader */
+.toast-notification { position: fixed; bottom: 30px; right: 30px; background: white; border-radius: 50px; box-shadow: 0 25px 50px rgba(0,0,0,0.2); z-index: 9999; min-width: 300px; overflow: hidden; }
+.toast-content { display: flex; align-items: center; gap: 12px; padding: 16px 24px; }
+.toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: linear-gradient(90deg, #10b981, #08717f); animation: progress 3s linear; }
+.toast-notification.success { border-right: 4px solid #10b981; }
+.toast-notification.error { border-right: 4px solid #ef4444; }
+
+.loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; }
+.spinner { width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top: 4px solid #08717f; border-right: 4px solid #d40025; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+.loader { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+
+/* Animations */
+@keyframes slowZoom { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
+@keyframes floatLogo { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes progress { from { width: 0; } to { width: 100%; } }
+
+/* Dark Mode */
+.become-vendor-page.dark-mode { background: linear-gradient(135deg, #065a69 0%, #b00020 100%); }
+.dark-mode .vendor-wrapper { background: #1f2937; }
+.dark-mode .brand-column { background: linear-gradient(135deg, #065a69 0%, #b00020 100%); }
+.dark-mode .form-column { background: #1f2937; }
+.dark-mode .progress-container { background: #374151; }
+.dark-mode .step-number { background: #1f2937; border-color: #4b5563; color: #9ca3af; }
+.dark-mode .step.active .step-number { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.dark-mode .step.completed .step-number { background: #10b981; }
+.dark-mode .step-label, .dark-mode .step-description, .dark-mode .char-counter { color: #9ca3af; }
+.dark-mode .step-title, .dark-mode .summary-header h3, .dark-mode .summary-item span:last-child { color: #f3f4f6; }
+.dark-mode .form-label, .dark-mode .upload-text { color: #e5e7eb; }
+.dark-mode .form-input, .dark-mode .form-select, .dark-mode .form-textarea { background: #374151; border-color: #4b5563; color: #f3f4f6; }
+.dark-mode .phone-input-wrapper, .dark-mode .upload-area { background: #374151; border-color: #4b5563; }
+.dark-mode .country-code { background: #374151; border-left-color: #4b5563; color: #3b82f6; }
+.dark-mode .summary-card, .dark-mode .terms-section { background: #374151; border-color: #4b5563; }
+.dark-mode .btn-prev { background: #374151; color: #9ca3af; }
+.dark-mode .btn-prev:hover { background: #4b5563; }
+.dark-mode .success-modal { background: #1f2937; }
+.dark-mode .success-message-arabic { background: #374151; }
+.dark-mode .success-message-arabic p { color: #e5e7eb; }
+.dark-mode .contact-info { background: #1f2937; }
+.dark-mode .toast-notification { background: #1f2937; }
+.dark-mode .toast-message { color: #f3f4f6; }
+
+/* Responsive */
+@media (max-width: 1024px) { .vendor-wrapper { flex-direction: column; max-width: 600px; } .brand-column, .form-column { padding: 40px 30px; } }
+@media (max-width: 768px) {
+  .become-vendor-page { padding: 16px; }
+  .step-label { font-size: 0.6rem; }
+  .step-number { width: 36px; height: 36px; font-size: 0.9rem; }
+  .step-title { font-size: 1.4rem; }
+  .form-row, .summary-grid { grid-template-columns: 1fr; }
+  .form-actions { flex-direction: column; }
+  .btn-prev, .btn-next, .btn-submit { width: 100%; }
+  .success-title { font-size: 1.4rem; }
+  .toast-notification { width: calc(100% - 32px); right: 16px; bottom: 16px; }
+}
+@media (max-width: 480px) {
+  .welcome-title { font-size: 1.5rem; }
+  .step-title { font-size: 1.2rem; }
+  .phone-input-wrapper { flex-direction: column; }
+  .country-code { border-left: none; border-bottom: 2px solid #e2e8f0; text-align: center; }
+  .summary-item { flex-direction: column; align-items: flex-start; gap: 5px; }
+  .success-gemini-image { width: 220px; }
+}
 /* ===== VARIABLES ===== */
 :root {
   --primary-teal: #08717f;
@@ -962,16 +981,6 @@ onMounted(() => {
   --gradient-primary: linear-gradient(135deg, #08717f, #d40025);
   --gradient-teal: linear-gradient(135deg, #08717f, #0a94a6);
   --gradient-red: linear-gradient(135deg, #d40025, #ff1744);
-  --neutral-50: #f8fafc;
-  --neutral-100: #f1f5f9;
-  --neutral-200: #e2e8f0;
-  --neutral-300: #cbd5e1;
-  --neutral-400: #94a3b8;
-  --neutral-500: #64748b;
-  --neutral-600: #475569;
-  --neutral-700: #334155;
-  --neutral-800: #1e293b;
-  --neutral-900: #0f172a;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
@@ -993,87 +1002,341 @@ onMounted(() => {
 
 .become-vendor-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, #08717f 0%, #d40025 100%);
   font-family: 'Cairo', sans-serif;
   direction: rtl;
-  position: relative;
-  overflow-x: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  transition: all 0.3s ease;
 }
 
-/* Background Particles */
-.bg-particles {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background:
-    radial-gradient(circle at 10% 20%, rgba(8, 113, 127, 0.03) 0%, transparent 30%),
-    radial-gradient(circle at 90% 70%, rgba(212, 0, 37, 0.03) 0%, transparent 40%),
-    radial-gradient(circle at 30% 80%, rgba(8, 113, 127, 0.02) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
+/* ===== DARK MODE STYLES ===== */
+.become-vendor-page.dark-mode {
+  background: linear-gradient(135deg, #065a69 0%, #b00020 100%);
 }
 
-.container {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 0 20px;
-  position: relative;
-  z-index: 1;
+.dark-mode .vendor-wrapper {
+  background: #1f2937;
 }
 
-/* ===== HEADER ===== */
-.page-header {
-  padding: 60px 0 30px;
-  text-align: center;
-  position: relative;
+.dark-mode .brand-column {
+  background: linear-gradient(135deg, #065a69 0%, #b00020 100%);
 }
 
-.header-content {
-  animation: slideDown 0.8s ease;
+.dark-mode .form-column {
+  background: #1f2937;
 }
 
-.page-title {
-  font-size: 3rem;
-  font-weight: 900;
-  background: var(--gradient-primary);
+.dark-mode .progress-container {
+  background: #374151;
+}
+
+.dark-mode .step-number {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+.dark-mode .step.active .step-number {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.dark-mode .step.completed .step-number {
+  background: #10b981;
+}
+
+.dark-mode .step-label {
+  color: #9ca3af;
+}
+
+.dark-mode .step.active .step-label {
+  color: #3b82f6;
+}
+
+.dark-mode .step-line {
+  background: #4b5563;
+}
+
+.dark-mode .step-badge {
+  background: #374151;
+  color: #3b82f6;
+}
+
+.dark-mode .step-title {
+  color: #f3f4f6;
+}
+
+.dark-mode .step-description {
+  color: #9ca3af;
+}
+
+.dark-mode .form-label {
+  color: #e5e7eb;
+}
+
+.dark-mode .form-input,
+.dark-mode .form-select,
+.dark-mode .form-textarea {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f3f4f6;
+}
+
+.dark-mode .form-input:focus,
+.dark-mode .form-select:focus,
+.dark-mode .form-textarea:focus {
+  border-color: #3b82f6;
+}
+
+.dark-mode .phone-input-wrapper {
+  border-color: #4b5563;
+}
+
+.dark-mode .country-code {
+  background: #374151;
+  border-left-color: #4b5563;
+  color: #3b82f6;
+}
+
+.dark-mode .toggle-password {
+  color: #9ca3af;
+}
+
+.dark-mode .upload-area {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.dark-mode .upload-area:hover {
+  border-color: #3b82f6;
+  background: #4b5563;
+}
+
+.dark-mode .upload-text {
+  color: #e5e7eb;
+}
+
+.dark-mode .upload-hint {
+  color: #9ca3af;
+}
+
+.dark-mode .summary-card {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.dark-mode .summary-header {
+  border-bottom-color: #4b5563;
+}
+
+.dark-mode .summary-title {
+  color: #f3f4f6;
+}
+
+.dark-mode .item-label {
+  color: #9ca3af;
+}
+
+.dark-mode .item-value {
+  color: #e5e7eb;
+}
+
+.dark-mode .terms-section {
+  background: #374151;
+  border-color: #4b5563;
+}
+
+.dark-mode .checkbox-text {
+  color: #e5e7eb;
+}
+
+.dark-mode .checkmark {
+  background: #1f2937;
+  border-color: #4b5563;
+}
+
+.dark-mode .login-link {
+  border-top-color: #4b5563;
+}
+
+.dark-mode .login-link p {
+  color: #9ca3af;
+}
+
+.dark-mode .login-link-btn {
+  color: #3b82f6;
+}
+
+.dark-mode .btn-prev {
+  background: #374151;
+  color: #9ca3af;
+}
+
+.dark-mode .btn-prev:hover {
+  background: #4b5563;
+}
+
+.dark-mode .success-modal {
+  background: #1f2937;
+}
+
+.dark-mode .success-title {
+  background: linear-gradient(135deg, #3b82f6, #ef4444);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 10px;
-  text-shadow: var(--shadow-lg);
 }
 
-.page-subtitle {
-  color: var(--neutral-600);
-  font-size: 1.1rem;
-  font-weight: 500;
+.dark-mode .success-message-arabic {
+  background: #374151;
+  border-right-color: #3b82f6;
 }
 
-/* ===== FORM CARD ===== */
-.form-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: var(--radius-2xl);
-  padding: 40px 30px;
+.dark-mode .message-text {
+  color: #e5e7eb;
+}
+
+.dark-mode .highlight {
+  color: #3b82f6;
+}
+
+.dark-mode .email-highlight {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.dark-mode .contact-info {
+  background: #1f2937;
+}
+
+.dark-mode .contact-email {
+  color: #3b82f6;
+}
+
+.dark-mode .contact-note {
+  color: #9ca3af;
+}
+
+.dark-mode .toast-notification {
+  background: #1f2937;
+}
+
+.dark-mode .toast-message {
+  color: #f3f4f6;
+}
+
+/* ===== TWO COLUMNS LAYOUT ===== */
+.vendor-wrapper {
+  display: flex;
+  max-width: 1400px;
+  width: 100%;
+  background: white;
+  border-radius: 32px;
+  overflow: hidden;
   box-shadow: var(--shadow-2xl);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  margin-bottom: 60px;
-  animation: slideUp 0.6s ease 0.2s both;
+  transition: all 0.3s ease;
 }
 
-.glass-effect {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+/* ===== LEFT COLUMN - BRANDING ===== */
+.brand-column {
+  flex: 1;
+  background: linear-gradient(135deg, #08717f 0%, #d40025 100%);
+  padding: 48px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-/* ===== PROGRESS STEPS ===== */
+.brand-column::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('/src/assets/Gemini_Generated_Image_il5b9til5b9til5b.png');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.15;
+  pointer-events: none;
+  animation: slowZoom 20s ease-in-out infinite alternate;
+}
+
+@keyframes slowZoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
+.brand-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  width: 100%;
+}
+
+.logo-container {
+  margin-bottom: 32px;
+}
+
+.brand-logo {
+  width: 120px;
+  height: auto;
+  margin-bottom: 16px;
+  filter: brightness(0) invert(1);
+  animation: floatLogo 3s ease-in-out infinite;
+}
+
+@keyframes floatLogo {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.welcome-message {
+  margin-bottom: 32px;
+}
+
+.welcome-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.welcome-text {
+  font-size: 1.1rem;
+  opacity: 0.95;
+  margin-bottom: 8px;
+}
+
+.welcome-subtext {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+/* ===== RIGHT COLUMN - FORM ===== */
+.form-column {
+  flex: 1;
+  padding: 48px 40px;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.form-card {
+  width: 100%;
+}
+
+/* Progress Steps */
 .progress-container {
   margin-bottom: 40px;
   padding: 10px;
-  background: var(--neutral-100);
+  background: #f1f5f9;
   border-radius: 60px;
+  transition: all 0.3s ease;
 }
 
 .progress-steps {
@@ -1100,17 +1363,16 @@ onMounted(() => {
   width: 44px;
   height: 44px;
   background: white;
-  border: 2px solid var(--neutral-300);
+  border: 2px solid #e2e8f0;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   font-size: 1.1rem;
-  color: var(--neutral-600);
+  color: #64748b;
   margin-bottom: 8px;
   transition: var(--transition);
-  box-shadow: var(--shadow-md);
 }
 
 .step.active .step-number {
@@ -1132,8 +1394,8 @@ onMounted(() => {
 }
 
 .step-label {
-  font-size: 0.75rem;
-  color: var(--neutral-500);
+  font-size: 0.7rem;
+  color: #64748b;
   font-weight: 600;
   text-align: center;
   white-space: nowrap;
@@ -1147,7 +1409,7 @@ onMounted(() => {
 .step-line {
   flex: 1;
   height: 2px;
-  background: var(--neutral-300);
+  background: #e2e8f0;
   margin: 0 5px;
   margin-bottom: 25px;
   border-radius: 2px;
@@ -1158,73 +1420,75 @@ onMounted(() => {
   animation: progress 1s ease;
 }
 
-/* ===== FORM STEPS ===== */
-.form-step {
-  animation: fadeIn 0.5s ease;
+/* Step Header */
+.step-header {
+  margin-bottom: 30px;
+}
+
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: #f1f5f9;
+  border-radius: 30px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary-teal);
+  margin-bottom: 15px;
 }
 
 .step-title {
   font-size: 1.8rem;
   font-weight: 800;
-  color: var(--neutral-800);
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.title-icon {
-  font-size: 2rem;
+  color: #1e293b;
+  margin-bottom: 8px;
 }
 
 .step-description {
-  color: var(--neutral-500);
-  margin-bottom: 30px;
-  font-size: 0.95rem;
+  color: #64748b;
+  font-size: 0.9rem;
 }
 
-/* ===== FORM GROUPS ===== */
-.elegant-form {
+/* Form Styles */
+.auth-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
 .form-group {
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .form-label {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--neutral-700);
-  margin-bottom: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
 }
 
 .label-icon {
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .required {
   color: var(--primary-red);
-  font-size: 0.8rem;
-  margin-right: 2px;
+  font-size: 0.75rem;
 }
 
 .optional {
-  color: var(--neutral-400);
-  font-size: 0.8rem;
+  color: #64748b;
+  font-size: 0.75rem;
   font-weight: normal;
-  margin-right: 5px;
 }
 
 .input-wrapper {
   position: relative;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
 }
 
 .form-input,
@@ -1232,11 +1496,12 @@ onMounted(() => {
 .form-textarea {
   width: 100%;
   padding: 14px 18px;
-  border: 2px solid var(--neutral-200);
+  border: 2px solid #e2e8f0;
   border-radius: var(--radius-lg);
   font-size: 0.95rem;
   transition: var(--transition);
   background: white;
+  color: #1e293b;
   font-family: 'Cairo', sans-serif;
 }
 
@@ -1266,24 +1531,32 @@ onMounted(() => {
 }
 
 /* Phone Input */
-.phone-input {
+.phone-input-wrapper {
   display: flex;
   align-items: center;
+  border: 2px solid #e2e8f0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-.phone-code {
+.phone-input-wrapper:focus-within {
+  border-color: var(--primary-teal);
+  box-shadow: 0 0 0 4px rgba(8, 113, 127, 0.1);
+}
+
+.country-code {
   padding: 14px 18px;
-  background: var(--neutral-100);
-  border: 2px solid var(--neutral-200);
-  border-left: none;
-  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  background: #f1f5f9;
   color: var(--primary-teal);
   font-weight: 700;
+  border-left: 2px solid #e2e8f0;
 }
 
 .phone-field {
-  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-  border-left: none;
+  flex: 1;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Password Toggle */
@@ -1298,11 +1571,10 @@ onMounted(() => {
   transform: translateY(-50%);
   background: none;
   border: none;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   cursor: pointer;
-  color: var(--neutral-400);
+  color: #64748b;
   transition: var(--transition);
-  padding: 4px;
 }
 
 .toggle-password:hover {
@@ -1319,7 +1591,7 @@ onMounted(() => {
   left: 16px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--neutral-400);
+  color: #64748b;
   font-size: 0.8rem;
   pointer-events: none;
 }
@@ -1330,31 +1602,11 @@ onMounted(() => {
 }
 
 /* Textarea */
-.textarea-wrapper {
-  position: relative;
-}
-
 .char-counter {
   text-align: left;
   font-size: 0.7rem;
-  color: var(--neutral-400);
+  color: #64748b;
   margin-top: 5px;
-}
-
-/* Error States */
-.has-error .form-input,
-.has-error .form-select,
-.has-error .form-textarea {
-  border-color: var(--primary-red);
-  background: #fff5f5;
-}
-
-.error-message {
-  color: var(--primary-red);
-  font-size: 0.75rem;
-  margin-top: 5px;
-  display: block;
-  animation: shake 0.3s ease;
 }
 
 /* Form Row */
@@ -1364,20 +1616,35 @@ onMounted(() => {
   gap: 15px;
 }
 
-/* ===== UPLOAD AREAS ===== */
+/* Error States */
+.has-error .form-input,
+.has-error .form-select,
+.has-error .form-textarea,
+.has-error .phone-input-wrapper {
+  border-color: #ef4444;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  animation: shake 0.3s ease;
+}
+
+/* Upload Area */
 .upload-section {
-  margin-bottom: 25px;
+  margin-bottom: 20px;
 }
 
 .upload-area {
-  border: 2px dashed var(--neutral-300);
+  border: 2px dashed #e2e8f0;
   border-radius: var(--radius-xl);
   padding: 30px;
   text-align: center;
   cursor: pointer;
   transition: var(--transition);
-  background: var(--neutral-50);
-  min-height: 180px;
+  background: #f8fafc;
+  min-height: 160px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1385,17 +1652,9 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.profile-upload {
-  min-height: 200px;
-}
-
-.cover-upload {
-  min-height: 150px;
-}
-
 .upload-area:hover {
   border-color: var(--primary-teal);
-  background: linear-gradient(135deg, rgba(8, 113, 127, 0.05), rgba(212, 0, 37, 0.05));
+  background: #f1f5f9;
   transform: translateY(-2px);
 }
 
@@ -1409,21 +1668,21 @@ onMounted(() => {
 }
 
 .upload-icon {
-  font-size: 3rem;
+  font-size: 2.5rem;
   display: block;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
   animation: float 3s ease-in-out infinite;
 }
 
 .upload-text {
-  color: var(--neutral-600);
+  color: #1e293b;
   font-weight: 600;
   margin-bottom: 5px;
 }
 
 .upload-hint {
-  color: var(--neutral-400);
-  font-size: 0.8rem;
+  color: #64748b;
+  font-size: 0.75rem;
 }
 
 .upload-preview {
@@ -1437,14 +1696,14 @@ onMounted(() => {
 
 .upload-preview img {
   max-width: 100%;
-  max-height: 180px;
+  max-height: 150px;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
 }
 
 .cover-preview {
   width: 100%;
-  height: 150px;
+  height: 120px;
   background-size: cover;
   background-position: center;
   border-radius: var(--radius-lg);
@@ -1454,8 +1713,8 @@ onMounted(() => {
   position: absolute;
   bottom: 10px;
   right: 10px;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.95);
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.9);
   backdrop-filter: blur(5px);
   border: none;
   border-radius: 30px;
@@ -1464,43 +1723,38 @@ onMounted(() => {
   align-items: center;
   gap: 5px;
   transition: var(--transition);
-  box-shadow: var(--shadow-lg);
-  color: var(--neutral-700);
+  box-shadow: var(--shadow-sm);
+  color: #334155;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
 }
 
 .change-photo-btn:hover {
-  background: white;
-  transform: translateY(-2px);
-  color: var(--primary-teal);
+  background: var(--primary-teal);
+  color: white;
+  transform: scale(1.05);
 }
 
-.change-icon {
-  font-size: 0.9rem;
-}
-
-/* ===== SUMMARY CARDS ===== */
+/* Summary Cards */
 .summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  margin: 30px 0;
+  margin: 20px 0;
 }
 
 .summary-card {
-  background: linear-gradient(135deg, #ffffff, #f8fafc);
-  border-radius: var(--radius-xl);
+  background: #f8fafc;
+  border-radius: var(--radius-lg);
   padding: 20px;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--neutral-200);
+  border: 1px solid #e2e8f0;
   transition: var(--transition);
 }
 
 .summary-card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-2xl);
   border-color: var(--primary-teal);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .summary-header {
@@ -1509,16 +1763,16 @@ onMounted(() => {
   gap: 10px;
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 2px solid var(--neutral-200);
+  border-bottom: 2px solid #e2e8f0;
 }
 
 .summary-icon {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
 }
 
 .summary-title {
-  font-size: 1rem;
-  color: var(--neutral-800);
+  font-size: 0.9rem;
+  color: #1e293b;
   font-weight: 700;
 }
 
@@ -1532,38 +1786,34 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--neutral-200);
-}
-
-.summary-item:last-child {
-  border-bottom: none;
+  font-size: 0.8rem;
 }
 
 .item-label {
-  color: var(--neutral-500);
-  font-size: 0.8rem;
+  color: #64748b;
   font-weight: 600;
 }
 
 .item-value {
-  color: var(--neutral-800);
-  font-size: 0.9rem;
-  font-weight: 700;
+  color: #1e293b;
+  font-weight: 600;
 }
 
 .item-value.description {
-  max-width: 150px;
+  max-width: 120px;
   text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ===== TERMS CHECKBOX ===== */
+/* Terms Section */
 .terms-section {
-  margin: 20px 0;
+  margin: 15px 0;
   padding: 15px;
-  background: var(--neutral-50);
+  background: #f8fafc;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--neutral-200);
+  border: 1px solid #e2e8f0;
 }
 
 .checkbox-label {
@@ -1577,18 +1827,18 @@ onMounted(() => {
 .checkbox-label input {
   position: absolute;
   opacity: 0;
-  cursor: pointer;
-  height: 0;
   width: 0;
+  height: 0;
 }
 
 .checkmark {
-  width: 22px;
-  height: 22px;
-  border: 2px solid var(--neutral-300);
-  border-radius: 6px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 5px;
   position: relative;
   transition: var(--transition);
+  background: white;
 }
 
 .checkbox-label input:checked ~ .checkmark {
@@ -1603,20 +1853,18 @@ onMounted(() => {
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: 0.7rem;
 }
 
 .checkbox-text {
-  color: var(--neutral-700);
-  font-size: 0.9rem;
+  color: #334155;
+  font-size: 0.85rem;
 }
 
 .terms-link {
   color: var(--primary-teal);
   text-decoration: none;
-  font-weight: 700;
-  transition: color 0.3s ease;
+  font-weight: 600;
 }
 
 .terms-link:hover {
@@ -1624,18 +1872,18 @@ onMounted(() => {
   text-decoration: underline;
 }
 
-/* ===== BUTTONS ===== */
+/* Buttons */
 .form-actions {
   display: flex;
   gap: 15px;
-  margin-top: 30px;
+  margin-top: 20px;
 }
 
 .btn-prev,
 .btn-next,
 .btn-submit {
   flex: 1;
-  padding: 16px;
+  padding: 14px;
   border: none;
   border-radius: 50px;
   font-size: 1rem;
@@ -1645,19 +1893,16 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  position: relative;
-  overflow: hidden;
+  gap: 10px;
 }
 
 .btn-prev {
-  background: white;
-  color: var(--neutral-700);
-  border: 2px solid var(--neutral-300);
+  background: #f1f5f9;
+  color: #475569;
 }
 
 .btn-prev:hover {
-  background: var(--neutral-100);
+  background: #e2e8f0;
   transform: translateX(5px);
 }
 
@@ -1679,7 +1924,7 @@ onMounted(() => {
 }
 
 .btn-submit:hover:not(:disabled) {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: 0 12px 30px rgba(212, 0, 37, 0.4);
 }
 
@@ -1688,30 +1933,228 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-.btn-icon {
-  font-size: 1.2rem;
-  transition: transform 0.3s ease;
-}
-
-.btn-next:hover .btn-icon {
-  transform: translateX(-5px);
-}
-
-.btn-prev:hover .btn-icon {
-  transform: translateX(5px);
-}
-
-/* Loader */
 .loader {
   width: 20px;
   height: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top: 3px solid white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-/* ===== TOAST ===== */
+/* Login Link */
+.login-link {
+  margin-top: 30px;
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.login-link p {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+.login-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary-teal);
+  text-decoration: none;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.login-link-btn:hover {
+  color: var(--primary-red);
+  transform: translateX(-5px);
+}
+
+/* ===== SUCCESS MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease;
+}
+
+.success-modal {
+  max-width: 550px;
+  width: 90%;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border-radius: 40px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 15px 20px;
+  background: transparent;
+}
+
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #64748b;
+}
+
+.modal-close:hover {
+  background: #d40025;
+  color: white;
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  padding: 0 30px 40px;
+  text-align: center;
+}
+
+.success-logo-wrapper {
+  margin-bottom: 20px;
+}
+
+.success-logo {
+  width: 80px;
+  height: auto;
+  filter: drop-shadow(0 4px 12px rgba(8, 113, 127, 0.3));
+  animation: bounceLogo 0.6s ease;
+}
+
+.success-icon-wrapper {
+  margin-bottom: 20px;
+}
+
+.success-gemini-image {
+  width: 280px;
+  max-width: 100%;
+  height: auto;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  animation: scaleUp 0.5s ease;
+}
+
+.success-content {
+  margin-top: 20px;
+}
+
+.success-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #08717f, #d40025);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 20px;
+  animation: fadeInUp 0.5s ease;
+}
+
+.success-message-arabic {
+  background: #f8fafc;
+  border-radius: 24px;
+  padding: 20px;
+  margin: 20px 0;
+  border-right: 4px solid #08717f;
+  text-align: right;
+}
+
+.message-text {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.message-text:last-child {
+  margin-bottom: 0;
+}
+
+.highlight {
+  color: #08717f;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.email-highlight {
+  color: #d40025;
+  font-weight: 700;
+  background: rgba(212, 0, 37, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-block;
+}
+
+.contact-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 10px;
+  background: white;
+  border-radius: 50px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.contact-icon {
+  font-size: 1.2rem;
+}
+
+.contact-email {
+  color: #08717f;
+  font-weight: 600;
+  font-size: 0.9rem;
+  direction: ltr;
+}
+
+.contact-note {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 10px;
+}
+
+.modal-actions {
+  margin-top: 30px;
+}
+
+.btn-home {
+  background: linear-gradient(135deg, #08717f, #065a69);
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(8, 113, 127, 0.3);
+}
+
+.btn-home:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(8, 113, 127, 0.4);
+}
+
+/* Toast */
 .toast-notification {
   position: fixed;
   bottom: 30px;
@@ -1723,6 +2166,7 @@ onMounted(() => {
   min-width: 300px;
   overflow: hidden;
   animation: slideInRight 0.3s ease;
+  border: 1px solid #e2e8f0;
 }
 
 .toast-content {
@@ -1737,8 +2181,8 @@ onMounted(() => {
 }
 
 .toast-message {
-  color: var(--neutral-800);
-  font-size: 0.95rem;
+  color: #1e293b;
+  font-size: 0.9rem;
   font-weight: 600;
   flex: 1;
 }
@@ -1757,21 +2201,17 @@ onMounted(() => {
 }
 
 .toast-notification.error {
-  border-right: 4px solid var(--primary-red);
+  border-right: 4px solid #ef4444;
 }
 
-.toast-notification.info {
-  border-right: 4px solid var(--primary-teal);
-}
-
-/* ===== LOADING OVERLAY ===== */
+/* Loading Overlay */
 .loading-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(5px);
   display: flex;
   flex-direction: column;
@@ -1783,7 +2223,7 @@ onMounted(() => {
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid var(--neutral-200);
+  border: 4px solid #e2e8f0;
   border-top: 4px solid var(--primary-teal);
   border-right: 4px solid var(--primary-red);
   border-radius: 50%;
@@ -1792,27 +2232,42 @@ onMounted(() => {
 }
 
 .loading-text {
-  color: var(--neutral-700);
-  font-size: 1.1rem;
-  font-weight: 600;
+  color: white;
+  font-size: 1rem;
 }
 
-/* ===== ANIMATIONS ===== */
-@keyframes slideDown {
+/* Animations */
+@keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(-30px);
+    transform: scale(0.9) translateY(-30px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1) translateY(0);
   }
 }
 
-@keyframes slideUp {
+@keyframes bounceLogo {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes scaleUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -1821,98 +2276,86 @@ onMounted(() => {
 }
 
 @keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 4px rgba(8, 113, 127, 0.2);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(8, 113, 127, 0.1);
-  }
+  0%, 100% { box-shadow: 0 0 0 4px rgba(8, 113, 127, 0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(8, 113, 127, 0.1); }
 }
 
 @keyframes progress {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
+  from { width: 0; }
+  to { width: 100%; }
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 @keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .vendor-wrapper {
+    flex-direction: column;
+    max-width: 600px;
   }
-  25% {
-    transform: translateX(-5px);
+
+  .brand-column {
+    padding: 40px 30px;
   }
-  75% {
-    transform: translateX(5px);
+
+  .form-column {
+    padding: 40px 30px;
   }
 }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-  .page-title {
-    font-size: 2.2rem;
+  .become-vendor-page {
+    padding: 16px;
   }
 
-  .form-card {
-    padding: 30px 20px;
+  .brand-column {
+    padding: 30px 24px;
+  }
+
+  .form-column {
+    padding: 30px 24px;
   }
 
   .step-label {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
   }
 
   .step-number {
-    width: 38px;
-    height: 38px;
-    font-size: 1rem;
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+
+  .step-title {
+    font-size: 1.4rem;
   }
 
   .form-row {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 15px;
   }
 
   .summary-grid {
@@ -1929,45 +2372,414 @@ onMounted(() => {
     width: 100%;
   }
 
+  .success-title {
+    font-size: 1.4rem;
+  }
+
+  .success-modal {
+    width: 95%;
+  }
+
+  .modal-body {
+    padding: 0 20px 30px;
+  }
+
   .toast-notification {
     min-width: auto;
-    width: calc(100% - 40px);
-    right: 20px;
+    width: calc(100% - 32px);
+    right: 16px;
+    bottom: 16px;
   }
 }
 
 @media (max-width: 480px) {
-  .page-title {
-    font-size: 1.8rem;
-  }
-
-  .step-title {
+  .welcome-title {
     font-size: 1.5rem;
   }
 
-  .phone-input {
-    flex-direction: column;
-    gap: 10px;
+  .welcome-text {
+    font-size: 0.9rem;
   }
 
-  .phone-code {
-    border-radius: var(--radius-lg);
-    border: 2px solid var(--neutral-200);
+  .step-badge {
+    font-size: 0.7rem;
+  }
+
+  .step-title {
+    font-size: 1.2rem;
+  }
+
+  .phone-input-wrapper {
+    flex-direction: column;
+  }
+
+  .country-code {
+    border-left: none;
+    border-bottom: 2px solid #e2e8f0;
     text-align: center;
   }
 
-  .phone-field {
-    border-radius: var(--radius-lg);
-    border: 2px solid var(--neutral-200);
+  .summary-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
   }
 
-  .upload-area {
-    padding: 20px;
+  .item-value.description {
+    max-width: 100%;
+    text-align: right;
   }
 
-  .change-photo-btn {
-    position: static;
-    margin-top: 10px;
+  .success-gemini-image {
+    width: 220px;
+  }
+
+  .message-text {
+    font-size: 0.85rem;
   }
 }
+/* ===== BOUTON SUIVANT / NEXT BUTTON ===== */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 30px;
+  gap: 15px;
+}
+
+.btn-next {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #08717f 0%, #0a94a6 100%);
+  border: none;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: 'Cairo', sans-serif;
+  color: white;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(8, 113, 127, 0.3);
+}
+
+/* Effet de brillance au survol */
+.btn-next::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-next:hover::before {
+  left: 100%;
+}
+
+.btn-next:hover {
+  transform: translateX(-5px);
+  box-shadow: 0 8px 25px rgba(8, 113, 127, 0.4);
+  background: linear-gradient(135deg, #0a94a6 0%, #08717f 100%);
+}
+
+.btn-next:active {
+  transform: translateX(-2px) scale(0.98);
+}
+
+/* Texte du bouton */
+.btn-text {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Icône du bouton */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: transform 0.3s ease;
+}
+
+.btn-next:hover .btn-icon {
+  transform: translateX(-4px);
+}
+
+/* ===== MODE SOMBRE ===== */
+.dark-mode .btn-next {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.dark-mode .btn-next:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+}
+
+/* ===== VARIANTE POUR LE BOUTON PRÉCÉDENT ===== */
+.btn-prev {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 32px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: 'Cairo', sans-serif;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-prev:hover {
+  background: #e2e8f0;
+  transform: translateX(5px);
+  color: #1e293b;
+}
+
+.btn-prev:active {
+  transform: translateX(2px) scale(0.98);
+}
+
+.dark-mode .btn-prev {
+  background: #374151;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+.dark-mode .btn-prev:hover {
+  background: #4b5563;
+  color: #f3f4f6;
+}
+
+/* ===== BOUTON DE SOUMISSION (SUBMIT) ===== */
+.btn-submit {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #d40025 0%, #ff1744 100%);
+  border: none;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: 'Cairo', sans-serif;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(212, 0, 37, 0.3);
+}
+
+.btn-submit::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-submit:hover::before {
+  left: 100%;
+}
+
+.btn-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(212, 0, 37, 0.4);
+}
+
+.btn-submit:active:not(:disabled) {
+  transform: translateY(0px) scale(0.98);
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dark-mode .btn-submit {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* ===== ANIMATION DE CHARGEMENT ===== */
+.loader {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn-next,
+  .btn-prev,
+  .btn-submit {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-next:hover {
+    transform: translateY(-2px);
+  }
+
+  .btn-prev:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 480px) {
+  .btn-next,
+  .btn-prev,
+  .btn-submit {
+    padding: 12px 24px;
+    font-size: 0.9rem;
+  }
+
+  .btn-icon {
+    font-size: 1rem;
+  }
+}
+/* ===== POP-UP NOIR (styles du PendingVendor) ===== */
+.pending-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.pending-popup {
+  position: relative;
+  background: linear-gradient(160deg, #0a0a0a 0%, #111827 30%, #1a1a2e 60%, #0f0f1a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  padding: 40px 28px 28px;
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  direction: rtl;
+  font-family: 'Amiri', 'Cairo', serif;
+}
+
+.popup-close {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 38px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.popup-close:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  transform: rotate(90deg);
+}
+
+.popup-logo { margin-bottom: 20px; }
+.logo-img { height: 45px; filter: brightness(1.2); }
+
+.popup-icon { margin-bottom: 16px; display: flex; justify-content: center; }
+.icon-circle {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 40px rgba(16, 185, 129, 0.25);
+}
+.icon-circle svg { width: 32px; height: 32px; stroke: white; }
+
+.popup-title { font-size: 1.5rem; font-weight: 800; color: #ffffff; margin-bottom: 4px; }
+.popup-subtitle { font-size: 0.9rem; color: rgba(255, 255, 255, 0.45); margin-bottom: 20px; }
+
+.popup-message {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: right;
+}
+.message-emoji { font-size: 1.6rem; display: block; margin-bottom: 10px; text-align: center; }
+.popup-message p { font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); line-height: 1.8; margin: 0; }
+.text-gold { color: #fbbf24; font-weight: 700; }
+
+.popup-email-section {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(8, 113, 127, 0.1);
+  border: 1px solid rgba(8, 113, 127, 0.2);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: right;
+}
+.email-image { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
+.email-content { flex: 1; }
+.email-icon-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.email-emoji { font-size: 1rem; }
+.email-text { font-size: 0.8rem; color: rgba(255, 255, 255, 0.6); margin: 0; }
+.email-highlight { display: block; font-size: 0.95rem; font-weight: 700; color: #2dd4bf; }
+.email-subtext { font-size: 0.75rem; color: rgba(255, 255, 255, 0.4); margin: 0; }
+
+.popup-contact {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+.contact-row { display: flex; align-items: center; justify-content: center; gap: 6px; color: rgba(255, 255, 255, 0.55); margin-bottom: 8px; }
+.contact-link { display: block; font-weight: 700; color: #60a5fa; text-decoration: none; direction: ltr; margin-bottom: 8px; }
+.contact-hint { font-size: 0.75rem; color: rgba(255, 255, 255, 0.35); margin: 0; }
+
+.popup-btn {
+  width: 100%; padding: 14px 20px;
+  background: linear-gradient(135deg, #08717f, #065a69);
+  color: white; border: none; border-radius: 14px;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: all 0.3s ease;
+}
+.popup-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(8, 113, 127, 0.35); }
 </style>

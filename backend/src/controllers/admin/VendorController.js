@@ -1,39 +1,36 @@
 // backend/src/controllers/admin/VendorController.js
 const Vendor = require('../../models/Vendor');
-const User = require('../../models/User');
 const db = require('../../models/db');
 
-// ===== RÉCUPÉRER TOUS LES VENDEURS =====
+// ===== RÉCUPÉRER TOUS LES VENDEURS (ADMIN) =====
 exports.getAllVendors = async (req, res) => {
   try {
     const { page = 1, limit = 20, search = '', verified = '' } = req.query;
-
-    let sql = `
-      SELECT v.*, 
-             u.name, u.email, u.avatar as userAvatar,
-             (SELECT COUNT(*) FROM products WHERE vendorId = v.id) as productsCount,
-             (SELECT COUNT(*) FROM followers WHERE vendorId = v.id) as followersCount
-      FROM vendors v
-      JOIN users u ON v.userId = u.id
-      WHERE 1=1
-    `;
-    const params = [];
-
-    if (verified === 'true' || verified === 'false') {
-      sql += ' AND v.verified = ?';
-      params.push(verified === 'true' ? 1 : 0);
+    
+    // Utiliser la méthode getAll du modèle Vendor avec approved = null pour admin
+    const result = await Vendor.getAll({
+      page,
+      limit,
+      search,
+      verified: verified === 'true' ? true : (verified === 'false' ? false : null),
+      approved: null // Admin voit tous les vendeurs
+    });
+    
+    // Formater les URLs des images
+    if (result.data && Array.isArray(result.data)) {
+      result.data = result.data.map(vendor => {
+        if (vendor.userAvatar && !vendor.userAvatar.startsWith('http')) {
+          const baseURL = `${req.protocol}://${req.get('host')}`;
+          vendor.userAvatar = `${baseURL}${vendor.userAvatar}`;
+        }
+        if (vendor.coverImage && !vendor.coverImage.startsWith('http')) {
+          const baseURL = `${req.protocol}://${req.get('host')}`;
+          vendor.coverImage = `${baseURL}${vendor.coverImage}`;
+        }
+        return vendor;
+      });
     }
-
-    if (search) {
-      sql += ' AND (v.shopName LIKE ? OR u.name LIKE ? OR u.email LIKE ?)';
-      const term = `%${search}%`;
-      params.push(term, term, term);
-    }
-
-    sql += ' ORDER BY v.createdAt DESC';
-
-    const result = await db.paginate(sql, params, page, limit);
-
+    
     res.json({
       success: true,
       data: result
@@ -47,7 +44,66 @@ exports.getAllVendors = async (req, res) => {
   }
 };
 
-// ===== RÉCUPÉRER UN VENDEUR =====
+// ===== RÉCUPÉRER LES VENDEURS EN ATTENTE =====
+exports.getPendingVendors = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search = '' } = req.query;
+    
+    const result = await Vendor.getPending({ page, limit, search });
+    
+    if (result.data && Array.isArray(result.data)) {
+      result.data = result.data.map(vendor => {
+        if (vendor.userAvatar && !vendor.userAvatar.startsWith('http')) {
+          const baseURL = `${req.protocol}://${req.get('host')}`;
+          vendor.userAvatar = `${baseURL}${vendor.userAvatar}`;
+        }
+        return vendor;
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('❌ Erreur admin getPendingVendors:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// ===== RÉCUPÉRER LES STATISTIQUES =====
+exports.getVendorStats = async (req, res) => {
+  try {
+    const total = await Vendor.count();
+    const approved = await Vendor.countApproved();
+    const pending = await Vendor.countPending();
+    const verified = await Vendor.count(true);
+    
+    res.json({
+      success: true,
+      data: {
+        total,
+        approved,
+        pending,
+        verified,
+        rejected: total - approved - pending,
+        pendingPercentage: total > 0 ? ((pending / total) * 100).toFixed(1) : 0,
+        approvedPercentage: total > 0 ? ((approved / total) * 100).toFixed(1) : 0
+      }
+    });
+  } catch (error) {
+    console.error('❌ Erreur admin getVendorStats:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// ===== RÉCUPÉRER UN VENDEUR PAR ID =====
 exports.getVendorById = async (req, res) => {
   try {
     const vendor = await Vendor.findById(req.params.id);
@@ -57,6 +113,15 @@ exports.getVendorById = async (req, res) => {
         success: false,
         message: 'Vendeur non trouvé'
       });
+    }
+
+    // Formater les URLs des images
+    const baseURL = `${req.protocol}://${req.get('host')}`;
+    if (vendor.userAvatar && !vendor.userAvatar.startsWith('http')) {
+      vendor.userAvatar = `${baseURL}${vendor.userAvatar}`;
+    }
+    if (vendor.coverImage && !vendor.coverImage.startsWith('http')) {
+      vendor.coverImage = `${baseURL}${vendor.coverImage}`;
     }
 
     // Récupérer les produits
@@ -88,7 +153,7 @@ exports.getVendorById = async (req, res) => {
 // ===== METTRE À JOUR UN VENDEUR =====
 exports.updateVendor = async (req, res) => {
   try {
-    const { shopName, specialty, description, location, verified } = req.body;
+    const { shopName, specialty, description, location, verified, approved } = req.body;
 
     const vendor = await Vendor.findById(req.params.id);
     if (!vendor) {
@@ -103,8 +168,18 @@ exports.updateVendor = async (req, res) => {
       specialty,
       description,
       location,
-      verified: verified !== undefined ? verified : vendor.verified
+      verified: verified !== undefined ? verified : vendor.verified,
+      approved: approved !== undefined ? approved : vendor.approved
     });
+
+    // Formater les URLs des images
+    const baseURL = `${req.protocol}://${req.get('host')}`;
+    if (updated.userAvatar && !updated.userAvatar.startsWith('http')) {
+      updated.userAvatar = `${baseURL}${updated.userAvatar}`;
+    }
+    if (updated.coverImage && !updated.coverImage.startsWith('http')) {
+      updated.coverImage = `${baseURL}${updated.coverImage}`;
+    }
 
     res.json({
       success: true,
@@ -140,7 +215,7 @@ exports.deleteVendor = async (req, res) => {
       });
     }
 
-    await Vendor.delete(req.params.id);
+    await db.query('DELETE FROM vendors WHERE id = ?', [vendor.id]);
 
     res.json({
       success: true,
@@ -155,7 +230,7 @@ exports.deleteVendor = async (req, res) => {
   }
 };
 
-// ===== ACTIVER LA VÉRIFICATION =====
+// ===== ACTIVER/DÉSACTIVER LA VÉRIFICATION =====
 exports.toggleVerification = async (req, res) => {
   try {
     const vendor = await Vendor.findById(req.params.id);
@@ -176,6 +251,64 @@ exports.toggleVerification = async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Erreur admin toggleVerification:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// ===== APPROUVER UN VENDEUR =====
+exports.approveVendor = async (req, res) => {
+  try {
+    const vendor = await Vendor.findById(req.params.id);
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vendeur non trouvé'
+      });
+    }
+
+    await Vendor.update(req.params.id, { approved: 1 });
+    
+    // Mettre à jour le rôle de l'utilisateur
+    await db.query('UPDATE users SET role = ? WHERE id = ?', ['vendor', vendor.userId]);
+
+    res.json({
+      success: true,
+      message: 'Vendeur approuvé avec succès',
+      data: { vendor }
+    });
+  } catch (error) {
+    console.error('❌ Erreur admin approveVendor:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// ===== REJETER UN VENDEUR =====
+exports.rejectVendor = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const vendor = await Vendor.findById(req.params.id);
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vendeur non trouvé'
+      });
+    }
+
+    await Vendor.update(req.params.id, { approved: 2 });
+
+    res.json({
+      success: true,
+      message: 'Vendeur rejeté',
+      data: { vendor, reason }
+    });
+  } catch (error) {
+    console.error('❌ Erreur admin rejectVendor:', error);
     res.status(500).json({
       success: false,
       message: error.message

@@ -1,8 +1,13 @@
+// frontend/src/stores/auth.js - VERSION CORRIGÉE FINALE COMPLÈTE
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '../services/api'
+import { formatImageUrl, DEFAULT_AVATAR } from '../utils/image.js'
 
 export const useAuthStore = defineStore('auth', () => {
+  const router = useRouter()
+
   // ===== STATE =====
   const token = ref(localStorage.getItem('token') || null)
   const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
@@ -10,173 +15,163 @@ export const useAuthStore = defineStore('auth', () => {
   const loading = ref(false)
   const error = ref(null)
 
+  // ===== INITIALISER LE HEADER AUTHORIZATION =====
+  const initAuthHeader = () => {
+    if (token.value && api && api.defaults) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+      console.log('✅ Header Authorization initialisé')
+    }
+  }
+  initAuthHeader()
+
   // ===== COMPUTED =====
   const isAuthenticated = computed(() => !!token.value && !!user.value)
-  const userRole = computed(() => user.value?.role || null)
+  const userRole = computed(() => user.value?.role || 'customer')
   const userId = computed(() => user.value?.id || null)
   const userName = computed(() => user.value?.name || '')
-  const userFullName = computed(() => user.value?.name || '')
+  const userEmail = computed(() => user.value?.email || '')
+  const userPhone = computed(() => user.value?.phone || '')
+  const userAddress = computed(() => user.value?.address || '')
+  const isVendor = computed(() => user.value?.role === 'vendor' || !!vendorId.value)
+  const isPending = computed(() => user.value?.role === 'pending')
+
+  const userAvatar = computed(() => {
+    if (!user.value?.avatar) return DEFAULT_AVATAR
+    const formatted = formatImageUrl(user.value.avatar)
+    return formatted || DEFAULT_AVATAR
+  })
+
   const userInitials = computed(() => {
     const name = user.value?.name || ''
     return name ? name.charAt(0).toUpperCase() : 'U'
   })
-  const userEmail = computed(() => user.value?.email || '')
-  const userAvatar = computed(() => {
-    if (!user.value?.avatar) {
-      return 'https://i.pravatar.cc/300?u=' + (user.value?.id || 'default')
-    }
 
-    // Si c'est déjà une URL complète
-    if (user.value.avatar.startsWith('http')) {
-      return user.value.avatar
-    }
+  const userFullName = computed(() => user.value?.name || '')
 
-    // Si c'est une data URL (base64)
-    if (user.value.avatar.startsWith('data:image')) {
-      return user.value.avatar
-    }
-
-    // Si c'est un chemin relatif (/uploads/...)
-    if (user.value.avatar.startsWith('/uploads')) {
-      const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-      return `${baseURL}${user.value.avatar}`
-    }
-
-    return user.value.avatar
-  })
-  const userPhone = computed(() => user.value?.phone || '')
-  const userAddress = computed(() => user.value?.address || '')
-  const userCreatedAt = computed(() => user.value?.createdAt || new Date().toISOString())
-  const isVendor = computed(() => user.value?.role === 'vendor' || !!vendorId.value)
+  const userCreatedAt = computed(() => user.value?.createdAt || null)
 
   // ===== MÉTHODES PRIVÉES =====
   const saveToStorage = () => {
-    if (token.value) {
-      localStorage.setItem('token', token.value)
+    if (token.value) localStorage.setItem('token', token.value)
+    else localStorage.removeItem('token')
+
+    if (user.value) localStorage.setItem('user', JSON.stringify(user.value))
+    else localStorage.removeItem('user')
+
+    if (vendorId.value) localStorage.setItem('vendorId', vendorId.value)
+    else localStorage.removeItem('vendorId')
+  }
+
+  // ===== MÉTHODES PUBLIQUES =====
+  const setAuth = (newToken, userData) => {
+    token.value = newToken
+    user.value = userData
+    if (newToken) {
+      localStorage.setItem('token', newToken)
+      api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
     } else {
       localStorage.removeItem('token')
+      delete api.defaults.headers.common['Authorization']
     }
+    if (userData) {
+      localStorage.setItem('user', JSON.stringify(userData))
+    }
+  }
 
-    if (user.value) {
-      localStorage.setItem('user', JSON.stringify(user.value))
+  const setToken = (newToken) => {
+    token.value = newToken
+    if (newToken) {
+      localStorage.setItem('token', newToken)
+      if (api && api.defaults) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
+      }
+    } else {
+      localStorage.removeItem('token')
+      if (api && api.defaults) {
+        delete api.defaults.headers.common['Authorization']
+      }
+    }
+  }
+
+  const setUser = (userData) => {
+    user.value = userData
+    if (userData) {
+      localStorage.setItem('user', JSON.stringify(userData))
     } else {
       localStorage.removeItem('user')
     }
+  }
 
-    if (vendorId.value) {
-      localStorage.setItem('vendorId', vendorId.value)
+  const setVendorId = (id) => {
+    vendorId.value = id
+    if (id) {
+      localStorage.setItem('vendorId', id)
     } else {
       localStorage.removeItem('vendorId')
     }
   }
 
-  // ===== MÉTHODES PUBLIQUES =====
-
-  /**
-   * Définir le token manuellement
-   */
-  const setToken = (newToken) => {
-    token.value = newToken
-    saveToStorage()
-    console.log('🔑 Token défini:', newToken ? 'présent' : 'null')
-  }
-
-  /**
-   * Définir l'utilisateur manuellement
-   */
-  const setUser = (newUser) => {
-    user.value = newUser
-    saveToStorage()
-    console.log('👤 Utilisateur défini:', newUser)
-  }
-
-  /**
-   * Définir l'ID du vendeur manuellement
-   */
-  const setVendorId = (id) => {
-    vendorId.value = id
-    saveToStorage()
-    console.log('🏪 Vendor ID défini:', id)
-  }
-
-  /**
-   * Mettre à jour le téléphone de l'utilisateur
-   */
-  const updatePhone = (newPhone) => {
-    if (user.value) {
-      user.value.phone = newPhone
-      saveToStorage()
-      console.log('📱 Téléphone mis à jour:', newPhone)
-      return true
-    }
-    return false
-  }
-
-  /**
-   * Mettre à jour l'utilisateur avec les données du backend
-   */
-  const updateUser = (userData) => {
-    if (user.value && userData) {
-      user.value = { ...user.value, ...userData }
-      saveToStorage()
-      console.log('👤 Utilisateur mis à jour:', userData)
-      return true
-    }
-    return false
-  }
-
-  /**
-   * Connexion utilisateur
-   */
+  // ===== LOGIN =====
   const login = async (email, password) => {
     loading.value = true
     error.value = null
-
     try {
-      console.log('📝 Tentative de connexion:', email)
-
-      const response = await api.post('/auth/login', {
-        email: email.toLowerCase().trim(),
-        password
-      })
+      const response = await api.post('/auth/login', { email, password })
 
       if (response.data.success) {
         const { token: newToken, user: userData } = response.data
+        setAuth(newToken, userData)
 
-        token.value = newToken
-        user.value = userData
-
-        if (userData?.role === 'vendor') {
-          await fetchVendorId()
+        // Si c'est un vendeur, récupérer son vendorId
+        if (userData.role === 'vendor') {
+          try {
+            const vendorResponse = await api.get(`/vendors/user/${userData.id}`)
+            if (vendorResponse.data.success) {
+              const vendor = vendorResponse.data.data?.vendor || vendorResponse.data.data
+              if (vendor?.id) {
+                setVendorId(vendor.id)
+              }
+            }
+          } catch (err) {
+            console.log('⚠️ Aucun vendeur trouvé pour cet utilisateur')
+          }
         }
 
-        saveToStorage()
-        console.log('✅ Connexion réussie pour:', userData.email)
-
-        return { success: true, user: user.value }
-      } else {
-        throw new Error(response.data.message || 'Erreur de connexion')
+        return { success: true, user: userData }
       }
+
+      return { success: false, error: response.data.message || 'فشل تسجيل الدخول' }
     } catch (err) {
       console.error('❌ Erreur login:', err)
-      const message = err.response?.data?.message || err.message || 'Erreur de connexion'
-      error.value = message
-      return { success: false, error: message }
+      error.value = err.response?.data?.message || 'حدث خطأ غير متوقع'
+      return { success: false, error: error.value }
     } finally {
       loading.value = false
     }
   }
 
-  /**
-   * Inscription client
-   */
+  const register = async (userData) => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await api.post('/auth/register', userData)
+      if (response.data.success) {
+        setAuth(response.data.token, response.data.user)
+        return { success: true, user: response.data.user }
+      }
+      return { success: false, error: response.data.message }
+    } catch (err) {
+      error.value = err.response?.data?.message || "Erreur d'inscription"
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
   const registerCustomer = async (userData) => {
     loading.value = true
     error.value = null
-
     try {
-      console.log('📝 Inscription client:', userData.email)
-
       const response = await api.post('/auth/register', {
         name: userData.name,
         email: userData.email.toLowerCase().trim(),
@@ -188,323 +183,205 @@ export const useAuthStore = defineStore('auth', () => {
       })
 
       if (response.data.success) {
-        const { token: newToken, user: userData } = response.data
-
-        token.value = newToken
-        user.value = userData
-        vendorId.value = null
-
-        saveToStorage()
-        console.log('✅ Inscription réussie pour:', userData.email)
-
-        return { success: true, user: user.value }
-      } else {
-        throw new Error(response.data.message || "Erreur d'inscription")
+        setAuth(response.data.token, response.data.user)
+        return { success: true, user: response.data.user }
       }
+      return { success: false, error: response.data.message }
     } catch (err) {
-      console.error('❌ Erreur register:', err)
-      let message = "Erreur lors de l'inscription"
-      if (err.response?.data?.message) {
-        message = err.response.data.message
-      } else if (err.message) {
-        message = err.message
-      }
-      error.value = message
-      return { success: false, error: message }
+      error.value = err.response?.data?.message || "Erreur d'inscription"
+      return { success: false, error: error.value }
     } finally {
       loading.value = false
     }
   }
 
-  /**
-   * Inscription vendeur
-   */
   const registerVendor = async (vendorData) => {
     loading.value = true
     error.value = null
-
     try {
-      console.log('📝 Inscription vendeur:', vendorData.email)
+      const formData = new FormData()
+      formData.append('fullName', vendorData.fullName)
+      formData.append('email', vendorData.email.toLowerCase().trim())
+      formData.append('phone', vendorData.phone)
+      formData.append('address', vendorData.address)
+      formData.append('password', vendorData.password)
+      formData.append('shopName', vendorData.shopName)
+      formData.append('specialty', vendorData.specialty)
+      formData.append('description', vendorData.description)
+      formData.append('location', vendorData.location || 'تونس')
+      formData.append('experience', vendorData.experience || 0)
 
-      const registerResponse = await api.post('/auth/register', {
-        name: vendorData.fullName,
-        email: vendorData.email.toLowerCase().trim(),
-        password: vendorData.password,
-        phone: vendorData.phone,
-        address: vendorData.address,
-        avatar: vendorData.avatar,
-        role: 'vendor'
+      if (vendorData.avatar) {
+        formData.append('avatar', vendorData.avatar)
+      }
+      if (vendorData.coverImage) {
+        formData.append('coverImage', vendorData.coverImage)
+      }
+
+      const response = await api.post('/auth/register-vendor', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
 
-      if (!registerResponse.data.success) {
-        throw new Error(registerResponse.data.message || "Erreur d'inscription")
+      if (response.data.success) {
+        const { token: newToken, user: userData, data } = response.data
+
+        token.value = newToken
+        localStorage.setItem('token', newToken)
+        if (api && api.defaults) {
+          api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
+        }
+
+        user.value = userData
+        localStorage.setItem('user', JSON.stringify(userData))
+
+        if (data?.vendorId) {
+          setVendorId(data.vendorId)
+        }
+
+        return {
+          success: true,
+          user: userData,
+          vendorId: data?.vendorId,
+          pending: true
+        }
       }
 
-      const { token: newToken, user: userData } = registerResponse.data
-
-      token.value = newToken
-      user.value = userData
-
-      const vendorProfileData = {
-        userId: user.value.id,
-        shopName: vendorData.shopName,
-        specialty: vendorData.specialty,
-        description: vendorData.description,
-        location: vendorData.location || 'تونس',
-        coverImage: vendorData.coverImage,
-        experience: vendorData.experience || 0,
-      }
-
-      const vendorResponse = await api.post('/vendors', vendorProfileData, {
-        headers: { 'Authorization': `Bearer ${token.value}` }
-      })
-
-      if (!vendorResponse.data.success) {
-        throw new Error(vendorResponse.data.message || 'Erreur création vendeur')
-      }
-
-      const vendorResult = vendorResponse.data.data || vendorResponse.data
-      let newVendorId = null
-
-      if (vendorResult.vendor?.id) newVendorId = vendorResult.vendor.id
-      else if (vendorResult.id) newVendorId = vendorResult.id
-
-      if (newVendorId) {
-        vendorId.value = newVendorId
-      }
-
-      saveToStorage()
-      console.log('✅ Inscription vendeur réussie pour:', userData.email)
-      console.log('🏪 Vendor ID:', vendorId.value)
-
-      return {
-        success: true,
-        user: user.value,
-        vendorId: vendorId.value
-      }
+      return { success: false, error: response.data.message }
 
     } catch (err) {
       console.error('❌ Erreur registerVendor:', err)
-      const message = err.response?.data?.message || err.message || "Erreur lors de l'inscription"
-      error.value = message
-      return { success: false, error: message }
+      error.value = err.response?.data?.message || err.message || "Erreur lors de l'inscription"
+      return { success: false, error: error.value }
     } finally {
       loading.value = false
     }
   }
 
-  /**
-   * Récupérer l'ID du vendeur
-   */
-  const fetchVendorId = async () => {
-    if (!token.value || !user.value) return null
-
-    try {
-      const response = await api.get(`/vendors/user/${user.value.id}`)
-
-      if (response.data.success) {
-        const vendor = response.data.data?.vendor || response.data.vendor
-
-        if (vendor && vendor.id) {
-          vendorId.value = vendor.id
-          saveToStorage()
-          console.log('✅ Vendor ID récupéré:', vendor.id)
-          return vendor.id
-        }
-      }
-      return null
-    } catch (err) {
-      if (err.response?.status === 404) {
-        console.log('ℹ️ Utilisateur non vendeur')
-        return null
-      }
-      console.error('❌ Erreur fetchVendorId:', err)
-      return null
+  const logout = () => {
+    token.value = null
+    user.value = null
+    vendorId.value = null
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('vendorId')
+    if (api && api.defaults) {
+      delete api.defaults.headers.common['Authorization']
     }
+    console.log('👋 Déconnexion réussie')
   }
 
-  /**
-   * Récupérer le profil utilisateur
-   */
-  const fetchProfile = async () => {
-    if (!token.value) return null
-
-    loading.value = true
-
-    try {
-      const response = await api.get('/auth/me')
-
-      if (response.data.success) {
-        user.value = response.data.user
-
-        if (response.data.user?.role === 'vendor') {
-          await fetchVendorId()
-        }
-
-        saveToStorage()
-        return user.value
-      }
-
-      return null
-    } catch (err) {
-      console.error('❌ Erreur fetchProfile:', err)
-      return null
-    } finally {
-      loading.value = false
-    }
-  }
-
-  /**
-   * Mettre à jour le profil
-   */
   const updateProfile = async (updates) => {
-    if (!token.value) return { success: false, error: 'Non authentifié' }
-
     loading.value = true
-
     try {
-      const response = await api.patch('/users/profile', updates)
-
+      const response = await api.put('/user/profile', updates)
       if (response.data.success) {
         user.value = { ...user.value, ...response.data.user }
         saveToStorage()
         return { success: true, user: user.value }
       }
-
       return { success: false, error: response.data.message }
     } catch (err) {
-      console.error('❌ Erreur updateProfile:', err)
-      const message = err.response?.data?.message || err.message || 'Erreur lors de la mise à jour'
-      return { success: false, error: message }
+      return { success: false, error: err.response?.data?.message }
     } finally {
       loading.value = false
     }
   }
 
-  /**
-   * Mettre à jour l'avatar - VERSION FINALE CORRIGÉE
-   */
-  const updateAvatar = async (avatarInput) => {
-    if (!token.value) return { success: false, error: 'Non authentifié' }
-
+  const updateAvatar = async (avatarData) => {
     loading.value = true
-
     try {
-      let response
-      const formData = new FormData()
+      let formData = new FormData()
+      let blob
 
-      // Cas 1: C'est un File
-      if (avatarInput instanceof File) {
-        formData.append('avatar', avatarInput)
-        response = await api.post('/users/avatar', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
-      }
-      // Cas 2: C'est un objet avec propriété avatar
-      else if (avatarInput && typeof avatarInput === 'object' && avatarInput.avatar) {
-        const base64Data = avatarInput.avatar
-
-        if (typeof base64Data === 'string' && base64Data.startsWith('data:image')) {
-          const fetchResponse = await fetch(base64Data)
-          const blob = await fetchResponse.blob()
-          const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
-
-          formData.append('avatar', file)
-          response = await api.post('/users/avatar', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          })
-        } else {
-          throw new Error("Format d'image invalide")
-        }
-      }
-      // Cas 3: C'est une string base64
-      else if (typeof avatarInput === 'string' && avatarInput.startsWith('data:image')) {
-        const fetchResponse = await fetch(avatarInput)
-        const blob = await fetchResponse.blob()
-        const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
-
-        formData.append('avatar', file)
-        response = await api.post('/users/avatar', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        })
-      }
-      else {
+      if (avatarData instanceof File) {
+        formData.append('avatar', avatarData)
+      } else if (typeof avatarData === 'string' && avatarData.startsWith('data:image')) {
+        blob = await fetch(avatarData).then(r => r.blob())
+        formData.append('avatar', blob, 'avatar.jpg')
+      } else {
         throw new Error('Format de fichier invalide')
       }
 
-      console.log('📦 Réponse upload avatar:', response.data)
+      const response = await api.patch('/user/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
 
       if (response.data.success) {
-        // Construire l'URL complète de l'avatar
-        const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-        const avatarUrl = response.data.avatar
-          ? `${baseURL}${response.data.avatar}`
-          : response.data.user?.avatar
-
-        user.value = {
-          ...user.value,
-          ...response.data.user,
-          avatar: avatarUrl
+        const newAvatar = response.data.avatar || response.data.user?.avatar
+        if (newAvatar) {
+          user.value = { ...user.value, avatar: newAvatar }
+          saveToStorage()
         }
+        return { success: true, avatar: newAvatar }
+      }
+
+      // Fallback local
+      if (typeof avatarData === 'string' && avatarData.startsWith('data:image')) {
+        user.value = { ...user.value, avatar: avatarData }
         saveToStorage()
-        return { success: true, user: user.value }
+        return { success: true, avatar: avatarData, local: true }
       }
 
       return { success: false, error: response.data.message }
-
     } catch (err) {
       console.error('❌ Erreur updateAvatar:', err)
-
-      // Mode démo
-      if (err.code === 'ERR_NETWORK' || err.message?.includes('Network')) {
-        console.log('🎭 Mode démo: Simulation upload avatar')
-
-        let avatarUrl
-        if (avatarInput instanceof File) {
-          return new Promise((resolve) => {
-            const reader = new FileReader()
-            reader.onload = (e) => {
-              user.value = { ...user.value, avatar: e.target.result }
-              saveToStorage()
-              loading.value = false
-              resolve({ success: true, user: user.value })
-            }
-            reader.readAsDataURL(avatarInput)
-          })
-        } else if (typeof avatarInput === 'string') {
-          avatarUrl = avatarInput
-        } else if (avatarInput?.avatar) {
-          avatarUrl = avatarInput.avatar
-        }
-
-        if (avatarUrl) {
-          user.value = { ...user.value, avatar: avatarUrl }
-          saveToStorage()
-          return { success: true, user: user.value }
-        }
-      }
-
-      const message = err.response?.data?.message || err.message || "Erreur lors de l'upload"
-      return { success: false, error: message }
+      return { success: false, error: err.message }
     } finally {
       loading.value = false
     }
   }
 
-  /**
-   * Déconnexion
-   */
-  const logout = () => {
-    token.value = null
-    user.value = null
-    vendorId.value = null
-    saveToStorage()
-    console.log('👋 Déconnexion réussie')
+  const changePassword = async (currentPassword, newPassword) => {
+    loading.value = true
+    try {
+      const response = await api.patch('/user/change-password', { currentPassword, newPassword })
+      return { success: response.data.success, message: response.data.message }
+    } catch (err) {
+      return { success: false, error: err.response?.data?.message }
+    } finally {
+      loading.value = false
+    }
   }
 
-  /**
-   * Vérifier si l'utilisateur est un vendeur
-   */
+  const fetchUser = async () => {
+    if (!token.value) return
+    loading.value = true
+    try {
+      const response = await api.get('/user/profile')
+      if (response.data.success) {
+        user.value = response.data.user
+        saveToStorage()
+      }
+    } catch (err) {
+      console.error('Erreur fetchUser:', err)
+      if (err.response?.status === 401) {
+        logout()
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const fetchVendorId = async () => {
+    if (!token.value || !user.value) return null
+    try {
+      const response = await api.get(`/vendors/user/${user.value.id}`)
+      if (response.data.success) {
+        const vendor = response.data.data?.vendor || response.data.data
+        if (vendor?.id) {
+          setVendorId(vendor.id)
+          return vendor.id
+        }
+      }
+      return null
+    } catch (err) {
+      if (err.response?.status !== 404) {
+        console.error('❌ Erreur fetchVendorId:', err)
+      }
+      return null
+    }
+  }
+
   const checkVendorStatus = async () => {
     if (!token.value || !user.value) return false
     if (vendorId.value) return true
@@ -512,12 +389,19 @@ export const useAuthStore = defineStore('auth', () => {
     return !!id
   }
 
+  // Initialisation
+  if (token.value && !user.value) {
+    fetchUser()
+  }
+
   return {
+    // State
     token,
     user,
     vendorId,
     loading,
     error,
+    // Computed
     isAuthenticated,
     userRole,
     userId,
@@ -525,24 +409,29 @@ export const useAuthStore = defineStore('auth', () => {
     userFullName,
     userInitials,
     userEmail,
-    userAvatar,
     userPhone,
     userAddress,
+    userAvatar,
     userCreatedAt,
     isVendor,
+    isPending,
+    // Actions
+    setAuth,
     setToken,
     setUser,
     setVendorId,
-    updatePhone,
-    updateUser,
     login,
+    register,
     registerCustomer,
     registerVendor,
     logout,
-    fetchProfile,
     updateProfile,
     updateAvatar,
+    changePassword,
+    fetchUser,
     fetchVendorId,
     checkVendorStatus,
+    initAuthHeader,
+    saveToStorage
   }
 })
