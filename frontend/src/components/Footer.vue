@@ -1,10 +1,8 @@
 <!-- frontend/src/components/Footer.vue -->
 <template>
-  <footer class="footer" :class="{ 'dark-mode': isDarkMode }">
-    <!-- Dark Mode Toggle Button -->
-    <button class="dark-mode-toggle" @click="toggleDarkMode" :title="isDarkMode ? 'الوضع النهاري' : 'الوضع الليلي'">
-      <span class="toggle-icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
-    </button>
+  <footer class="footer">
+    <!-- Theme Toggle Button (global) -->
+    <ThemeToggle :compact="true" class="footer-theme-toggle" />
 
     <!-- Wave decoration -->
     <div class="footer-wave">
@@ -207,27 +205,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import api from '../services/api'
+import ThemeToggle from './ThemeToggle.vue'
 
 const email = ref('')
 const loading = ref(false)
 const message = ref('')
 const messageType = ref('')
-const isDarkMode = ref(false)
-
-// Charger la préférence depuis localStorage
-onMounted(() => {
-  const savedMode = localStorage.getItem('footer-dark-mode')
-  if (savedMode !== null) {
-    isDarkMode.value = savedMode === 'true'
-  }
-})
-
-const toggleDarkMode = () => {
-  isDarkMode.value = !isDarkMode.value
-  localStorage.setItem('footer-dark-mode', isDarkMode.value)
-}
 
 const subscribeNewsletter = async () => {
   if (!email.value) {
@@ -285,141 +270,14 @@ const showMessage = (msg, type) => {
   transition: all 0.3s ease;
 }
 
-/* ===== MODE SOMBRE ===== */
-.footer.dark-mode {
-  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-  color: #e0e0e0;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.dark-mode .footer-description,
-.dark-mode .footer-links a,
-.dark-mode .contact-item,
-.dark-mode .contact-item a,
-.dark-mode .feature-text,
-.dark-mode .newsletter-text,
-.dark-mode .copyright p,
-.dark-mode .footer-bottom-links a {
-  color: #b0b0b0;
-}
-
-.dark-mode .footer-title {
-  color: #ffffff;
-}
-
-.dark-mode .social-title {
-  color: #e0e0e0;
-}
-
-.dark-mode .social-btn {
-  background: #333 !important;
-  color: #e0e0e0 !important;
-}
-
-.dark-mode .social-btn:hover {
-  filter: brightness(1.2);
-}
-
-.dark-mode .category-chip {
-  background: #2a2a2a;
-  border-color: #444;
-  color: #ccc;
-}
-
-.dark-mode .category-chip:hover {
-  color: white;
-}
-
-.dark-mode .newsletter-section {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.dark-mode .input-group {
-  background: #2a2a2a;
-  border-color: #444;
-}
-
-.dark-mode .input-group input {
-  color: #e0e0e0;
-  background: transparent;
-}
-
-.dark-mode .input-group input::placeholder {
-  color: #666;
-}
-
-.dark-mode .red-gradient-btn {
-  background: linear-gradient(135deg, #b00020, #8b0000);
-}
-
-.dark-mode .footer-bottom {
-  border-top-color: rgba(255, 255, 255, 0.1);
-}
-
-.dark-mode .title-icon,
-.dark-mode .contact-emoji {
-  background: #333;
-  color: #e0e0e0;
-}
-
-.dark-mode .dot {
-  color: #444;
-}
-
-.dark-mode .logo-text {
-  background: linear-gradient(135deg, #0a94a6, #ff1744);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.dark-mode .newsletter-message.success {
-  background: #1e3a2a;
-  color: #a3d8b0;
-  border-color: #2a5a3a;
-}
-
-.dark-mode .newsletter-message.error {
-  background: #3a1e1e;
-  color: #ffb3b3;
-  border-color: #5a2a2a;
-}
-
-/* ===== BOUTON DE BASCULE MODE SOMBRE ===== */
-.dark-mode-toggle {
+/* Styles pour le bouton ThemeToggle dans le footer */
+.footer-theme-toggle {
   position: absolute;
   top: 20px;
   left: 20px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: white;
-  border: 2px solid #e2e8f0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
   z-index: 10;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.dark-mode-toggle:hover {
-  transform: scale(1.1);
-  border-color: #08717f;
-}
-
-.dark-mode .dark-mode-toggle {
-  background: #2d2d2d;
-  border-color: #444;
-}
-
-.dark-mode .dark-mode-toggle:hover {
-  border-color: #d40025;
-}
-
-.toggle-icon {
-  font-size: 1.2rem;
+  background: var(--bg-tertiary, #f1f5f9);
+  border-color: var(--border-color, #e2e8f0);
 }
 
 /* Wave decoration */
@@ -440,7 +298,7 @@ const showMessage = (msg, type) => {
   height: 60px;
 }
 
-.dark-mode .footer-wave svg path {
+.dark-theme .footer-wave svg path {
   fill: #1a1a1a;
   fill-opacity: 0.3;
 }
@@ -717,22 +575,6 @@ const showMessage = (msg, type) => {
   color: #1b5e20;
 }
 
-.dark-mode .red-hover {
-  color: #ff6b6b;
-}
-
-.dark-mode .red-hover:hover {
-  color: #ff4444;
-}
-
-.dark-mode .green-hover {
-  color: #6b9e6b;
-}
-
-.dark-mode .green-hover:hover {
-  color: #4caf50;
-}
-
 /* Categories Grid */
 .categories-grid {
   display: grid;
@@ -784,18 +626,6 @@ const showMessage = (msg, type) => {
   border-color: transparent;
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(46, 125, 50, 0.2);
-}
-
-.dark-mode .red-chip {
-  color: #ff6b6b;
-  border-color: #5a2a2a;
-  background: #2a1a1a;
-}
-
-.dark-mode .green-chip {
-  color: #6b9e6b;
-  border-color: #1e3a2a;
-  background: #1a2a1a;
 }
 
 /* Newsletter Section */
@@ -936,16 +766,6 @@ const showMessage = (msg, type) => {
   color: #2e7d32;
 }
 
-.dark-mode .red-feature .feature-text,
-.dark-mode .red-feature .feature-icon {
-  color: #ff6b6b;
-}
-
-.dark-mode .green-feature .feature-text,
-.dark-mode .green-feature .feature-icon {
-  color: #6b9e6b;
-}
-
 /* Footer Bottom avec couleurs */
 .footer-bottom {
   display: flex;
@@ -992,22 +812,6 @@ const showMessage = (msg, type) => {
 .green-link:hover {
   color: #1b5e20;
   text-decoration: underline;
-}
-
-.dark-mode .red-link {
-  color: #ff6b6b;
-}
-
-.dark-mode .red-link:hover {
-  color: #ff4444;
-}
-
-.dark-mode .green-link {
-  color: #6b9e6b;
-}
-
-.dark-mode .green-link:hover {
-  color: #4caf50;
 }
 
 .dot {
@@ -1110,11 +914,9 @@ const showMessage = (msg, type) => {
     justify-content: center;
   }
 
-  .dark-mode-toggle {
+  .footer-theme-toggle {
     top: 10px;
     left: 10px;
-    width: 32px;
-    height: 32px;
   }
 }
 

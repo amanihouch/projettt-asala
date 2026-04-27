@@ -106,6 +106,41 @@ const routes = [
       requiresAuth: true,
     },
   },
+  {
+  path: '/shipping',
+  name: 'Shipping',
+  component: () => import('../views/Shipping.vue')
+},
+{
+    path: '/order-details/:id',
+    name: 'OrderDetails',
+    component: () => import('../views/OrderDetails.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/order-tracking/:id',
+    name: 'OrderTracking',
+    component: () => import('../views/OrderTracking.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/order-confirmation/:id',
+    name: 'OrderConfirmation',
+    component: () => import('../views/OrderConfirmation.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/notification-settings',
+    name: 'NotificationSettings',
+    component: () => import('../views/NotificationSettings.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/edit-phone',
+    name: 'EditPhone',
+    component: () => import('../views/EditPhone.vue'),
+    meta: { requiresAuth: true }
+  },
   // ========== ADMIN ROUTES ==========
   {
     path: '/admin',
@@ -207,6 +242,12 @@ const routes = [
       requiresAdmin: true,
     },
   },
+  {
+  path: '/admin/sponsored-products',
+  name: 'AdminSponsoredProducts',
+  component: () => import('../views/admin/SponsoredProducts.vue'),
+  meta: { requiresAuth: true, role: 'admin' }
+},
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

@@ -18,7 +18,7 @@ const protect = async (req, res, next) => {
         });
       }
 
-      console.log('🔑 Token reçu:', token.substring(0, 20) + '...');
+      console.log(`🔑 Token reçu: ${token.substring(0, 20)}...`);
 
       // Vérifier le token
       const decoded = jwt.verify(
@@ -70,10 +70,8 @@ const protect = async (req, res, next) => {
         error: error.message
       });
     }
-  }
-
-  // Si pas de token
-  if (!token) {
+  } else {
+    // Si pas de token dans le header
     console.log('❌ Token manquant dans la requête');
     return res.status(401).json({
       success: false,

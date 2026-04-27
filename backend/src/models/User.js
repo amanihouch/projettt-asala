@@ -11,7 +11,7 @@ const User = {
       INSERT INTO users (name, email, password, phone, role, avatar, address)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
-    const userId = await db.insert(sql, [
+    const result = await db.query(sql, [
       name, 
       email, 
       hashedPassword, 
@@ -20,25 +20,29 @@ const User = {
       avatar || null,
       address || null
     ]);
-    return this.findById(userId);
+    
+    const insertId = result.insertId;
+    return this.findById(insertId);
   },
 
   async findById(id) {
     const sql = `
-      SELECT id, name, email, phone, role, avatar, address, isActive, 
-             lastLogin, createdAt, updatedAt
+      SELECT id, name, email, phone, role, avatar, address, 
+             isActive, lastLogin, createdAt, updatedAt
       FROM users WHERE id = ?
     `;
-    return db.getOne(sql, [id]);
+    const results = await db.query(sql, [id]);
+    return results[0] || null;
   },
 
   async findByEmail(email) {
     const sql = `
-      SELECT id, name, email, phone, role, avatar, address, isActive, 
-             lastLogin, createdAt
+      SELECT id, name, email, phone, role, avatar, address, 
+             isActive, lastLogin, createdAt
       FROM users WHERE email = ?
     `;
-    return db.getOne(sql, [email]);
+    const results = await db.query(sql, [email]);
+    return results[0] || null;
   },
 
   async findByEmailWithPassword(email) {
@@ -46,7 +50,17 @@ const User = {
       SELECT id, name, email, password, phone, role, avatar, address, isActive
       FROM users WHERE email = ?
     `;
-    return db.getOne(sql, [email]);
+    const results = await db.query(sql, [email]);
+    return results[0] || null;
+  },
+
+  async findByPhone(phone) {
+    const sql = `
+      SELECT id, name, email, phone, role, avatar, address, isActive
+      FROM users WHERE phone = ?
+    `;
+    const results = await db.query(sql, [phone]);
+    return results[0] || null;
   },
 
   async update(id, updates) {
@@ -94,7 +108,8 @@ const User = {
       FROM users 
       WHERE reset_password_token = ? AND reset_password_expire > NOW()
     `;
-    return db.getOne(sql, [token]);
+    const results = await db.query(sql, [token]);
+    return results[0] || null;
   },
 
   async clearResetToken(id) {
@@ -124,8 +139,8 @@ const User = {
 
   async isInWishlist(userId, productId) {
     const sql = 'SELECT 1 FROM wishlist WHERE userId = ? AND productId = ?';
-    const result = await db.getOne(sql, [userId, productId]);
-    return !!result;
+    const results = await db.query(sql, [userId, productId]);
+    return results.length > 0;
   },
 
   async getWishlist(userId) {
@@ -139,7 +154,7 @@ const User = {
     return db.query(sql, [userId]);
   },
 
-  // ===== PRODUCT LIKES =====
+  // ===== PRODUCT LIKES (CORRIGÉ) =====
 
   async likeProduct(userId, productId) {
     const sql = `
@@ -159,11 +174,12 @@ const User = {
 
   async hasLikedProduct(userId, productId) {
     const sql = 'SELECT 1 FROM product_likes WHERE userId = ? AND productId = ?';
-    const result = await db.getOne(sql, [userId, productId]);
-    return !!result;
+    const results = await db.query(sql, [userId, productId]);
+    return results.length > 0;
   },
 
   async getProductLikes(userId) {
+    // CORRECTION: Utiliser 'createdAt' au lieu de 'created_at'
     const sql = `
       SELECT p.*, pl.createdAt as likedAt 
       FROM product_likes pl
@@ -174,7 +190,7 @@ const User = {
     return db.query(sql, [userId]);
   },
 
-  // ===== POST LIKES =====
+  // ===== POST LIKES (CORRIGÉ) =====
 
   async likePost(userId, postId) {
     const sql = `
@@ -194,11 +210,12 @@ const User = {
 
   async hasLikedPost(userId, postId) {
     const sql = 'SELECT 1 FROM post_likes WHERE userId = ? AND postId = ?';
-    const result = await db.getOne(sql, [userId, postId]);
-    return !!result;
+    const results = await db.query(sql, [userId, postId]);
+    return results.length > 0;
   },
 
   async getPostLikes(userId) {
+    // CORRECTION: Utiliser 'createdAt' au lieu de 'created_at'
     const sql = `
       SELECT p.*, pl.createdAt as likedAt 
       FROM post_likes pl
@@ -221,27 +238,27 @@ const User = {
     const user = await this.findById(id);
     if (!user) return null;
     
-    const orderStats = await db.getOne(
+    const orderStats = await db.query(
       'SELECT COUNT(*) as orderCount, COALESCE(SUM(total), 0) as orderTotal FROM orders WHERE userId = ?',
       [id]
     );
     
-    const wishlistCount = await db.getOne(
+    const wishlistCount = await db.query(
       'SELECT COUNT(*) as count FROM wishlist WHERE userId = ?',
       [id]
     );
     
-    const likesCount = await db.getOne(
+    const likesCount = await db.query(
       'SELECT COUNT(*) as count FROM product_likes WHERE userId = ?',
       [id]
     );
     
     return {
       ...user,
-      ordersCount: orderStats?.orderCount || 0,
-      ordersTotal: orderStats?.orderTotal || 0,
-      wishlistCount: wishlistCount?.count || 0,
-      likesCount: likesCount?.count || 0
+      ordersCount: orderStats[0]?.orderCount || 0,
+      ordersTotal: orderStats[0]?.orderTotal || 0,
+      wishlistCount: wishlistCount[0]?.count || 0,
+      likesCount: likesCount[0]?.count || 0
     };
   },
 
@@ -265,14 +282,52 @@ const User = {
     }
     
     sql += ' ORDER BY createdAt DESC';
-    return db.paginate(sql, params, page, limit);
+    
+    const offset = (page - 1) * limit;
+    sql += ' LIMIT ? OFFSET ?';
+    params.push(parseInt(limit), parseInt(offset));
+    
+    const users = await db.query(sql, params);
+    
+    let countSql = 'SELECT COUNT(*) as total FROM users WHERE 1=1';
+    const countParams = [];
+    
+    if (role && role !== 'all') {
+      countSql += ' AND role = ?';
+      countParams.push(role);
+    }
+    
+    if (search) {
+      countSql += ' AND (name LIKE ? OR email LIKE ? OR phone LIKE ?)';
+      const s = `%${search}%`;
+      countParams.push(s, s, s);
+    }
+    
+    const countResult = await db.query(countSql, countParams);
+    const total = countResult[0]?.total || 0;
+    
+    return {
+      data: users,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
   },
 
   async delete(id) {
-    const hasOrders = await db.exists('SELECT 1 FROM orders WHERE userId = ?', [id]);
-    if (hasOrders) {
+    const orders = await db.query('SELECT 1 FROM orders WHERE userId = ? LIMIT 1', [id]);
+    if (orders.length > 0) {
       throw new Error('Impossible de supprimer un utilisateur avec des commandes');
     }
+    
+    await db.query('DELETE FROM wishlist WHERE userId = ?', [id]);
+    await db.query('DELETE FROM product_likes WHERE userId = ?', [id]);
+    await db.query('DELETE FROM post_likes WHERE userId = ?', [id]);
+    await db.query('DELETE FROM phone_verifications WHERE user_id = ?', [id]);
+    
     await db.query('DELETE FROM users WHERE id = ?', [id]);
     return true;
   },
@@ -284,8 +339,8 @@ const User = {
       sql += ' WHERE role = ?';
       params.push(role);
     }
-    const result = await db.getOne(sql, params);
-    return result?.count || 0;
+    const results = await db.query(sql, params);
+    return results[0]?.count || 0;
   }
 };
 

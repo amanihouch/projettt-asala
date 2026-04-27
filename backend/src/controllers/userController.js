@@ -1,52 +1,51 @@
+// backend/src/controllers/userController.js
 const User = require('../models/User');
-const db = require('../models/db');
+const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 
 // ===== PROFIL =====
-
-/**
- * Récupérer le profil de l'utilisateur connecté
- */
-const getProfile = async (req, res) => {
+exports.getProfile = async (req, res) => {
   try {
-    // req.user est déjà disponible grâce au middleware protect
-    const user = req.user;
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
 
-    res.status(200).json({
+    res.json({
       success: true,
-      data: {
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          address: user.address,
-          avatar: user.avatar,
-          role: user.role,
-          isActive: user.isActive === 1,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt
-        }
-      }
+      user
     });
   } catch (error) {
     console.error('❌ Erreur getProfile:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur serveur'
+      message: 'Erreur serveur',
+      error: error.message
     });
   }
 };
 
-/**
- * Mettre à jour le profil utilisateur
- */
-const updateProfile = async (req, res) => {
+// ===== METTRE À JOUR LE PROFIL =====
+exports.updateProfile = async (req, res) => {
   try {
     const { name, email, phone, address } = req.body;
     const userId = req.user.id;
 
-    // Vérifier si l'email est déjà utilisé par un autre utilisateur
-    if (email && email !== req.user.email) {
+    // Validation
+    if (!name && !email && !phone && !address) {
+      return res.status(400).json({
+        success: false,
+        message: 'Aucune donnée à mettre à jour'
+      });
+    }
+
+    // Vérifier si l'email est déjà utilisé
+    if (email) {
       const existingUser = await User.findByEmail(email);
       if (existingUser && existingUser.id !== userId) {
         return res.status(400).json({
@@ -57,38 +56,78 @@ const updateProfile = async (req, res) => {
     }
 
     // Mettre à jour l'utilisateur
-    const updatedUser = await User.update(userId, {
-      name: name || req.user.name,
-      email: email || req.user.email,
-      phone: phone || req.user.phone,
-      address: address || req.user.address
-    });
+    const updates = {};
+    if (name) updates.name = name;
+    if (email) updates.email = email;
+    if (phone !== undefined) updates.phone = phone;
+    if (address !== undefined) updates.address = address;
 
-    res.status(200).json({
+    const updatedUser = await User.update(userId, updates);
+
+    res.json({
       success: true,
-      data: {
-        user: updatedUser
-      },
+      user: updatedUser,
       message: 'Profil mis à jour avec succès'
     });
   } catch (error) {
     console.error('❌ Erreur updateProfile:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur serveur'
+      message: 'Erreur serveur',
+      error: error.message
     });
   }
 };
 
-/**
- * Changer le mot de passe
- */
-const changePassword = async (req, res) => {
+// ===== METTRE À JOUR L'AVATAR =====
+exports.updateAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Aucun fichier fourni'
+      });
+    }
+
+    // Récupérer l'utilisateur pour avoir l'ancien avatar
+    const user = await User.findById(req.user.id);
+    
+    // Supprimer l'ancien avatar s'il existe et n'est pas une URL externe
+    if (user && user.avatar && !user.avatar.includes('pravatar') && !user.avatar.includes('http')) {
+      const oldPath = path.join(__dirname, '../../', user.avatar);
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+        console.log('🗑️ Ancien avatar supprimé');
+      }
+    }
+
+    // Construire l'URL de l'avatar
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+    // Mettre à jour l'utilisateur
+    const updatedUser = await User.update(req.user.id, { avatar: avatarUrl });
+
+    res.json({
+      success: true,
+      avatar: avatarUrl,
+      user: updatedUser,
+      message: 'Avatar mis à jour avec succès'
+    });
+  } catch (error) {
+    console.error('❌ Erreur updateAvatar:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur',
+      error: error.message
+    });
+  }
+};
+
+// ===== CHANGER LE MOT DE PASSE =====
+exports.changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const userId = req.user.id;
 
-    // Validation
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
@@ -105,9 +144,17 @@ const changePassword = async (req, res) => {
 
     // Récupérer l'utilisateur avec son mot de passe
     const user = await User.findByEmailWithPassword(req.user.email);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
 
     // Vérifier l'ancien mot de passe
-    const isMatch = await User.verifyPassword(user, currentPassword);
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -116,153 +163,126 @@ const changePassword = async (req, res) => {
     }
 
     // Mettre à jour le mot de passe
-    await User.updatePassword(userId, newPassword);
+    await User.updatePassword(user.id, newPassword);
 
-    res.status(200).json({
+    res.json({
       success: true,
-      message: 'Mot de passe modifié avec succès'
+      message: 'Mot de passe changé avec succès'
     });
   } catch (error) {
     console.error('❌ Erreur changePassword:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur serveur'
+      message: 'Erreur serveur',
+      error: error.message
     });
   }
 };
 
-/**
- * Mettre à jour l'avatar
- */
-const updateAvatar = async (req, res) => {
+// ===== WISHLIST =====
+exports.getWishlist = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Veuillez fournir une image'
-      });
-    }
-
-    const userId = req.user.id;
-    
-    // Construire l'URL de l'avatar
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const avatarUrl = `${baseUrl}/uploads/avatars/${req.file.filename}`;
-
-    // Mettre à jour l'utilisateur
-    const updatedUser = await User.update(userId, { avatar: avatarUrl });
-
-    res.status(200).json({
+    const wishlist = await User.getWishlist(req.user.id);
+    res.json({
       success: true,
-      data: {
-        user: updatedUser
-      },
-      message: 'Avatar mis à jour avec succès'
-    });
-  } catch (error) {
-    console.error('❌ Erreur updateAvatar:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur'
-    });
-  }
-};
-
-// ===== WISHLIST / LIKES =====
-
-/**
- * Récupérer la wishlist de l'utilisateur
- */
-const getWishlist = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    
-    const wishlist = await db.query(`
-      SELECT p.* FROM wishlist w
-      JOIN products p ON w.productId = p.id
-      WHERE w.userId = ?
-      ORDER BY w.createdAt DESC
-    `, [userId]);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        wishlist: wishlist || []
-      }
+      data: wishlist
     });
   } catch (error) {
     console.error('❌ Erreur getWishlist:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur serveur'
+      message: 'Erreur serveur',
+      error: error.message
     });
   }
 };
 
-/**
- * Récupérer les likes de l'utilisateur (produits)
- */
-const getUserLikes = async (req, res) => {
+// ===== LIKES PRODUITS =====
+exports.getProductLikes = async (req, res) => {
   try {
-    const userId = req.user.id;
-    
-    const likes = await db.query(`
-      SELECT p.* FROM product_likes pl
-      JOIN products p ON pl.productId = p.id
-      WHERE pl.userId = ?
-      ORDER BY pl.createdAt DESC
-    `, [userId]);
-
-    res.status(200).json({
+    const likes = await User.getProductLikes(req.user.id);
+    res.json({
       success: true,
-      data: {
-        likes: likes || []
-      }
+      data: likes
     });
   } catch (error) {
-    console.error('❌ Erreur getUserLikes:', error);
+    console.error('❌ Erreur getProductLikes:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur serveur'
+      message: 'Erreur serveur',
+      error: error.message
     });
   }
 };
 
-/**
- * Récupérer les likes de l'utilisateur (posts)
- */
-const getPostLikes = async (req, res) => {
+exports.toggleProductLike = async (req, res) => {
   try {
+    const { productId } = req.params;
     const userId = req.user.id;
-    
-    const likedPosts = await db.query(`
-      SELECT p.* FROM post_likes pl
-      JOIN posts p ON pl.postId = p.id
-      WHERE pl.userId = ?
-      ORDER BY pl.createdAt DESC
-    `, [userId]);
 
-    res.status(200).json({
+    const hasLiked = await User.hasLikedProduct(userId, productId);
+
+    if (hasLiked) {
+      await User.unlikeProduct(userId, productId);
+    } else {
+      await User.likeProduct(userId, productId);
+    }
+
+    res.json({
       success: true,
-      data: {
-        likedPosts: likedPosts || []
-      }
+      liked: !hasLiked
+    });
+  } catch (error) {
+    console.error('❌ Erreur toggleProductLike:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur',
+      error: error.message
+    });
+  }
+};
+
+// ===== LIKES POSTS =====
+exports.getPostLikes = async (req, res) => {
+  try {
+    const likes = await User.getPostLikes(req.user.id);
+    res.json({
+      success: true,
+      data: likes
     });
   } catch (error) {
     console.error('❌ Erreur getPostLikes:', error);
     res.status(500).json({
       success: false,
-      message: 'Erreur serveur'
+      message: 'Erreur serveur',
+      error: error.message
     });
   }
 };
 
-module.exports = {
-  getProfile,
-  updateProfile,
-  changePassword,
-  updateAvatar,
-  getWishlist,
-  getUserLikes,
-  getPostLikes
+exports.togglePostLike = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user.id;
+
+    const hasLiked = await User.hasLikedPost(userId, postId);
+
+    if (hasLiked) {
+      await User.unlikePost(userId, postId);
+    } else {
+      await User.likePost(userId, postId);
+    }
+
+    res.json({
+      success: true,
+      liked: !hasLiked
+    });
+  } catch (error) {
+    console.error('❌ Erreur togglePostLike:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur',
+      error: error.message
+    });
+  }
 };

@@ -1,4 +1,3 @@
-<!-- src/views/Profile.vue -->
 <template>
   <div class="profile-page" dir="rtl">
     <!-- Loading -->
@@ -13,9 +12,20 @@
         <div class="container">
           <div class="profile-info">
             <div class="avatar-section">
-              <img :src="authStore.userAvatar" :alt="authStore.userName" class="profile-avatar" />
-              <button class="change-avatar-btn" @click="triggerAvatarUpload" :disabled="uploading">
+              <img
+                :src="authStore.userAvatar"
+                :alt="authStore.userName"
+                class="profile-avatar"
+                @error="handleImageError"
+              />
+              <button
+                class="change-avatar-btn"
+                @click="triggerAvatarUpload"
+                :disabled="uploading"
+                :class="{ uploading }"
+              >
                 <span class="icon">{{ uploading ? '⏳' : '📷' }}</span>
+                <span class="tooltip">تغيير الصورة</span>
               </button>
               <input
                 type="file"
@@ -196,9 +206,10 @@
                 <div class="order-items">
                   <div v-for="item in order.items" :key="item.id" class="order-item">
                     <img
-                      :src="item.image || '/placeholder.jpg'"
+                      :src="item.image || 'https://placehold.co/60x60/08717f/white?text=منتج'"
                       :alt="item.name"
                       class="item-image"
+                      @error="handleImageError"
                     />
                     <div class="item-details">
                       <h4 class="item-name">{{ item.name }}</h4>
@@ -417,6 +428,10 @@ const completedOrders = computed(() => {
 })
 
 // ===== METHODS =====
+const handleImageError = (e) => {
+  e.target.src = 'https://placehold.co/300x300/08717f/white?text=صورة'
+}
+
 const showNotification = (message, type = 'success') => {
   const icons = {
     success: '✅',
@@ -463,22 +478,52 @@ const getOrderStatusText = (status) => {
   return statusMap[status] || status
 }
 
-// ===== AVATAR =====
+// ===== AVATAR UPLOAD SIMPLIFIÉ =====
 const triggerAvatarUpload = () => {
   avatarInput.value?.click()
+}
+
+const compressImage = (file, maxWidth = 300, quality = 0.7) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (e) => {
+      const img = new Image()
+      img.src = e.target.result
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width)
+          width = maxWidth
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality)
+        resolve(compressedDataUrl)
+      }
+      img.onerror = reject
+    }
+    reader.onerror = reject
+  })
 }
 
 const handleAvatarUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) return
 
-  // Vérifier la taille (max 2MB)
   if (file.size > 2 * 1024 * 1024) {
     showNotification('حجم الصورة يجب أن يكون أقل من 2 ميجابايت', 'warning')
     return
   }
 
-  // Vérifier le type
   if (!file.type.startsWith('image/')) {
     showNotification('الرجاء اختيار صورة صالحة', 'warning')
     return
@@ -487,10 +532,10 @@ const handleAvatarUpload = async (event) => {
   uploading.value = true
 
   try {
-    const formData = new FormData()
-    formData.append('avatar', file)
+    const compressedImage = await compressImage(file, 300)
 
-    const result = await authStore.updateAvatar(formData)
+    // Appel à updateAvatar avec l'objet contenant le base64
+    const result = await authStore.updateAvatar({ avatar: compressedImage })
 
     if (result.success) {
       showNotification('✅ تم تحديث الصورة بنجاح')
@@ -498,10 +543,10 @@ const handleAvatarUpload = async (event) => {
       showNotification(result.error, 'error')
     }
   } catch (error) {
+    console.error('❌ Erreur upload avatar:', error)
     showNotification('حدث خطأ أثناء رفع الصورة', 'error')
   } finally {
     uploading.value = false
-    // Reset input
     event.target.value = ''
   }
 }
@@ -512,7 +557,6 @@ const loadOrders = () => {
 
   try {
     const allOrders = JSON.parse(localStorage.getItem('orders') || '[]')
-    // Filtrer les commandes de l'utilisateur connecté
     orders.value = allOrders
       .filter((order) => order.customer?.email === authStore.userEmail)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -553,6 +597,7 @@ const saveProfileChanges = async () => {
       showNotification(result.error, 'error')
     }
   } catch (error) {
+    console.error('Error saving profile:', error)
     showNotification('حدث خطأ أثناء الحفظ', 'error')
   }
 }
@@ -568,7 +613,6 @@ const changePassword = () => {
 }
 
 const savePassword = async () => {
-  // Validation
   if (passwordForm.value.newPassword.length < 6) {
     showNotification('كلمة المرور يجب أن تكون 6 أحرف على الأقل', 'warning')
     return
@@ -582,12 +626,12 @@ const savePassword = async () => {
   changingPassword.value = true
 
   try {
-    // Simulation - à remplacer par un appel API réel
+    // Simuler un appel API
     await new Promise((resolve) => setTimeout(resolve, 1000))
-
     showNotification('✅ تم تغيير كلمة المرور بنجاح')
     showPasswordModal.value = false
   } catch (error) {
+    console.error('Error changing password:', error)
     showNotification('حدث خطأ', 'error')
   } finally {
     changingPassword.value = false
@@ -596,11 +640,11 @@ const savePassword = async () => {
 
 // ===== SETTINGS ACTIONS =====
 const notificationSettings = () => {
-  showNotification('إعدادات الإشعارات - قريباً', 'info')
+  router.push('/notification-settings')
 }
 
 const privacySettings = () => {
-  showNotification('الخصوصية والأمان - قريباً', 'info')
+  router.push('/privacy-settings')
 }
 
 const logout = () => {
@@ -635,7 +679,23 @@ onMounted(() => {
 })
 </script>
 
+
 <style scoped>
+/* ===== VARIABLES ===== */
+:root {
+  --primary: #08717f;
+  --primary-dark: #065a69;
+  --secondary: #d40025;
+  --secondary-dark: #b00020;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --dark: #1e293b;
+  --gray: #64748b;
+  --light: #f8fafc;
+  --border: #e2e8f0;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -644,7 +704,7 @@ onMounted(() => {
 
 .profile-page {
   min-height: 100vh;
-  background: #f8fafc;
+  background: var(--light);
   font-family: 'Cairo', sans-serif;
   direction: rtl;
 }
@@ -655,7 +715,7 @@ onMounted(() => {
   padding: 0 20px;
 }
 
-/* Loading */
+/* ===== LOADING ===== */
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -667,38 +727,34 @@ onMounted(() => {
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid #e2e8f0;
-  border-top: 4px solid #08717f;
-  border-right: 4px solid #d40025;
+  border: 4px solid var(--border);
+  border-top: 4px solid var(--primary);
+  border-right: 4px solid var(--secondary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 20px;
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .spinner-small {
   width: 30px;
   height: 30px;
-  border: 3px solid #e2e8f0;
-  border-top: 3px solid #08717f;
+  border: 3px solid var(--border);
+  border-top: 3px solid var(--primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 10px;
 }
 
-/* Profile Header */
+/* ===== PROFILE HEADER ===== */
 .profile-header {
   background: white;
   padding: 40px 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 }
 
@@ -709,6 +765,7 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
+/* Avatar Section - Amélioré */
 .avatar-section {
   position: relative;
   width: 120px;
@@ -722,6 +779,7 @@ onMounted(() => {
   border: 4px solid white;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
   object-fit: cover;
+  transition: all 0.3s ease;
 }
 
 .change-avatar-btn {
@@ -739,17 +797,47 @@ onMounted(() => {
   justify-content: center;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+  border: 2px solid var(--primary);
 }
 
 .change-avatar-btn:hover {
-  background: #08717f;
+  background: var(--primary);
   color: white;
   transform: scale(1.1);
 }
 
-.change-avatar-btn:disabled {
-  opacity: 0.5;
+.change-avatar-btn.uploading {
+  background: var(--gray);
+  border-color: var(--gray);
   cursor: not-allowed;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.change-avatar-btn .tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--dark);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  margin-bottom: 5px;
+}
+
+.change-avatar-btn:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
 }
 
 .profile-details {
@@ -759,13 +847,13 @@ onMounted(() => {
 .profile-name {
   font-size: 2rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--dark);
   margin-bottom: 5px;
 }
 
 .profile-email,
 .profile-phone {
-  color: #64748b;
+  color: var(--gray);
   font-size: 1rem;
   margin-bottom: 5px;
 }
@@ -780,17 +868,17 @@ onMounted(() => {
 }
 
 .profile-role.admin {
-  background: #d40025;
+  background: var(--secondary);
   color: white;
 }
 
 .profile-role.vendor {
-  background: #08717f;
+  background: var(--primary);
   color: white;
 }
 
 .profile-role.customer {
-  background: #10b981;
+  background: var(--success);
   color: white;
 }
 
@@ -798,7 +886,7 @@ onMounted(() => {
   display: flex;
   gap: 40px;
   padding-top: 20px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border);
 }
 
 .stat-item {
@@ -809,18 +897,18 @@ onMounted(() => {
   display: block;
   font-size: 1.5rem;
   font-weight: 800;
-  color: #08717f;
+  color: var(--primary);
 }
 
 .stat-label {
-  color: #64748b;
+  color: var(--gray);
   font-size: 0.9rem;
 }
 
-/* Tabs */
+/* ===== TABS ===== */
 .profile-tabs {
   background: white;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
 }
 
 .tabs-nav {
@@ -839,37 +927,37 @@ onMounted(() => {
   border-bottom: 3px solid transparent;
   font-size: 1rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--gray);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .tab-btn:hover {
-  color: #08717f;
+  color: var(--primary);
 }
 
 .tab-btn.active {
-  color: #d40025;
-  border-bottom-color: #d40025;
+  color: var(--secondary);
+  border-bottom-color: var(--secondary);
 }
 
 .tab-icon {
   font-size: 1.2rem;
 }
 
-/* Tab Content */
+/* ===== TAB CONTENT ===== */
 .tab-content {
   padding: 40px 0;
 }
 
-/* Account Card */
+/* ===== ACCOUNT CARD ===== */
 .account-card {
   background: white;
   border-radius: 16px;
   padding: 30px;
   margin-bottom: 30px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
 }
 
 .card-title {
@@ -877,7 +965,7 @@ onMounted(() => {
   align-items: center;
   gap: 10px;
   font-size: 1.3rem;
-  color: #1e293b;
+  color: var(--dark);
   margin-bottom: 25px;
   padding-bottom: 15px;
   border-bottom: 2px solid #f1f5f9;
@@ -896,22 +984,22 @@ onMounted(() => {
 
 .info-item {
   padding: 15px;
-  background: #f8fafc;
+  background: var(--light);
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
 }
 
 .info-label {
   display: block;
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--gray);
   margin-bottom: 5px;
 }
 
 .info-value {
   font-size: 1rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--dark);
 }
 
 .role-badge {
@@ -923,17 +1011,17 @@ onMounted(() => {
 }
 
 .role-badge.admin {
-  background: #d40025;
+  background: var(--secondary);
   color: white;
 }
 
 .role-badge.vendor {
-  background: #08717f;
+  background: var(--primary);
   color: white;
 }
 
 .role-badge.customer {
-  background: #10b981;
+  background: var(--success);
   color: white;
 }
 
@@ -942,7 +1030,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 12px 25px;
-  background: linear-gradient(135deg, #08717f, #065a69);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
   border: none;
   border-radius: 8px;
@@ -957,7 +1045,7 @@ onMounted(() => {
   box-shadow: 0 5px 15px rgba(8, 113, 127, 0.3);
 }
 
-/* Settings */
+/* ===== SETTINGS ===== */
 .settings-list {
   display: flex;
   flex-direction: column;
@@ -969,8 +1057,8 @@ onMounted(() => {
   align-items: center;
   gap: 15px;
   padding: 15px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--light);
+  border: 1px solid var(--border);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -979,7 +1067,7 @@ onMounted(() => {
 
 .setting-item:hover {
   background: white;
-  border-color: #08717f;
+  border-color: var(--primary);
   transform: translateX(-4px);
 }
 
@@ -990,7 +1078,7 @@ onMounted(() => {
 
 .setting-item.logout:hover {
   background: #fee2e2;
-  border-color: #d40025;
+  border-color: var(--secondary);
 }
 
 .setting-icon {
@@ -1002,22 +1090,22 @@ onMounted(() => {
   justify-content: center;
   background: white;
   border-radius: 8px;
-  color: #08717f;
+  color: var(--primary);
 }
 
 .logout-icon {
-  color: #d40025 !important;
+  color: var(--secondary) !important;
 }
 
 .setting-text {
   flex: 1;
   text-align: right;
   font-size: 0.95rem;
-  color: #1e293b;
+  color: var(--dark);
 }
 
 .logout-text {
-  color: #d40025 !important;
+  color: var(--secondary) !important;
   font-weight: 700;
 }
 
@@ -1026,7 +1114,7 @@ onMounted(() => {
   font-size: 1rem;
 }
 
-/* Orders Tab */
+/* ===== ORDERS ===== */
 .orders-header {
   display: flex;
   justify-content: space-between;
@@ -1036,21 +1124,20 @@ onMounted(() => {
 
 .orders-title {
   font-size: 1.5rem;
-  color: #1e293b;
+  color: var(--dark);
 }
 
 .orders-count {
-  color: #64748b;
+  color: var(--gray);
   font-size: 0.95rem;
 }
 
 .loading-orders {
   text-align: center;
   padding: 40px;
-  color: #64748b;
+  color: var(--gray);
 }
 
-/* Orders List */
 .orders-list {
   display: flex;
   flex-direction: column;
@@ -1062,13 +1149,13 @@ onMounted(() => {
   border-radius: 16px;
   padding: 25px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   transition: all 0.3s ease;
 }
 
 .order-card:hover {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  border-color: #08717f;
+  border-color: var(--primary);
 }
 
 .order-header {
@@ -1088,7 +1175,7 @@ onMounted(() => {
 
 .order-id {
   font-weight: 700;
-  color: #08717f;
+  color: var(--primary);
   background: #e0f2f1;
   padding: 4px 12px;
   border-radius: 20px;
@@ -1096,7 +1183,7 @@ onMounted(() => {
 }
 
 .order-date {
-  color: #64748b;
+  color: var(--gray);
   font-size: 0.9rem;
 }
 
@@ -1153,7 +1240,7 @@ onMounted(() => {
   height: 60px;
   border-radius: 8px;
   object-fit: cover;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
 }
 
 .item-details {
@@ -1162,26 +1249,26 @@ onMounted(() => {
 
 .item-name {
   font-size: 0.95rem;
-  color: #1e293b;
+  color: var(--dark);
   margin-bottom: 5px;
   font-weight: 600;
 }
 
 .item-price {
-  color: #d40025;
+  color: var(--secondary);
   font-weight: 700;
   font-size: 0.85rem;
   margin-bottom: 3px;
 }
 
 .item-quantity {
-  color: #64748b;
+  color: var(--gray);
   font-size: 0.8rem;
 }
 
 .item-total {
   font-weight: 700;
-  color: #08717f;
+  color: var(--primary);
   font-size: 0.95rem;
   min-width: 100px;
   text-align: left;
@@ -1201,7 +1288,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #64748b;
+  color: var(--gray);
   font-size: 0.9rem;
 }
 
@@ -1212,11 +1299,11 @@ onMounted(() => {
 .order-total {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--dark);
 }
 
 .total-price {
-  color: #d40025;
+  color: var(--secondary);
   margin-right: 8px;
 }
 
@@ -1242,7 +1329,7 @@ onMounted(() => {
 }
 
 .btn-track {
-  background: linear-gradient(135deg, #08717f, #065a69);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
 }
 
@@ -1253,7 +1340,7 @@ onMounted(() => {
 
 .btn-details {
   background: #f1f5f9;
-  color: #64748b;
+  color: var(--gray);
 }
 
 .btn-details:hover {
@@ -1267,7 +1354,7 @@ onMounted(() => {
   padding: 60px 20px;
   background: white;
   border-radius: 16px;
-  border: 2px dashed #e2e8f0;
+  border: 2px dashed var(--border);
 }
 
 .empty-icon {
@@ -1279,19 +1366,19 @@ onMounted(() => {
 
 .empty-orders h3 {
   font-size: 1.3rem;
-  color: #1e293b;
+  color: var(--dark);
   margin-bottom: 10px;
 }
 
 .empty-orders p {
-  color: #64748b;
+  color: var(--gray);
   margin-bottom: 25px;
 }
 
 .btn-shop {
   display: inline-block;
   padding: 12px 30px;
-  background: linear-gradient(135deg, #08717f, #065a69);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
   text-decoration: none;
   border-radius: 30px;
@@ -1304,7 +1391,7 @@ onMounted(() => {
   box-shadow: 0 5px 15px rgba(8, 113, 127, 0.3);
 }
 
-/* Modal */
+/* ===== MODAL ===== */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1345,18 +1432,18 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
 }
 
 .modal-header h3 {
   font-size: 1.2rem;
-  color: #1e293b;
+  color: var(--dark);
 }
 
 .modal-close {
   width: 35px;
   height: 35px;
-  background: #f1f5f9;
+  background: var(--light);
   border: none;
   border-radius: 8px;
   font-size: 1.2rem;
@@ -1365,7 +1452,7 @@ onMounted(() => {
 }
 
 .modal-close:hover {
-  background: #d40025;
+  background: var(--secondary);
   color: white;
 }
 
@@ -1381,7 +1468,7 @@ onMounted(() => {
   display: block;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--dark);
   margin-bottom: 8px;
 }
 
@@ -1389,7 +1476,7 @@ onMounted(() => {
 .form-textarea {
   width: 100%;
   padding: 12px 15px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border);
   border-radius: 8px;
   font-size: 0.95rem;
   transition: all 0.3s ease;
@@ -1399,7 +1486,7 @@ onMounted(() => {
 .form-input:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: #08717f;
+  border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(8, 113, 127, 0.1);
 }
 
@@ -1427,8 +1514,8 @@ onMounted(() => {
 }
 
 .btn-cancel {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--light);
+  color: var(--gray);
 }
 
 .btn-cancel:hover {
@@ -1436,7 +1523,7 @@ onMounted(() => {
 }
 
 .btn-save {
-  background: linear-gradient(135deg, #08717f, #065a69);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
 }
 
@@ -1460,7 +1547,7 @@ onMounted(() => {
   animation: spin 0.8s linear infinite;
 }
 
-/* Toast */
+/* ===== TOAST ===== */
 .toast-notification {
   position: fixed;
   bottom: 30px;
@@ -1479,15 +1566,19 @@ onMounted(() => {
 }
 
 .toast-notification.success {
-  border-right-color: #10b981;
+  border-right-color: var(--success);
 }
 
 .toast-notification.error {
-  border-right-color: #ef4444;
+  border-right-color: var(--error);
 }
 
 .toast-notification.info {
-  border-right-color: #08717f;
+  border-right-color: var(--primary);
+}
+
+.toast-notification.warning {
+  border-right-color: var(--warning);
 }
 
 @keyframes slideInRight {
@@ -1506,11 +1597,11 @@ onMounted(() => {
 }
 
 .toast-message {
-  color: #1e293b;
+  color: var(--dark);
   font-size: 0.9rem;
 }
 
-/* Responsive */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .profile-info {
     flex-direction: column;

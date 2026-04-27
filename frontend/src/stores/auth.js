@@ -1,4 +1,3 @@
-// frontend/src/stores/auth.js
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '../services/api'
@@ -23,8 +22,27 @@ export const useAuthStore = defineStore('auth', () => {
   })
   const userEmail = computed(() => user.value?.email || '')
   const userAvatar = computed(() => {
-    // Retourner l'avatar de l'utilisateur ou une image par défaut
-    return user.value?.avatar || 'https://i.pravatar.cc/300?u=' + (user.value?.id || 'default')
+    if (!user.value?.avatar) {
+      return 'https://i.pravatar.cc/300?u=' + (user.value?.id || 'default')
+    }
+
+    // Si c'est déjà une URL complète
+    if (user.value.avatar.startsWith('http')) {
+      return user.value.avatar
+    }
+
+    // Si c'est une data URL (base64)
+    if (user.value.avatar.startsWith('data:image')) {
+      return user.value.avatar
+    }
+
+    // Si c'est un chemin relatif (/uploads/...)
+    if (user.value.avatar.startsWith('/uploads')) {
+      const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+      return `${baseURL}${user.value.avatar}`
+    }
+
+    return user.value.avatar
   })
   const userPhone = computed(() => user.value?.phone || '')
   const userAddress = computed(() => user.value?.address || '')
@@ -82,6 +100,32 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Mettre à jour le téléphone de l'utilisateur
+   */
+  const updatePhone = (newPhone) => {
+    if (user.value) {
+      user.value.phone = newPhone
+      saveToStorage()
+      console.log('📱 Téléphone mis à jour:', newPhone)
+      return true
+    }
+    return false
+  }
+
+  /**
+   * Mettre à jour l'utilisateur avec les données du backend
+   */
+  const updateUser = (userData) => {
+    if (user.value && userData) {
+      user.value = { ...user.value, ...userData }
+      saveToStorage()
+      console.log('👤 Utilisateur mis à jour:', userData)
+      return true
+    }
+    return false
+  }
+
+  /**
    * Connexion utilisateur
    */
   const login = async (email, password) => {
@@ -96,15 +140,12 @@ export const useAuthStore = defineStore('auth', () => {
         password
       })
 
-      console.log('📦 Réponse login:', response.data)
-
       if (response.data.success) {
         const { token: newToken, user: userData } = response.data
 
         token.value = newToken
         user.value = userData
 
-        // Récupérer l'ID du vendeur si nécessaire
         if (userData?.role === 'vendor') {
           await fetchVendorId()
         }
@@ -146,8 +187,6 @@ export const useAuthStore = defineStore('auth', () => {
         role: 'customer'
       })
 
-      console.log('📦 Réponse inscription:', response.data)
-
       if (response.data.success) {
         const { token: newToken, user: userData } = response.data
 
@@ -187,7 +226,6 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       console.log('📝 Inscription vendeur:', vendorData.email)
 
-      // 1. Créer le compte utilisateur
       const registerResponse = await api.post('/auth/register', {
         name: vendorData.fullName,
         email: vendorData.email.toLowerCase().trim(),
@@ -198,8 +236,6 @@ export const useAuthStore = defineStore('auth', () => {
         role: 'vendor'
       })
 
-      console.log('📦 Réponse register:', registerResponse.data)
-
       if (!registerResponse.data.success) {
         throw new Error(registerResponse.data.message || "Erreur d'inscription")
       }
@@ -209,7 +245,6 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = newToken
       user.value = userData
 
-      // 2. Créer le profil vendeur
       const vendorProfileData = {
         userId: user.value.id,
         shopName: vendorData.shopName,
@@ -221,18 +256,13 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       const vendorResponse = await api.post('/vendors', vendorProfileData, {
-        headers: {
-          'Authorization': `Bearer ${token.value}`
-        }
+        headers: { 'Authorization': `Bearer ${token.value}` }
       })
-
-      console.log('📦 Réponse vendeur:', vendorResponse.data)
 
       if (!vendorResponse.data.success) {
         throw new Error(vendorResponse.data.message || 'Erreur création vendeur')
       }
 
-      // 3. Extraire et sauvegarder l'ID du vendeur
       const vendorResult = vendorResponse.data.data || vendorResponse.data
       let newVendorId = null
 
@@ -273,7 +303,6 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await api.get(`/vendors/user/${user.value.id}`)
 
       if (response.data.success) {
-        // Gérer les différentes structures de réponse
         const vendor = response.data.data?.vendor || response.data.vendor
 
         if (vendor && vendor.id) {
@@ -285,7 +314,6 @@ export const useAuthStore = defineStore('auth', () => {
       }
       return null
     } catch (err) {
-      // Si 404, c'est normal (l'utilisateur n'est pas vendeur)
       if (err.response?.status === 404) {
         console.log('ℹ️ Utilisateur non vendeur')
         return null
@@ -354,57 +382,106 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Mettre à jour l'avatar
+   * Mettre à jour l'avatar - VERSION FINALE CORRIGÉE
    */
-  const updateAvatar = async (formData) => {
+  const updateAvatar = async (avatarInput) => {
     if (!token.value) return { success: false, error: 'Non authentifié' }
 
     loading.value = true
 
     try {
-      const response = await api.post('/users/avatar', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      let response
+      const formData = new FormData()
+
+      // Cas 1: C'est un File
+      if (avatarInput instanceof File) {
+        formData.append('avatar', avatarInput)
+        response = await api.post('/users/avatar', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+      }
+      // Cas 2: C'est un objet avec propriété avatar
+      else if (avatarInput && typeof avatarInput === 'object' && avatarInput.avatar) {
+        const base64Data = avatarInput.avatar
+
+        if (typeof base64Data === 'string' && base64Data.startsWith('data:image')) {
+          const fetchResponse = await fetch(base64Data)
+          const blob = await fetchResponse.blob()
+          const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
+
+          formData.append('avatar', file)
+          response = await api.post('/users/avatar', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          })
+        } else {
+          throw new Error("Format d'image invalide")
         }
-      })
+      }
+      // Cas 3: C'est une string base64
+      else if (typeof avatarInput === 'string' && avatarInput.startsWith('data:image')) {
+        const fetchResponse = await fetch(avatarInput)
+        const blob = await fetchResponse.blob()
+        const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
+
+        formData.append('avatar', file)
+        response = await api.post('/users/avatar', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+      }
+      else {
+        throw new Error('Format de fichier invalide')
+      }
 
       console.log('📦 Réponse upload avatar:', response.data)
 
       if (response.data.success) {
-        // Mettre à jour l'utilisateur avec le nouvel avatar
+        // Construire l'URL complète de l'avatar
+        const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+        const avatarUrl = response.data.avatar
+          ? `${baseURL}${response.data.avatar}`
+          : response.data.user?.avatar
+
         user.value = {
           ...user.value,
-          avatar: response.data.avatar || response.data.user?.avatar
+          ...response.data.user,
+          avatar: avatarUrl
         }
         saveToStorage()
         return { success: true, user: user.value }
       }
 
       return { success: false, error: response.data.message }
+
     } catch (err) {
       console.error('❌ Erreur updateAvatar:', err)
 
-      // Mode démo - Simuler un upload réussi
-      if (err.code === 'ERR_NETWORK') {
+      // Mode démo
+      if (err.code === 'ERR_NETWORK' || err.message?.includes('Network')) {
         console.log('🎭 Mode démo: Simulation upload avatar')
 
-        // Simuler un nouvel avatar (image data URL)
-        const reader = new FileReader()
-        const file = formData.get('avatar')
-
-        return new Promise((resolve) => {
-          reader.onload = (e) => {
-            const avatarUrl = e.target.result
-            user.value = {
-              ...user.value,
-              avatar: avatarUrl
+        let avatarUrl
+        if (avatarInput instanceof File) {
+          return new Promise((resolve) => {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+              user.value = { ...user.value, avatar: e.target.result }
+              saveToStorage()
+              loading.value = false
+              resolve({ success: true, user: user.value })
             }
-            saveToStorage()
-            loading.value = false
-            resolve({ success: true, user: user.value })
-          }
-          reader.readAsDataURL(file)
-        })
+            reader.readAsDataURL(avatarInput)
+          })
+        } else if (typeof avatarInput === 'string') {
+          avatarUrl = avatarInput
+        } else if (avatarInput?.avatar) {
+          avatarUrl = avatarInput.avatar
+        }
+
+        if (avatarUrl) {
+          user.value = { ...user.value, avatar: avatarUrl }
+          saveToStorage()
+          return { success: true, user: user.value }
+        }
       }
 
       const message = err.response?.data?.message || err.message || "Erreur lors de l'upload"
@@ -436,14 +513,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    // State
     token,
     user,
     vendorId,
     loading,
     error,
-
-    // Getters
     isAuthenticated,
     userRole,
     userId,
@@ -456,11 +530,11 @@ export const useAuthStore = defineStore('auth', () => {
     userAddress,
     userCreatedAt,
     isVendor,
-
-    // Actions
     setToken,
     setUser,
     setVendorId,
+    updatePhone,
+    updateUser,
     login,
     registerCustomer,
     registerVendor,

@@ -109,6 +109,22 @@
                 جاري التحميل...
               </span>
             </button>
+
+            <!-- Demo Accounts -->
+            <div class="demo-buttons">
+              <button type="button" class="demo-btn" @click="fillDemoAccount('client@turath.tn', 'client123')">
+                <span class="demo-icon">👤</span>
+                <span>عميل</span>
+              </button>
+              <button type="button" class="demo-btn" @click="fillDemoAccount('vendor@turath.tn', 'vendor123')">
+                <span class="demo-icon">🏪</span>
+                <span>بائع</span>
+              </button>
+              <button type="button" class="demo-btn" @click="fillDemoAccount('admin@turath.tn', 'admin123')">
+                <span class="demo-icon">⚙️</span>
+                <span>مسؤول</span>
+              </button>
+            </div>
           </form>
         </div>
 
@@ -278,7 +294,7 @@
                 <div class="avatar-upload-container">
                   <div class="avatar-preview-wrapper">
                     <img
-                      :src="avatarPreview || 'https://i.pravatar.cc/300'"
+                      :src="avatarPreview || 'https://i.pravatar.cc/300?u=' + Date.now()"
                       alt="Profile Avatar"
                       class="avatar-preview"
                     />
@@ -390,6 +406,7 @@
                 class="code-input"
                 v-model="codeDigits[index]"
                 @input="(e) => handleCodeInput(index, e)"
+                @keydown="handleCodeKeydown"
               />
             </div>
             <div class="modal-actions">
@@ -448,9 +465,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import api from '../services/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -497,11 +515,10 @@ const avatarPreview = ref(null)
 // ===== COMPUTED =====
 const canProceedToStep2 = computed(() => {
   return (
-    registerForm.fullName &&
-    registerForm.email &&
-    registerForm.phone &&
-    registerForm.password &&
-    registerForm.password.length >= 6 &&
+    registerForm.fullName?.trim() &&
+    registerForm.email?.includes('@') &&
+    registerForm.phone?.trim() &&
+    registerForm.password?.length >= 6 &&
     registerForm.password === registerForm.confirmPassword &&
     registerForm.acceptTerms
   )
@@ -518,6 +535,18 @@ const showNotification = (message, type = 'success') => {
 const switchView = (view) => {
   currentView.value = view
   errors.value = {}
+  if (view === 'register') {
+    registerStep.value = 1
+    // Réinitialiser le formulaire
+    registerForm.fullName = ''
+    registerForm.email = ''
+    registerForm.phone = ''
+    registerForm.address = ''
+    registerForm.password = ''
+    registerForm.confirmPassword = ''
+    registerForm.acceptTerms = false
+    avatarPreview.value = null
+  }
 }
 
 // ===== LOGIN =====
@@ -555,7 +584,7 @@ const handleLogin = async () => {
     }
   } catch (error) {
     console.error('❌ Erreur login:', error)
-    showNotification('حدث خطأ غير متوقع', 'error')
+    showNotification(error.response?.data?.message || 'حدث خطأ غير متوقع', 'error')
   } finally {
     isLoading.value = false
   }
@@ -620,7 +649,7 @@ const handleClientRegister = async () => {
     }
   } catch (error) {
     console.error('❌ Erreur register:', error)
-    showNotification('حدث خطأ أثناء التسجيل', 'error')
+    showNotification(error.response?.data?.message || 'حدث خطأ أثناء التسجيل', 'error')
   } finally {
     isLoading.value = false
   }
@@ -661,22 +690,19 @@ const sendResetCode = async () => {
 
   modalLoading.value = true
   try {
-    const response = await fetch('http://localhost:5000/api/v1/auth/forgot-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: forgotEmail.value }),
+    const response = await api.post('/auth/forgot-password', {
+      email: forgotEmail.value
     })
-    const data = await response.json()
 
-    if (data.success) {
+    if (response.data.success) {
       forgotStep.value = 2
       showNotification('📨 تم إرسال رمز التحقق إلى بريدك', 'success')
     } else {
-      showNotification(data.message || 'حدث خطأ', 'error')
+      showNotification(response.data.message || 'حدث خطأ', 'error')
     }
   } catch (error) {
     console.error('❌ Erreur sendResetCode:', error)
-    showNotification('خطأ في الاتصال بالخادم', 'error')
+    showNotification(error.response?.data?.message || 'خطأ في الاتصال بالخادم', 'error')
   } finally {
     modalLoading.value = false
   }
@@ -691,24 +717,19 @@ const verifyCode = async () => {
 
   modalLoading.value = true
   try {
-    const response = await fetch('http://localhost:5000/api/v1/auth/verify-code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: forgotEmail.value,
-        code: code,
-      }),
+    const response = await api.post('/auth/verify-code', {
+      email: forgotEmail.value,
+      code: code
     })
-    const data = await response.json()
 
-    if (data.success) {
+    if (response.data.success) {
       forgotStep.value = 3
     } else {
-      showNotification(data.message || 'رمز غير صحيح', 'error')
+      showNotification(response.data.message || 'رمز غير صحيح', 'error')
     }
   } catch (error) {
     console.error('❌ Erreur verifyCode:', error)
-    showNotification('خطأ في الاتصال بالخادم', 'error')
+    showNotification(error.response?.data?.message || 'خطأ في الاتصال بالخادم', 'error')
   } finally {
     modalLoading.value = false
   }
@@ -728,25 +749,20 @@ const resetPassword = async () => {
 
   modalLoading.value = true
   try {
-    const response = await fetch('http://localhost:5000/api/v1/auth/reset-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: forgotEmail.value,
-        code: code,
-        newPassword: newPassword.value,
-      }),
+    const response = await api.post('/auth/reset-password', {
+      email: forgotEmail.value,
+      code: code,
+      newPassword: newPassword.value
     })
-    const data = await response.json()
 
-    if (data.success) {
+    if (response.data.success) {
       forgotStep.value = 4
     } else {
-      showNotification(data.message || 'حدث خطأ', 'error')
+      showNotification(response.data.message || 'حدث خطأ', 'error')
     }
   } catch (error) {
     console.error('❌ Erreur resetPassword:', error)
-    showNotification('خطأ في الاتصال بالخادم', 'error')
+    showNotification(error.response?.data?.message || 'خطأ في الاتصال بالخادم', 'error')
   } finally {
     modalLoading.value = false
   }
@@ -764,6 +780,25 @@ const handleCodeInput = (index, event) => {
     if (nextInput) nextInput.focus()
   }
 }
+
+const handleCodeKeydown = (event) => {
+  const target = event.target
+  const index = Number(target.dataset.index)
+
+  if (event.key === 'Backspace' && !target.value && index > 0) {
+    const prevInput = document.querySelectorAll('.code-input')[index - 1]
+    if (prevInput) {
+      prevInput.focus()
+    }
+  }
+}
+
+// Ajouter data-index aux inputs de code
+onMounted(() => {
+  document.querySelectorAll('.code-input').forEach((input, index) => {
+    input.dataset.index = index
+  })
+})
 
 const maskEmail = (email) => {
   if (!email) return ''

@@ -558,23 +558,122 @@ const EMAIL_TEMPLATES = {
     html: `
       <!DOCTYPE html>
       <html dir="rtl" lang="ar">
-      <head><meta charset="UTF-8"><title>مرحباً بك</title>
-      <style>
-        body { font-family: 'Cairo', sans-serif; background: linear-gradient(145deg, #0a1929, #1a2b3c); padding: 40px 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 48px; overflow: hidden; animation: floatIn 0.8s ease; }
-        .header { background: linear-gradient(165deg, #08717f, #d40025); padding: 50px; text-align: center; color: white; }
-        .content { padding: 50px; text-align: center; }
-        .button { display: inline-block; background: linear-gradient(145deg, #08717f, #065a69); color: white; padding: 18px 40px; border-radius: 60px; text-decoration: none; margin: 20px 0; }
-        @keyframes floatIn { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
-      </style>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>مرحباً بك في أصالة</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap');
+          
+          body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(145deg, #0a1929, #1a2b3c);
+            padding: 40px 20px;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 48px;
+            overflow: hidden;
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.5);
+            animation: floatIn 0.8s ease;
+          }
+          
+          @keyframes floatIn {
+            0% { opacity: 0; transform: translateY(40px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          
+          .header {
+            background: linear-gradient(165deg, #08717f, #d40025);
+            padding: 60px 40px;
+            text-align: center;
+            color: white;
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+          }
+          
+          .header h1 { font-size: 48px; margin-bottom: 15px; }
+          .header p { font-size: 18px; opacity: 0.9; }
+          
+          .content {
+            padding: 50px 40px;
+            text-align: center;
+          }
+          
+          .welcome-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+          }
+          
+          @keyframes bounce {
+            0%,100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+          }
+          
+          h2 {
+            color: #08717f;
+            font-size: 32px;
+            margin-bottom: 20px;
+          }
+          
+          p {
+            color: #334155;
+            font-size: 18px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+          }
+          
+          .button {
+            display: inline-block;
+            background: linear-gradient(145deg, #08717f, #065a69);
+            color: white;
+            padding: 18px 40px;
+            border-radius: 60px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 18px;
+            margin: 20px 0;
+            box-shadow: 0 20px 30px -10px rgba(8,113,127,0.4);
+            transition: all 0.3s ease;
+          }
+          
+          .button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 40px -10px rgba(8,113,127,0.5);
+          }
+          
+          .footer {
+            background: #f1f5f9;
+            padding: 30px;
+            text-align: center;
+            color: #64748b;
+          }
+        </style>
       </head>
       <body>
         <div class="container">
-          <div class="header"><h1>🎉 مرحباً بك!</h1></div>
+          <div class="header">
+            <h1>🎉 مرحباً بك!</h1>
+            <p>أصالة - ASALA · منصة الحرف اليدوية التونسية</p>
+          </div>
           <div class="content">
-            <h2 style="color:#08717f;">${name}</h2>
-            <p>نحن سعداء بانضمامك إلى <strong>عائلة أصالة</strong>.</p>
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/products" class="button">✨ استكشف المنتجات</a>
+            <div class="welcome-icon">✨</div>
+            <h2>${name}</h2>
+            <p>نحن سعداء بانضمامك إلى <strong>عائلة أصالة</strong>.<br>استعد لاكتشاف أجمل الحرف اليدوية التونسية.</p>
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/products" class="button">
+              <span>✨ استكشف المنتجات</span>
+            </a>
+          </div>
+          <div class="footer">
+            <p>© 2025 أصالة - جميع الحقوق محفوظة</p>
           </div>
         </div>
       </body>
@@ -588,24 +687,101 @@ const EMAIL_TEMPLATES = {
     html: `
       <!DOCTYPE html>
       <html dir="rtl" lang="ar">
-      <head><meta charset="UTF-8"><title>تأكيد الطلب</title>
-      <style>
-        body { font-family: 'Cairo', sans-serif; background: #f0f9ff; padding: 30px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 24px; overflow: hidden; }
-        .header { background: #08717f; padding: 30px; text-align: center; color: white; }
-        .content { padding: 30px; }
-        .order-details { background: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0; }
-      </style>
+      <head>
+        <meta charset="UTF-8">
+        <title>تأكيد الطلب</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+          
+          body {
+            font-family: 'Cairo', sans-serif;
+            background: #f0f9ff;
+            padding: 30px;
+            margin: 0;
+          }
+          
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+          }
+          
+          .header {
+            background: linear-gradient(135deg, #08717f, #065a69);
+            padding: 40px;
+            text-align: center;
+            color: white;
+          }
+          
+          .header h1 { font-size: 32px; margin: 0; }
+          
+          .content {
+            padding: 40px;
+          }
+          
+          .order-details {
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 16px;
+            margin: 25px 0;
+            border: 1px solid #e2e8f0;
+          }
+          
+          .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+          }
+          
+          .detail-row:last-child {
+            border-bottom: none;
+          }
+          
+          .total {
+            font-size: 20px;
+            font-weight: 700;
+            color: #d40025;
+          }
+          
+          .button {
+            display: inline-block;
+            background: #08717f;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-top: 20px;
+          }
+        </style>
       </head>
       <body>
         <div class="container">
-          <div class="header"><h1>✅ تم تأكيد طلبك</h1></div>
+          <div class="header">
+            <h1>✅ تم تأكيد طلبك</h1>
+          </div>
           <div class="content">
-            <p>شكراً لك على طلبك!</p>
+            <p>شكراً لك على طلبك! سنقوم بمعالجته في أقرب وقت.</p>
             <div class="order-details">
-              <p><strong>رقم الطلب:</strong> #${order.id || 'N/A'}</p>
-              <p><strong>المجموع:</strong> ${order.total || 0} د.ت</p>
+              <div class="detail-row">
+                <span>رقم الطلب:</span>
+                <strong>#${order.id || 'N/A'}</strong>
+              </div>
+              <div class="detail-row">
+                <span>التاريخ:</span>
+                <strong>${new Date().toLocaleDateString('ar-TN')}</strong>
+              </div>
+              <div class="detail-row">
+                <span>المجموع:</span>
+                <strong class="total">${order.total || 0} د.ت</strong>
+              </div>
             </div>
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/orders/${order.id}" class="button">
+              تتبع طلبي
+            </a>
           </div>
         </div>
       </body>
@@ -619,22 +795,72 @@ const EMAIL_TEMPLATES = {
     html: `
       <!DOCTYPE html>
       <html dir="rtl" lang="ar">
-      <head><meta charset="UTF-8"><title>مرحباً بك</title>
-      <style>
-        body { font-family: 'Cairo', sans-serif; background: #f8fafc; padding: 30px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 24px; overflow: hidden; }
-        .header { background: linear-gradient(135deg, #08717f, #d40025); padding: 40px; text-align: center; color: white; }
-        .content { padding: 40px; text-align: center; }
-        .button { display: inline-block; background: #08717f; color: white; padding: 12px 30px; border-radius: 30px; text-decoration: none; }
-      </style>
+      <head>
+        <meta charset="UTF-8">
+        <title>مرحباً بك في نشرتنا البريدية</title>
+        <style>
+          body {
+            font-family: 'Cairo', sans-serif;
+            background: #f8fafc;
+            padding: 30px;
+          }
+          
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+          }
+          
+          .header {
+            background: linear-gradient(135deg, #08717f, #d40025);
+            padding: 40px;
+            text-align: center;
+            color: white;
+          }
+          
+          .header h1 { font-size: 32px; margin: 0; }
+          
+          .content {
+            padding: 40px;
+            text-align: center;
+          }
+          
+          .button {
+            display: inline-block;
+            background: #08717f;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 30px;
+            text-decoration: none;
+            margin-top: 20px;
+          }
+          
+          .footer {
+            background: #f1f5f9;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+          }
+        </style>
       </head>
       <body>
         <div class="container">
-          <div class="header"><h1>🎉 مرحباً بك!</h1></div>
+          <div class="header">
+            <h1>🎉 مرحباً بك!</h1>
+          </div>
           <div class="content">
             <p>شكراً لاشتراكك في نشرتنا البريدية</p>
             <p>ستصلك أحدث العروض والمنتجات الحرفية التونسية.</p>
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/unsubscribe?email=${email}" class="button">إلغاء الاشتراك</a>
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/unsubscribe?email=${email}" class="button">
+              إلغاء الاشتراك
+            </a>
+          </div>
+          <div class="footer">
+            يمكنك إلغاء الاشتراك في أي وقت.
           </div>
         </div>
       </body>
@@ -644,25 +870,63 @@ const EMAIL_TEMPLATES = {
 
   // ===== قالب حملة النشرة البريدية =====
   newsletterCampaign: (data) => ({
-    subject: data.subject,
+    subject: data.subject || '📧 نشرة أصالة البريدية',
     html: `
       <!DOCTYPE html>
       <html dir="rtl" lang="ar">
-      <head><meta charset="UTF-8"><title>${data.subject}</title>
-      <style>
-        body { font-family: 'Cairo', sans-serif; background: #f8fafc; padding: 30px; }
-        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 24px; overflow: hidden; }
-        .header { background: linear-gradient(135deg, #08717f, #d40025); padding: 40px; text-align: center; color: white; }
-        .content { padding: 40px; }
-        .footer { background: #f1f5f9; padding: 30px; text-align: center; }
-      </style>
+      <head>
+        <meta charset="UTF-8">
+        <title>${data.subject || 'نشرة أصالة'}</title>
+        <style>
+          body {
+            font-family: 'Cairo', sans-serif;
+            background: #f8fafc;
+            padding: 30px;
+          }
+          
+          .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+          }
+          
+          .header {
+            background: linear-gradient(135deg, #08717f, #d40025);
+            padding: 40px;
+            text-align: center;
+            color: white;
+          }
+          
+          .content {
+            padding: 40px;
+          }
+          
+          .footer {
+            background: #f1f5f9;
+            padding: 30px;
+            text-align: center;
+          }
+          
+          .unsubscribe {
+            color: #64748b;
+            font-size: 12px;
+          }
+        </style>
       </head>
       <body>
         <div class="container">
-          <div class="header"><h1>📧 ${data.subject}</h1></div>
-          <div class="content">${data.content}</div>
+          <div class="header">
+            <h1>📧 ${data.subject || 'نشرة أصالة'}</h1>
+          </div>
+          <div class="content">
+            ${data.content || ''}
+          </div>
           <div class="footer">
-            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/unsubscribe">إلغاء الاشتراك</a>
+            <p class="unsubscribe">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/unsubscribe">إلغاء الاشتراك</a>
+            </p>
           </div>
         </div>
       </body>
@@ -708,7 +972,7 @@ const sendEmail = async (to, template) => {
     to,
     subject: template.subject,
     html: template.html,
-    text: template.text
+    text: template.text || template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
   };
 
   try {
@@ -717,6 +981,7 @@ const sendEmail = async (to, template) => {
     if (process.env.NODE_ENV === 'development' && nodemailer.getTestMessageUrl(info)) {
       console.log('📧 Preview:', nodemailer.getTestMessageUrl(info));
     }
+    console.log(`✅ Email sent: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('❌ Error sending email:', error);
@@ -736,15 +1001,11 @@ const sendWelcomeEmail = (email, name) =>
 const sendOrderConfirmationEmail = (email, order) => 
   sendEmail(email, EMAIL_TEMPLATES.orderConfirmation(order));
 
-const sendNewsletterEmail = async (email, type, data = {}) => {
-  let template;
-  if (type === 'welcome') {
-    template = EMAIL_TEMPLATES.newsletterWelcome(email);
-  } else if (type === 'campaign') {
-    template = EMAIL_TEMPLATES.newsletterCampaign(data);
-  }
-  return sendEmail(email, template);
-};
+const sendNewsletterWelcomeEmail = (email) => 
+  sendEmail(email, EMAIL_TEMPLATES.newsletterWelcome(email));
+
+const sendNewsletterCampaign = (email, data) => 
+  sendEmail(email, EMAIL_TEMPLATES.newsletterCampaign(data));
 
 // ============================================
 // EXPORTS
@@ -754,6 +1015,7 @@ module.exports = {
   sendResetPasswordEmail,
   sendWelcomeEmail,
   sendOrderConfirmationEmail,
-  sendNewsletterEmail,
+  sendNewsletterWelcomeEmail,
+  sendNewsletterCampaign,
   EMAIL_TEMPLATES
 };

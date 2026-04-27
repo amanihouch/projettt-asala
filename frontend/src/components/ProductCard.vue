@@ -1,20 +1,20 @@
-<!-- src/components/ProductCard.vue -->
 <template>
   <div class="product-card" @click="viewProduct">
     <!-- Image Container -->
     <div class="product-image-container">
       <!-- Product Image -->
-      <img 
-        :src="product.image || product.images?.[0] || 'https://via.placeholder.com/300'" 
-        :alt="product.name || product.productName" 
-        class="product-image" 
-        loading="lazy" 
+      <img
+        :src="getProductImage"
+        :alt="getProductName"
+        class="product-image"
+        loading="lazy"
+        @error="handleImageError"
       />
 
-      <!-- Top Badges -->
+      <!-- Top Badges - Compacts -->
       <div class="top-badges">
-        <span v-if="product.isSponsored" class="badge badge-sponsored">⭐ {{ $t('common.sponsored') }}</span>
-        <span v-if="isNew" class="badge badge-new">🆕 {{ $t('common.new') }}</span>
+        <span v-if="product.isSponsored" class="badge sponsored">⭐</span>
+        <span v-if="isNew" class="badge new">🆕</span>
       </div>
 
       <!-- Quick Actions -->
@@ -25,24 +25,21 @@
           :class="{ 'is-liked': isLiked }"
           @click.stop="toggleLike"
           :aria-label="$t('actions.addToFavorites')"
-          :title="isLiked ? $t('actions.removeFromFavorites') : $t('actions.addToFavorites')"
         >
           <svg class="heart-icon" viewBox="0 0 24 24" :class="{ 'animate-like': animateLike }">
             <path
               d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-              :fill="isLiked ? '#d40025' : 'none'"
-              :stroke="isLiked ? '#d40025' : 'currentColor'"
+              :fill="isLiked ? 'var(--primary-red)' : 'none'"
+              :stroke="isLiked ? 'var(--primary-red)' : 'currentColor'"
               stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
             />
           </svg>
         </button>
 
         <!-- Quick View Button -->
-        <button 
-          class="action-btn quick-view-btn" 
-          @click.stop="$emit('quick-view', product)" 
+        <button
+          class="action-btn quick-view-btn"
+          @click.stop="$emit('quick-view', product)"
           :aria-label="$t('actions.quickView')"
         >
           👁️
@@ -54,7 +51,7 @@
 
       <!-- Liked Badge with Animation -->
       <transition name="slide-fade">
-        <div v-if="isLiked" class="liked-indicator">
+        <div v-if="isLiked && showLikedIndicator" class="liked-indicator">
           <span class="liked-icon">❤️</span>
           <span class="liked-text">{{ $t('common.favorite') }}</span>
         </div>
@@ -63,28 +60,29 @@
 
     <!-- Product Info -->
     <div class="product-info">
-      <!-- Vendor Info -->
+      <!-- Vendor Info - Compact -->
       <div class="vendor-info" @click.stop="goToVendor">
         <img
-          :src="product.vendor?.avatar || product.vendorAvatar || '/default-avatar.png'"
-          :alt="product.vendor?.name || product.vendorName"
+          :src="getVendorAvatar"
+          :alt="getVendorName"
           class="vendor-avatar"
+          @error="handleAvatarError"
         />
         <div class="vendor-details">
-          <span class="vendor-name">{{ product.vendor?.name || product.vendorName || $t('common.vendor') }}</span>
-          <span v-if="product.vendor?.verified || product.vendorVerified" class="verified-badge" :title="$t('vendor.verified')"> ✓ </span>
+          <span class="vendor-name">{{ getVendorName }}</span>
+          <span v-if="isVendorVerified" class="verified-badge">✓</span>
         </div>
       </div>
 
       <!-- Product Name -->
-      <h3 class="product-name">{{ product.name || product.productName }}</h3>
+      <h3 class="product-name">{{ getProductName }}</h3>
 
-      <!-- Product Description -->
-      <p v-if="product.description" class="product-description">
+      <!-- Product Description (optionnel) -->
+      <p v-if="product.description && showDescription" class="product-description">
         {{ truncateDescription(product.description) }}
       </p>
 
-      <!-- Rating Section -->
+      <!-- Rating Section - Compact -->
       <div class="rating-section">
         <div class="stars">
           <span
@@ -99,17 +97,15 @@
             ⭐
           </span>
         </div>
-        <div class="rating-info">
-          <span class="rating-value">{{ (product.rating || 0).toFixed(1) }}</span>
-          <span class="reviews-count">({{ product.reviews || 0 }})</span>
-        </div>
+        <span class="rating-value">{{ (product.rating || 0).toFixed(1) }}</span>
+        <span class="reviews-count">({{ product.reviews || 0 }})</span>
       </div>
 
       <!-- Price & Actions -->
       <div class="footer-section">
         <div class="price-section">
           <span class="current-price">{{ formatPrice(product.price) }} د.ت</span>
-          <span v-if="product.originalPrice || product.oldPrice" class="original-price">
+          <span v-if="hasDiscount" class="original-price">
             {{ formatPrice(product.originalPrice || product.oldPrice) }} د.ت
           </span>
         </div>
@@ -118,7 +114,6 @@
           <div
             class="likes-counter"
             @click.stop="toggleLike"
-            :title="isLiked ? $t('common.unlike') : $t('common.like')"
             :class="{ liked: isLiked }"
           >
             <span class="likes-icon">❤️</span>
@@ -130,7 +125,6 @@
             @click.stop="addToCart"
             :disabled="isAddingToCart"
             :class="{ 'in-cart': isInCart }"
-            :title="isInCart ? $t('products.inCart') : $t('products.addToCart')"
           >
             <span v-if="isAddingToCart" class="loading-spinner"></span>
             <span v-else-if="isInCart">✓</span>
@@ -180,11 +174,16 @@ const props = defineProps({
       vendorName: '',
       vendorAvatar: '',
       vendorVerified: false,
+      createdAt: null,
     }),
   },
   viewMode: {
     type: String,
     default: 'grid'
+  },
+  showDescription: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -195,15 +194,57 @@ const cartStore = useCartStore()
 
 const animateLike = ref(false)
 const isAddingToCart = ref(false)
+const showLikedIndicator = ref(false)
 const likeAnimationTimeout = ref(null)
+const likedIndicatorTimeout = ref(null)
 
-// Computed properties
+// ===== COMPUTED PROPERTIES =====
+
+// Nom du produit
+const getProductName = computed(() => {
+  return props.product.name || props.product.productName || t('products.unnamed')
+})
+
+// Image du produit
+const getProductImage = computed(() => {
+  return props.product.image ||
+         props.product.images?.[0] ||
+         'https://placehold.co/300x400/08717f/white?text=' + encodeURIComponent(getProductName.value)
+})
+
+// Nom du vendeur
+const getVendorName = computed(() => {
+  return props.product.vendor?.name ||
+         props.product.vendorName ||
+         t('vendor.artisan')
+})
+
+// Avatar du vendeur
+const getVendorAvatar = computed(() => {
+  return props.product.vendor?.avatar ||
+         props.product.vendorAvatar ||
+         'https://i.pravatar.cc/150?u=' + (props.product.vendorId || props.product.id)
+})
+
+// Vérification du vendeur
+const isVendorVerified = computed(() => {
+  return props.product.vendor?.verified || props.product.vendorVerified || false
+})
+
+// ID du vendeur
+const getVendorId = computed(() => {
+  return props.product.vendor?.id || props.product.vendorId || null
+})
+
+// Like status
 const isLiked = computed(() => likesStore.isLiked(props.product.id))
 
+// In cart status
 const isInCart = computed(() => {
   return cartStore.isInCart(props.product.id)
 })
 
+// New product check
 const isNew = computed(() => {
   if (props.product.isNew) return true
   if (!props.product.createdAt) return false
@@ -213,26 +254,28 @@ const isNew = computed(() => {
   return diffDays <= 7
 })
 
+// Discount check
 const hasDiscount = computed(() => {
-  return (props.product.originalPrice || props.product.oldPrice) && 
-         (props.product.originalPrice || props.product.oldPrice) > props.product.price
+  const oldPrice = props.product.originalPrice || props.product.oldPrice
+  return oldPrice && oldPrice > props.product.price
 })
 
+// Discount percentage
 const discountPercentage = computed(() => {
   const oldPrice = props.product.originalPrice || props.product.oldPrice
   if (!oldPrice) return 0
   return Math.round(((oldPrice - props.product.price) / oldPrice) * 100)
 })
 
-// Methods
+// ===== METHODS =====
 const formatPrice = (price) => {
-  return new Intl.NumberFormat('ar-TN').format(price)
+  return new Intl.NumberFormat('ar-TN').format(price || 0)
 }
 
 const truncateDescription = (description) => {
   if (!description) return ''
-  if (description.length > 100) {
-    return description.substring(0, 100) + '...'
+  if (description.length > 60) {
+    return description.substring(0, 60) + '...'
   }
   return description
 }
@@ -242,27 +285,53 @@ const viewProduct = () => {
 }
 
 const goToVendor = () => {
-  const vendorId = props.product.vendor?.id || props.product.vendorId
+  const vendorId = getVendorId.value
   if (vendorId) {
     router.push(`/vendor/${vendorId}`)
   }
 }
 
+const handleImageError = (e) => {
+  e.target.src = 'https://placehold.co/300x400/08717f/white?text=Produit'
+}
+
+const handleAvatarError = (e) => {
+  e.target.src = 'https://i.pravatar.cc/150?u=' + (props.product.vendorId || props.product.id)
+}
+
 const toggleLike = async () => {
+  // Clear existing timeouts
   if (likeAnimationTimeout.value) {
     clearTimeout(likeAnimationTimeout.value)
   }
+  if (likedIndicatorTimeout.value) {
+    clearTimeout(likedIndicatorTimeout.value)
+  }
+
+  const wasLiked = isLiked.value
 
   try {
     await likesStore.toggleLike(props.product)
+
+    // Animation
     animateLike.value = true
 
+    // Show indicator when liking
+    if (!wasLiked) {
+      showLikedIndicator.value = true
+      likedIndicatorTimeout.value = setTimeout(() => {
+        showLikedIndicator.value = false
+      }, 1500)
+    }
+
+    // Emit events
     if (likesStore.isLiked(props.product.id)) {
       emit('liked', props.product)
     } else {
       emit('unliked', props.product.id)
     }
 
+    // Reset animation
     likeAnimationTimeout.value = setTimeout(() => {
       animateLike.value = false
     }, 600)
@@ -279,11 +348,12 @@ const addToCart = async () => {
   try {
     await cartStore.addItem({
       id: props.product.id,
-      name: props.product.name || props.product.productName,
+      name: getProductName.value,
       price: props.product.price,
-      image: props.product.image || props.product.images?.[0],
+      image: getProductImage.value,
       quantity: 1,
-      vendorName: props.product.vendor?.name || props.product.vendorName
+      vendorName: getVendorName.value,
+      vendorId: getVendorId.value
     })
 
     emit('added-to-cart', props.product)
@@ -302,27 +372,27 @@ onUnmounted(() => {
   if (likeAnimationTimeout.value) {
     clearTimeout(likeAnimationTimeout.value)
   }
+  if (likedIndicatorTimeout.value) {
+    clearTimeout(likedIndicatorTimeout.value)
+  }
 })
 </script>
 
 <style scoped>
-/* === CSS VARIABLES - HARMONIZED WITH FAVORITES (#08717f & #d40025) === */
+/* === VARIABLES === */
 .product-card {
-  /* Primary Teal Theme (#08717f) */
   --primary-teal: #08717f;
   --primary-teal-light: #0a94a6;
   --primary-teal-dark: #065a69;
   --primary-teal-soft: #e0f5f7;
   --primary-teal-mist: #f0fafb;
 
-  /* Primary Red Theme (#d40025) */
   --primary-red: #d40025;
   --primary-red-light: #ff1744;
   --primary-red-dark: #b00020;
   --primary-red-soft: #ffe8ed;
   --primary-red-mist: #fff5f7;
 
-  /* Neutral Colors */
   --neutral-50: #f8fafc;
   --neutral-100: #f1f5f9;
   --neutral-200: #e2e8f0;
@@ -334,15 +404,14 @@ onUnmounted(() => {
   --neutral-800: #1e293b;
   --neutral-900: #0f172a;
 
-  /* Card Styling */
-  --card-radius: 16px;
-  --card-shadow: 0 4px 20px rgba(8, 113, 127, 0.08);
-  --card-shadow-hover: 0 12px 40px rgba(8, 113, 127, 0.18);
-  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --card-radius: 12px;
+  --card-shadow: 0 2px 8px rgba(8, 113, 127, 0.08);
+  --card-shadow-hover: 0 8px 24px rgba(8, 113, 127, 0.15);
+  --transition-smooth: all 0.3s ease;
+  --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-/* === BASE CARD STYLES === */
+/* === BASE CARD === */
 .product-card {
   background: white;
   border-radius: var(--card-radius);
@@ -358,16 +427,16 @@ onUnmounted(() => {
 }
 
 .product-card:hover {
-  transform: translateY(-8px);
+  transform: translateY(-4px);
   box-shadow: var(--card-shadow-hover);
   border-color: var(--primary-teal);
 }
 
-/* === IMAGE CONTAINER === */
+/* === IMAGE CONTAINER (Ratio 3:4 comme SHEIN) === */
 .product-image-container {
   position: relative;
   width: 100%;
-  padding-top: 100%;
+  padding-top: 133.33%; /* 3:4 Aspect Ratio */
   overflow: hidden;
   background: linear-gradient(135deg, var(--primary-teal-mist) 0%, var(--primary-red-mist) 100%);
 }
@@ -379,68 +448,57 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: transform 0.5s ease;
 }
 
 .product-card:hover .product-image {
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
-/* === BADGES === */
+/* === BADGES - Compacts === */
 .top-badges {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 8px;
+  right: 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   z-index: 2;
 }
 
 .badge {
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  backdrop-filter: blur(12px);
-  animation: slideInRight 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.badge-sponsored {
+.badge.sponsored {
   background: linear-gradient(135deg, var(--primary-teal), var(--primary-teal-dark));
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.badge-new {
+.badge.new {
   background: linear-gradient(135deg, var(--primary-red), var(--primary-red-dark));
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* === QUICK ACTIONS === */
 .quick-actions {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 8px;
+  left: 8px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   opacity: 0;
-  transform: translateX(-20px);
-  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
   z-index: 2;
 }
 
@@ -450,38 +508,33 @@ onUnmounted(() => {
 }
 
 .action-btn {
-  width: 46px;
-  height: 46px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(4px);
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   cursor: pointer;
   transition: var(--transition-bounce);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 0;
 }
 
 .action-btn:hover {
-  transform: scale(1.2);
+  transform: scale(1.15);
   background: white;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
-}
-
-.like-btn {
-  color: var(--neutral-600);
 }
 
 .like-btn.is-liked {
   background: var(--primary-red-soft);
   border-color: var(--primary-red);
-  animation: heartBeatPulse 0.8s ease;
 }
 
 .quick-view-btn {
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .quick-view-btn:hover {
@@ -490,82 +543,46 @@ onUnmounted(() => {
   border-color: var(--primary-teal);
 }
 
-/* === HEART ANIMATION === */
 .heart-icon {
-  width: 22px;
-  height: 22px;
-  transition: all 0.3s ease;
+  width: 18px;
+  height: 18px;
 }
 
+/* === HEART ANIMATION === */
 @keyframes heartBeatPulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  10%,
-  30% {
-    transform: scale(0.85);
-  }
-  20%,
-  40%,
-  60%,
-  80% {
-    transform: scale(1.15);
-  }
-  50%,
-  70% {
-    transform: scale(1.05);
-  }
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(0.9); }
+  50% { transform: scale(1.2); }
+  70% { transform: scale(1.1); }
+}
+
+.like-btn.is-liked {
+  animation: heartBeatPulse 0.5s ease;
 }
 
 .animate-like {
-  animation: likePopAnimation 0.7s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  animation: likePop 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-@keyframes likePopAnimation {
-  0% {
-    transform: scale(1);
-  }
-  25% {
-    transform: scale(1.4) rotate(15deg);
-  }
-  50% {
-    transform: scale(0.95) rotate(-15deg);
-  }
-  75% {
-    transform: scale(1.25) rotate(8deg);
-  }
-  100% {
-    transform: scale(1) rotate(0deg);
-  }
+@keyframes likePop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4) rotate(10deg); }
+  100% { transform: scale(1) rotate(0); }
 }
 
 /* === DISCOUNT BADGE === */
 .discount-badge {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
-  padding: 8px 16px;
+  bottom: 8px;
+  right: 8px;
+  padding: 4px 8px;
   background: linear-gradient(135deg, var(--primary-red), var(--primary-red-dark));
   color: white;
-  border-radius: 24px;
-  font-weight: 800;
-  font-size: 0.9rem;
-  box-shadow: 0 4px 20px rgba(212, 0, 37, 0.4);
-  animation: discountPulse 2.5s infinite;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-@keyframes discountPulse {
-  0%,
-  100% {
-    transform: scale(1);
-    box-shadow: 0 4px 20px rgba(212, 0, 37, 0.4);
-  }
-  50% {
-    transform: scale(1.08);
-    box-shadow: 0 6px 28px rgba(212, 0, 37, 0.6);
-  }
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  box-shadow: 0 2px 8px rgba(212, 0, 37, 0.3);
+  z-index: 2;
 }
 
 /* === LIKED INDICATOR === */
@@ -576,54 +593,46 @@ onUnmounted(() => {
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: linear-gradient(135deg, var(--primary-red), var(--primary-red-dark));
   color: white;
-  padding: 10px 20px;
-  border-radius: 30px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  box-shadow: 0 6px 24px rgba(212, 0, 37, 0.5);
+  padding: 6px 12px;
+  border-radius: 24px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(212, 0, 37, 0.4);
   z-index: 3;
-  animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  animation: bounceIn 0.4s ease;
+  white-space: nowrap;
 }
 
 .liked-icon {
-  animation: badgeHeartPulse 2s infinite;
-  font-size: 1.1em;
+  font-size: 1rem;
+  animation: heartBeat 1.5s infinite;
 }
 
-@keyframes badgeHeartPulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.3);
-  }
+@keyframes heartBeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 
 @keyframes bounceIn {
   0% {
     opacity: 0;
-    transform: translate(-50%, -50%) scale(0.3);
-  }
-  50% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.1);
+    transform: translate(-50%, -50%) scale(0.5);
   }
   70% {
-    transform: translate(-50%, -50%) scale(0.95);
+    transform: translate(-50%, -50%) scale(1.1);
   }
   100% {
+    opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
 }
 
 .slide-fade-enter-active,
 .slide-fade-leave-active {
-  transition: all 0.5s ease;
+  transition: all 0.4s ease;
 }
 
 .slide-fade-enter-from,
@@ -632,12 +641,12 @@ onUnmounted(() => {
   transform: translate(-50%, -50%) scale(0.8);
 }
 
-/* === PRODUCT INFO === */
+/* === PRODUCT INFO - Compact === */
 .product-info {
-  padding: 22px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
   flex: 1;
   background: white;
 }
@@ -646,19 +655,18 @@ onUnmounted(() => {
 .vendor-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
   transition: opacity 0.2s ease;
-  padding: 6px 0;
 }
 
 .vendor-info:hover {
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
 .vendor-avatar {
-  width: 34px;
-  height: 34px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--neutral-200);
@@ -667,20 +675,19 @@ onUnmounted(() => {
 
 .vendor-info:hover .vendor-avatar {
   border-color: var(--primary-teal);
-  box-shadow: 0 0 0 3px var(--primary-teal-soft);
 }
 
 .vendor-details {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .vendor-name {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: var(--neutral-600);
-  font-weight: 600;
-  max-width: 130px;
+  font-weight: 500;
+  max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -690,65 +697,63 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   background: linear-gradient(135deg, var(--primary-teal), var(--primary-teal-dark));
   color: white;
   border-radius: 50%;
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  box-shadow: 0 2px 8px rgba(8, 113, 127, 0.3);
 }
 
 /* Product Name */
 .product-name {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--neutral-900);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--neutral-800);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 3em;
-  margin: 4px 0;
+  min-height: 2.5em;
+  margin: 0;
 }
 
 /* Product Description */
 .product-description {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: var(--neutral-500);
-  line-height: 1.6;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin: 4px 0;
+  margin: 2px 0;
 }
 
-/* Rating Section */
+/* Rating Section - Compact */
 .rating-section {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 8px 0;
+  gap: 4px;
+  font-size: 0.75rem;
 }
 
 .stars {
   display: flex;
-  gap: 3px;
+  gap: 2px;
 }
 
 .star {
-  font-size: 16px;
-  opacity: 0.2;
+  font-size: 12px;
+  opacity: 0.3;
   transition: opacity 0.2s ease;
 }
 
 .star.filled {
   opacity: 1;
   color: #fbbf24;
-  filter: drop-shadow(0 1px 2px rgba(251, 191, 36, 0.3));
 }
 
 .star.half {
@@ -759,112 +764,85 @@ onUnmounted(() => {
   color: transparent;
 }
 
-.rating-info {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
 .rating-value {
-  font-weight: 700;
-  color: var(--neutral-900);
-  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--neutral-700);
 }
 
 .reviews-count {
   color: var(--neutral-400);
-  font-size: 0.75rem;
 }
 
-/* === FOOTER SECTION === */
+/* Footer Section */
 .footer-section {
   margin-top: auto;
-  padding-top: 18px;
-  border-top: 2px solid var(--neutral-100);
+  padding-top: 8px;
+  border-top: 1px solid var(--neutral-100);
 }
 
 .price-section {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .current-price {
-  font-size: 1.6rem;
+  font-size: 1.2rem;
   font-weight: 800;
   color: var(--primary-teal);
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  letter-spacing: -0.5px;
+  line-height: 1;
 }
 
 .original-price {
-  font-size: 1rem;
+  font-size: 0.75rem;
   color: var(--neutral-400);
   text-decoration: line-through;
-  font-weight: 500;
 }
 
 .actions-section {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
 }
 
 .likes-counter {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
+  gap: 4px;
+  padding: 6px 10px;
   background: var(--primary-red-mist);
-  border-radius: 24px;
-  border: 2px solid var(--primary-red-soft);
+  border-radius: 20px;
+  border: 1px solid var(--primary-red-soft);
   cursor: pointer;
-  transition: var(--transition-bounce);
-  min-width: 85px;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
 }
 
 .likes-counter:hover {
   background: var(--primary-red-soft);
-  transform: translateY(-3px);
+  transform: translateY(-1px);
   border-color: var(--primary-red);
-  box-shadow: 0 6px 20px rgba(212, 0, 37, 0.2);
 }
 
 .likes-counter.liked {
   background: var(--primary-red-soft);
   border-color: var(--primary-red);
-  box-shadow: 0 4px 16px rgba(212, 0, 37, 0.25);
-}
-
-.likes-counter.liked .likes-icon {
-  animation: heartPulseLoop 1.5s infinite;
 }
 
 .likes-icon {
-  font-size: 16px;
-}
-
-@keyframes heartPulseLoop {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.25);
-  }
+  font-size: 12px;
 }
 
 .likes-count {
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--primary-red);
 }
 
 .add-to-cart-btn {
-  width: 52px;
-  height: 52px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -872,21 +850,16 @@ onUnmounted(() => {
   color: white;
   border: none;
   border-radius: 50%;
-  font-size: 22px;
+  font-size: 18px;
   cursor: pointer;
   transition: var(--transition-bounce);
-  box-shadow: 0 4px 20px rgba(8, 113, 127, 0.35);
-  position: relative;
+  box-shadow: 0 2px 8px rgba(8, 113, 127, 0.3);
+  padding: 0;
 }
 
 .add-to-cart-btn:hover:not(:disabled) {
-  transform: translateY(-3px) scale(1.08);
-  box-shadow: 0 8px 30px rgba(8, 113, 127, 0.45);
-  background: linear-gradient(135deg, var(--primary-teal-light), var(--primary-teal));
-}
-
-.add-to-cart-btn:active:not(:disabled) {
-  transform: translateY(-1px) scale(1.05);
+  transform: translateY(-2px) scale(1.1);
+  box-shadow: 0 4px 12px rgba(8, 113, 127, 0.4);
 }
 
 .add-to-cart-btn:disabled {
@@ -896,89 +869,66 @@ onUnmounted(() => {
 
 .add-to-cart-btn.in-cart {
   background: linear-gradient(135deg, var(--primary-red), var(--primary-red-dark));
-  box-shadow: 0 4px 20px rgba(212, 0, 37, 0.35);
-}
-
-.add-to-cart-btn.in-cart:hover:not(:disabled) {
-  box-shadow: 0 8px 30px rgba(212, 0, 37, 0.45);
+  box-shadow: 0 2px 8px rgba(212, 0, 37, 0.3);
 }
 
 .loading-spinner {
-  width: 22px;
-  height: 22px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top: 3px solid white;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.6s linear infinite;
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
-/* === RESPONSIVE DESIGN === */
+/* === RESPONSIVE === */
 @media (max-width: 768px) {
-  .product-card {
-    border-radius: 14px;
-  }
-
   .product-info {
-    padding: 18px;
+    padding: 10px;
   }
 
   .product-name {
-    font-size: 1.05rem;
+    font-size: 0.85rem;
   }
 
   .current-price {
-    font-size: 1.4rem;
+    font-size: 1.1rem;
   }
 
   .action-btn {
-    width: 42px;
-    height: 42px;
+    width: 30px;
+    height: 30px;
+  }
+
+  .add-to-cart-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
   }
 
   .quick-actions {
     opacity: 1;
     transform: translateX(0);
   }
-
-  .likes-counter {
-    padding: 8px 14px;
-    min-width: 75px;
-  }
-
-  .add-to-cart-btn {
-    width: 48px;
-    height: 48px;
-    font-size: 20px;
-  }
-  
 }
 
 @media (max-width: 480px) {
   .badge {
-    font-size: 0.7rem;
-    padding: 5px 10px;
-  }
-
-  .discount-badge {
-    padding: 6px 12px;
-    font-size: 0.8rem;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
   }
 
   .vendor-name {
-    max-width: 90px;
+    max-width: 70px;
   }
 
   .product-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
   }
 }
 
@@ -988,7 +938,8 @@ onUnmounted(() => {
   .product-image,
   .action-btn,
   .likes-counter,
-  .add-to-cart-btn {
+  .add-to-cart-btn,
+  .liked-indicator {
     transition: none;
     animation: none;
   }
@@ -1001,13 +952,15 @@ onUnmounted(() => {
 /* === PRINT STYLES === */
 @media print {
   .quick-actions,
-  .actions-section {
+  .actions-section,
+  .discount-badge {
     display: none;
   }
 
   .product-card {
     box-shadow: none;
     border: 1px solid var(--neutral-300);
+    page-break-inside: avoid;
   }
 }
 </style>

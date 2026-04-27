@@ -34,6 +34,12 @@
             <span class="nav-text">المنتجات</span>
           </router-link>
 
+          <!-- ⭐ المنتجات المميزة (NOUVEAU) -->
+          <router-link to="/admin/sponsored-products" class="nav-item" active-class="active">
+            <span class="nav-icon">⭐</span>
+            <span class="nav-text">المنتجات المميزة</span>
+          </router-link>
+
           <!-- الطلبات -->
           <router-link to="/admin/orders" class="nav-item" active-class="active">
             <span class="nav-icon">🛒</span>
@@ -46,7 +52,7 @@
             <span class="nav-text">التصنيفات</span>
           </router-link>
 
-          <!-- ✅ المنشورات - الرابط الصحيح -->
+          <!-- المنشورات -->
           <router-link to="/admin/pending-posts" class="nav-item" active-class="active">
             <span class="nav-icon">📝</span>
             <span class="nav-text">المنشورات</span>
@@ -137,7 +143,16 @@
             </div>
           </div>
 
-
+          <!-- ⭐ Statistiques des produits sponsorisés (NOUVEAU) -->
+          <div class="stats-row">
+            <div class="stat-card mini">
+              <div class="stat-icon sponsored">⭐</div>
+              <div class="stat-details">
+                <h3 class="stat-value">{{ stats.sponsoredProducts }}</h3>
+                <p class="stat-label">منتجات مميزة</p>
+              </div>
+            </div>
+          </div>
 
           <!-- Recent Orders -->
           <div class="recent-orders">
@@ -221,10 +236,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
+import { useProductStore } from '../../stores/productStore'
 import Chart from 'chart.js/auto'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const productStore = useProductStore()
 
 // ===== STATE =====
 const pageTitle = ref('لوحة التحكم')
@@ -249,6 +266,7 @@ const stats = ref({
   totalProducts: 0,
   totalOrders: 0,
   totalRevenue: 0,
+  sponsoredProducts: 0,
 })
 
 const recentOrders = ref([])
@@ -326,7 +344,7 @@ const toggleVendorStatus = (vendor) => {
   showNotification(`تم ${vendor.verified ? 'تفعيل' : 'تعطيل'} البائع`, 'success')
 }
 
-const loadDashboardData = () => {
+const loadDashboardData = async () => {
   try {
     // Charger les données depuis localStorage
     const vendors = JSON.parse(localStorage.getItem('vendors') || '[]')
@@ -335,6 +353,10 @@ const loadDashboardData = () => {
     const posts = JSON.parse(localStorage.getItem('posts') || '[]')
     const pendingPosts = JSON.parse(localStorage.getItem('pending_posts') || '[]')
 
+    // Charger les produits sponsorisés
+    await productStore.fetchSponsoredProducts()
+    const sponsoredCount = productStore.sponsoredProducts?.length || 0
+
     // Calculer les statistiques
     stats.value = {
       totalUsers: customers.length,
@@ -342,6 +364,7 @@ const loadDashboardData = () => {
       totalProducts: posts.length + pendingPosts.length,
       totalOrders: orders.length,
       totalRevenue: orders.reduce((sum, order) => sum + (order.total || 0), 0),
+      sponsoredProducts: sponsoredCount,
     }
 
     // Récents ordres
@@ -633,6 +656,10 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 20px;
+  margin-bottom: 20px;
+}
+
+.stats-row {
   margin-bottom: 30px;
 }
 
@@ -645,6 +672,10 @@ onMounted(() => {
   gap: 15px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
+}
+
+.stat-card.mini {
+  max-width: 300px;
 }
 
 .stat-card:hover {
@@ -685,6 +716,11 @@ onMounted(() => {
 .stat-icon.revenue {
   background: #d1fae5;
   color: #059669;
+}
+
+.stat-icon.sponsored {
+  background: #fef9c3;
+  color: #ca8a04;
 }
 
 .stat-details {
