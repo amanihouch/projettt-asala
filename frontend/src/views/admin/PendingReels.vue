@@ -1212,4 +1212,189 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
 }
+/* ===== DARK MODE UNIFORMISÉ POUR ADMIN/PENDING VENDORS ===== */
+/* Ajoutez à la fin du <style scoped> */
+
+.admin-page.dark-mode {
+  background: #161627 !important;
+}
+
+.dark-mode .page-content {
+  background: #1e1e30 !important;
+  border: 1px solid #2a2a40 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Stats Cards */
+.dark-mode .stat-card {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .stat-value {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .stat-label {
+  color: #94a3b8 !important;
+}
+
+/* Search */
+.dark-mode .search-input {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .search-input::placeholder {
+  color: #64748b !important;
+}
+
+.dark-mode .search-input:focus {
+  border-color: #2dd4bf !important;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15) !important;
+}
+
+/* Vendor Cards */
+.dark-mode .vendor-card {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .vendor-card:hover {
+  border-color: #2dd4bf !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .vendor-header {
+  background: #121220 !important;
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .vendor-avatar {
+  border-color: #1e1e30 !important;
+}
+
+.dark-mode .vendor-name {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .vendor-owner {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .vendor-email {
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .vendor-phone {
+  color: #2dd4bf !important;
+}
+
+.dark-mode .pending-badge {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+}
+
+/* Details */
+.dark-mode .detail-label {
+  color: #64748b !important;
+}
+
+.dark-mode .detail-value {
+  color: #cbd5e1 !important;
+}
+
+/* Vendor Actions */
+.dark-mode .vendor-actions {
+  background: #121220 !important;
+  border-top-color: #2a2a40 !important;
+}
+
+.dark-mode .action-btn.view {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .action-btn.view:hover {
+  background: #3a3a55 !important;
+}
+
+/* Empty */
+.dark-mode .empty-state h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .empty-state p {
+  color: #94a3b8 !important;
+}
+
+/* Loading */
+.dark-mode .loading-state p {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .spinner {
+  border-color: #2a2a40 !important;
+  border-top-color: #2dd4bf !important;
+}
+
+/* Modal */
+.dark-mode .modal-content {
+  background: #1e1e30 !important;
+}
+
+.dark-mode .modal-header {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .modal-header h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .close-btn {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .modal-body p {
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .reject-textarea {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .reject-textarea:focus {
+  border-color: #ef4444 !important;
+}
+
+.dark-mode .hint {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .modal-footer {
+  border-top-color: #2a2a40 !important;
+}
+
+.dark-mode .btn-cancel {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .btn-cancel:hover {
+  background: #3a3a55 !important;
+}
+
+/* Toast */
+.dark-mode .toast-notification {
+  background: #1e1e30 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9 !important;
+}
 </style>

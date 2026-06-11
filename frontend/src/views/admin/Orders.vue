@@ -203,11 +203,13 @@
   </div>
 </template>
 
+// src/views/admin/Orders.vue - SECTION SCRIPT CORRIGÉE
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useThemeStore } from '../../stores/theme'
+import api from '../../services/api'  // ✅ Utiliser votre service API existant
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -216,12 +218,11 @@ const themeStore = useThemeStore()
 // ===== DARK MODE =====
 const isDarkMode = computed(() => themeStore.isDarkMode)
 
-// ===== DONNÉES DE DÉMONSTRATION =====
+// ===== DONNÉES DE DÉMONSTRATION (FALLBACK UNIQUEMENT) =====
 const DEMO_ORDERS = [
   {
-    id: 'ORD001',
-    orderNumber: 'ORD-2024-001',
-    customer: { fullName: 'أحمد المحمدي', email: 'ahmed@example.com', phone: '20123456' },
+    id: 'DEMO001',
+    orderNumber: 'DEMO-2024-001',
     customer_name: 'أحمد المحمدي',
     customer_email: 'ahmed@example.com',
     customer_phone: '20123456',
@@ -231,72 +232,7 @@ const DEMO_ORDERS = [
     shippingAddress: 'تونس، شارع الحبيب بورقيبة 45',
     items: [
       { productName: 'عطر فاخر', price: 89.900, quantity: 1 },
-      { productName: 'صابون تقليدي', price: 25.500, quantity: 2 },
-      { productName: 'زيت زيتون', price: 15.600, quantity: 1 }
-    ]
-  },
-  {
-    id: 'ORD002',
-    orderNumber: 'ORD-2024-002',
-    customer: { fullName: 'فاطمة بن صالح', email: 'fatma@example.com', phone: '98765432' },
-    customer_name: 'فاطمة بن صالح',
-    customer_email: 'fatma@example.com',
-    customer_phone: '98765432',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    total: 320.000,
-    status: 'processing',
-    shippingAddress: 'سوسة، شارع 2 مارس 12',
-    items: [
-      { productName: 'مجوهرات فضة', price: 280.000, quantity: 1 },
-      { productName: 'حقيبة جلدية', price: 40.000, quantity: 1 }
-    ]
-  },
-  {
-    id: 'ORD003',
-    orderNumber: 'ORD-2024-003',
-    customer: { fullName: 'محمد الكافي', email: 'mohamed@example.com', phone: '55443322' },
-    customer_name: 'محمد الكافي',
-    customer_email: 'mohamed@example.com',
-    customer_phone: '55443322',
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-    total: 89.900,
-    status: 'shipped',
-    shippingAddress: 'صفاقس، شارع الحبيب ثامر 78',
-    items: [
-      { productName: 'فخار تونسي', price: 59.900, quantity: 1 },
-      { productName: 'حنبل صغير', price: 30.000, quantity: 1 }
-    ]
-  },
-  {
-    id: 'ORD004',
-    orderNumber: 'ORD-2024-004',
-    customer: { fullName: 'سامية المناعي', email: 'samia@example.com', phone: '22334455' },
-    customer_name: 'سامية المناعي',
-    customer_email: 'samia@example.com',
-    customer_phone: '22334455',
-    createdAt: new Date(Date.now() - 259200000).toISOString(),
-    total: 450.000,
-    status: 'delivered',
-    shippingAddress: 'نابل، شارع البيئة 23',
-    items: [
-      { productName: 'سجاد يدوي', price: 400.000, quantity: 1 },
-      { productName: 'مرجان', price: 50.000, quantity: 1 }
-    ]
-  },
-  {
-    id: 'ORD005',
-    orderNumber: 'ORD-2024-005',
-    customer: { fullName: 'كريم بن عمر', email: 'karim@example.com', phone: '99887766' },
-    customer_name: 'كريم بن عمر',
-    customer_email: 'karim@example.com',
-    customer_phone: '99887766',
-    createdAt: new Date(Date.now() - 345600000).toISOString(),
-    total: 75.500,
-    status: 'cancelled',
-    shippingAddress: 'بنزرت، شارع الاستقلال 56',
-    items: [
-      { productName: 'منتج تجميلي', price: 45.500, quantity: 1 },
-      { productName: 'صابون بلدي', price: 30.000, quantity: 1 }
+      { productName: 'صابون تقليدي', price: 25.500, quantity: 2 }
     ]
   }
 ]
@@ -317,15 +253,15 @@ const toast = ref({
 
 // ===== UTILS =====
 const getCustomerName = (order) => {
-  return order.customer?.fullName || order.customer?.name || order.customer_name || 'غير معروف'
+  return order.customerName || order.customer_name || order.user?.name || order.userName || 'غير معروف'
 }
 
 const getCustomerEmail = (order) => {
-  return order.customer?.email || order.customer_email || 'غير متوفر'
+  return order.customerEmail || order.customer_email || order.user?.email || order.userEmail || 'غير متوفر'
 }
 
 const getCustomerPhone = (order) => {
-  return order.customer?.phone || order.customer_phone || 'غير متوفر'
+  return order.customerPhone || order.customerPhone1 || order.customer_phone || order.user?.phone || 'غير متوفر'
 }
 
 const showNotification = (message, type = 'success') => {
@@ -385,44 +321,178 @@ const filteredOrders = computed(() => {
   return result
 })
 
-// ===== CHARGEMENT DES DONNÉES =====
-const loadOrders = () => {
+// ===== CHARGEMENT DES DONNÉES (CORRIGÉ - UTILISE L'API) =====
+const loadOrders = async () => {
   loading.value = true
 
   try {
-    // Essayer de charger depuis localStorage
-    const savedOrders = localStorage.getItem('orders')
-    if (savedOrders) {
-      const parsed = JSON.parse(savedOrders)
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        orders.value = parsed
-        console.log('📦 Commandes chargées depuis localStorage:', orders.value.length)
+    // ✅ Utiliser votre API service avec la route admin correcte
+    const response = await api.get('/orders/admin/all')
+
+    if (response.data.success && Array.isArray(response.data.data)) {
+      const apiOrders = response.data.data
+
+      if (apiOrders.length > 0) {
+        // Normaliser les données pour correspondre au format attendu par le template
+        orders.value = apiOrders.map(order => ({
+          ...order,
+          id: order.id,
+          orderNumber: order.orderNumber || `ORD-${order.id}`,
+          customer_name: getCustomerName(order),
+          customer_email: getCustomerEmail(order),
+          customer_phone: getCustomerPhone(order),
+          total: parseFloat(order.total) || 0,
+          status: order.status || 'pending',
+          createdAt: order.createdAt || order.created_at,
+          items: Array.isArray(order.items) ? order.items.map(item => ({
+            productName: item.productName || item.product_name || item.name || 'منتج',
+            name: item.productName || item.product_name || item.name || 'منتج',
+            price: parseFloat(item.price) || 0,
+            quantity: parseInt(item.quantity) || 1
+          })) : [],
+          shippingAddress: order.shippingAddress || order.address || 'غير متوفر'
+        }))
+
+        console.log('📦 Commandes chargées depuis l\'API:', orders.value.length)
+
+        // Sauvegarder dans localStorage comme cache
+        localStorage.setItem('admin_orders_cache', JSON.stringify(orders.value))
       } else {
-        orders.value = DEMO_ORDERS
-        localStorage.setItem('orders', JSON.stringify(DEMO_ORDERS))
-        console.log('📦 Commandes de démo chargées:', orders.value.length)
+        // Aucune commande trouvée dans l'API
+        orders.value = []
+        console.log('📦 Aucune commande trouvée dans l\'API')
       }
     } else {
-      orders.value = DEMO_ORDERS
-      localStorage.setItem('orders', JSON.stringify(DEMO_ORDERS))
-      console.log('📦 Commandes de démo initialisées:', orders.value.length)
+      // Format de réponse invalide
+      console.warn('⚠️ Format de réponse API invalide, tentative de chargement du cache...')
+      loadOrdersFromCache()
     }
   } catch (error) {
-    console.error('❌ Erreur chargement commandes:', error)
-    orders.value = DEMO_ORDERS
+    console.error('❌ Erreur chargement commandes depuis l\'API:', error.message)
+
+    // Si l'erreur est 404 (route non trouvée), essayer d'autres routes
+    if (error.response?.status === 404) {
+      console.warn('⚠️ Route /orders/admin/all non trouvée, tentative de routes alternatives...')
+      await tryAlternativeRoutes()
+    } else {
+      // Charger depuis le cache localStorage
+      loadOrdersFromCache()
+    }
   } finally {
     loading.value = false
   }
 }
 
-const updateOrderStatus = (order) => {
-  // Mise à jour locale
-  localStorage.setItem('orders', JSON.stringify(orders.value))
-  showNotification(`✅ تم تحديث حالة الطلب #${order.id || order.orderNumber} إلى ${getStatusText(order.status)}`, 'success')
+// Fonction pour essayer des routes alternatives si la route principale échoue
+const tryAlternativeRoutes = async () => {
+  const alternativeRoutes = [
+    '/admin/orders',
+    '/orders/admin',
+    '/admin/orders/all'
+  ]
+
+  for (const route of alternativeRoutes) {
+    try {
+      console.log(`🔄 Tentative de la route: ${route}`)
+      const response = await api.get(route)
+
+      if (response.data.success && Array.isArray(response.data.data)) {
+        orders.value = response.data.data.map(order => ({
+          ...order,
+          id: order.id || order._id,
+          orderNumber: order.orderNumber || `ORD-${order.id || order._id}`,
+          customer_name: getCustomerName(order),
+          customer_email: getCustomerEmail(order),
+          customer_phone: getCustomerPhone(order),
+          total: parseFloat(order.total) || 0,
+          status: order.status || 'pending',
+          createdAt: order.createdAt || order.created_at,
+          items: Array.isArray(order.items) ? order.items : [],
+          shippingAddress: order.shippingAddress || order.address || 'غير متوفر'
+        }))
+
+        console.log(`✅ Commandes chargées via la route ${route}:`, orders.value.length)
+        localStorage.setItem('admin_orders_cache', JSON.stringify(orders.value))
+        return
+      }
+    } catch (err) {
+      console.warn(`❌ Route ${route} échouée:`, err.message)
+    }
+  }
+
+  // Si toutes les routes échouent, charger depuis le cache
+  loadOrdersFromCache()
+}
+
+// Fonction de fallback pour charger depuis le cache localStorage
+const loadOrdersFromCache = () => {
+  try {
+    const cached = localStorage.getItem('admin_orders_cache')
+    if (cached) {
+      const parsed = JSON.parse(cached)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        orders.value = parsed
+        console.log('📦 Commandes chargées depuis le cache localStorage:', orders.value.length)
+        return
+      }
+    }
+
+    // Si pas de cache, utiliser les données de démo
+    orders.value = DEMO_ORDERS
+    console.log('📦 Données de démonstration chargées (fallback)')
+  } catch (error) {
+    console.error('❌ Erreur chargement cache:', error)
+    orders.value = DEMO_ORDERS
+  }
+}
+
+// ===== MISE À JOUR DU STATUT (CORRIGÉ - UTILISE L'API) =====
+const updateOrderStatus = async (order) => {
+  if (!order || !order.id) return
+
+  const oldStatus = order.status
+  const previousStatus = orders.value.find(o => o.id === order.id)?.status || oldStatus
+
+  try {
+    // ✅ Essayer la route admin principale
+    const response = await api.patch(`/orders/admin/${order.id}/status`, {
+      status: order.status
+    })
+
+    if (response.data.success) {
+      // Mise à jour réussie via l'API
+      // Sauvegarder dans le cache localStorage
+      localStorage.setItem('admin_orders_cache', JSON.stringify(orders.value))
+      showNotification(`✅ تم تحديث حالة الطلب #${order.id || order.orderNumber} إلى ${getStatusText(order.status)}`, 'success')
+      console.log('✅ Statut mis à jour via API pour la commande:', order.id)
+      return
+    }
+  } catch (error) {
+    console.error('❌ Erreur mise à jour statut via API:', error.message)
+
+    // Si la route principale échoue, essayer des routes alternatives
+    try {
+      const alternativeResponse = await api.put(`/admin/orders/${order.id}/status`, {
+        status: order.status
+      })
+
+      if (alternativeResponse.data.success) {
+        localStorage.setItem('admin_orders_cache', JSON.stringify(orders.value))
+        showNotification(`✅ تم تحديث حالة الطلب #${order.id || order.orderNumber} إلى ${getStatusText(order.status)}`, 'success')
+        return
+      }
+    } catch (altError) {
+      console.error('❌ Routes alternatives échouées aussi:', altError.message)
+    }
+  }
+
+  // Si l'API échoue complètement, sauvegarder localement
+  localStorage.setItem('admin_orders_cache', JSON.stringify(orders.value))
+  showNotification(`⚠️ تم تحديث حالة الطلب محلياً فقط #${order.id || order.orderNumber}`, 'warning')
 }
 
 const viewOrder = (order) => {
-  selectedOrder.value = order
+  selectedOrder.value = { ...order }
   showOrderModal.value = true
 }
 
@@ -1161,4 +1231,198 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 }
+/* ===== DARK MODE UNIFORMISÉ POUR ADMIN/ORDERS.VUE ===== */
+/* Ajoutez à la fin du <style scoped> */
+
+.admin-page.dark-mode {
+  background: #161627 !important;
+}
+
+.dark-mode .page-content {
+  background: #1e1e30 !important;
+  border: 1px solid #2a2a40 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Stats Cards */
+.dark-mode .stat-card {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .stat-card:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dark-mode .stat-icon {
+  background: rgba(45, 212, 191, 0.1) !important;
+}
+
+.dark-mode .stat-label {
+  color: #94a3b8 !important;
+}
+
+/* Filters */
+.dark-mode .filter-select,
+.dark-mode .search-input {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .filter-select:focus,
+.dark-mode .search-input:focus {
+  border-color: #2dd4bf !important;
+}
+
+.dark-mode .search-input::placeholder {
+  color: #64748b !important;
+}
+
+/* Table */
+.dark-mode .data-table thead {
+  background: #121220 !important;
+}
+
+.dark-mode .data-table th {
+  color: #f1f5f9 !important;
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .data-table td {
+  color: #cbd5e1 !important;
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .data-table tr:hover {
+  background: #1a1a2e !important;
+}
+
+/* Price */
+.dark-mode .price-cell {
+  color: #ef4444 !important;
+}
+
+/* Status Select */
+.dark-mode .status-select {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .status-select.pending { border-right-color: #fbbf24 !important; }
+.dark-mode .status-select.processing { border-right-color: #60a5fa !important; }
+.dark-mode .status-select.shipped { border-right-color: #a78bfa !important; }
+.dark-mode .status-select.delivered { border-right-color: #34d399 !important; }
+.dark-mode .status-select.cancelled { border-right-color: #f87171 !important; }
+
+/* Action Button */
+.dark-mode .action-btn.view {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .action-btn.view:hover {
+  background: #2dd4bf !important;
+  color: #161627 !important;
+}
+
+/* Loading */
+.dark-mode .loading-state p {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .spinner {
+  border-color: #2a2a40 !important;
+  border-top-color: #2dd4bf !important;
+}
+
+/* Empty */
+.dark-mode .empty-state h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .empty-state p {
+  color: #94a3b8 !important;
+}
+
+/* Modal */
+.dark-mode .modal-content {
+  background: #1e1e30 !important;
+}
+
+.dark-mode .modal-header {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .modal-header h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .close-btn {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .order-info {
+  background: #121220 !important;
+}
+
+.dark-mode .info-row {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .info-label {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .info-value {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .order-items h4 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .items-table th,
+.dark-mode .items-table td {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .items-table th {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .items-table td {
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .total-label {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .total-price {
+  color: #ef4444 !important;
+}
+
+.dark-mode .modal-footer {
+  border-top-color: #2a2a40 !important;
+}
+
+/* Toast */
+.dark-mode .toast-notification {
+  background: #1e1e30 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9 !important;
+}
+
+/* Status badges in modal */
+.dark-mode .status-badge.pending { background: rgba(245, 158, 11, 0.15) !important; color: #fbbf24 !important; }
+.dark-mode .status-badge.processing { background: rgba(59, 130, 246, 0.15) !important; color: #60a5fa !important; }
+.dark-mode .status-badge.shipped { background: rgba(139, 92, 246, 0.15) !important; color: #a78bfa !important; }
+.dark-mode .status-badge.delivered { background: rgba(16, 185, 129, 0.15) !important; color: #34d399 !important; }
+.dark-mode .status-badge.cancelled { background: rgba(239, 68, 68, 0.15) !important; color: #f87171 !important; }
 </style>

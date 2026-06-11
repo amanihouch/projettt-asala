@@ -1,4 +1,4 @@
-<!-- src/views/Orders.vue -->
+<!-- src/views/Orders.vue - Version complète et corrigée -->
 <template>
   <div class="orders-page" :class="{ 'dark-mode': isDarkMode }">
     <div class="container">
@@ -145,7 +145,7 @@
               <div class="order-items">
                 <h4 class="section-title">المنتجات</h4>
                 <div class="items-list">
-                  <div v-for="item in order.items" :key="item.id" class="order-item">
+                  <div v-for="(item, idx) in order.items" :key="idx" class="order-item">
                     <div class="item-image">
                       <img
                         :src="item.image || 'https://placehold.co/80x80/08717f/white?text=منتج'"
@@ -154,7 +154,7 @@
                       />
                     </div>
                     <div class="item-details">
-                      <h5 class="item-name">{{ item.name }}</h5>
+                      <h5 class="item-name">{{ item.name || item.productName }}</h5>
                       <div class="item-meta">
                         <span v-if="item.size" class="item-size">المقاس: {{ item.size }}</span>
                         <span v-if="item.color" class="item-color">
@@ -169,7 +169,7 @@
                       </div>
                     </div>
                     <div class="item-total">
-                      {{ formatPrice(item.price * item.quantity) }} د.ت
+                      {{ formatPrice((item.price || 0) * (item.quantity || 1)) }} د.ت
                     </div>
                   </div>
                 </div>
@@ -204,20 +204,20 @@
                       <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
                       <circle cx="12" cy="7" r="4"/>
                     </svg>
-                    <span>{{ order.shippingAddress.fullName }}</span>
+                    <span>{{ order.shippingAddress.fullName || order.customerName }}</span>
                   </div>
                   <div class="shipping-row">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                       <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.362 1.903.7 2.81a2 2 0 01-.45 2.11L8 10a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.574 2.81.7A2 2 0 0122 16.92z"/>
                     </svg>
-                    <span>{{ order.shippingAddress.phone }}</span>
+                    <span>{{ order.customerPhone || order.customerPhone1 || 'غير متوفر' }}</span>
                   </div>
                   <div class="shipping-row">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
                       <circle cx="12" cy="10" r="3"/>
                     </svg>
-                    <span>{{ order.shippingAddress.address }}, {{ order.shippingAddress.city }}, {{ order.shippingAddress.governorate }}</span>
+                    <span>{{ order.shippingAddress.address || order.address }}, {{ order.governorate || '' }} {{ order.delegation || '' }}</span>
                   </div>
                 </div>
               </div>
@@ -390,6 +390,7 @@ const getFilterCount = (filterValue) => {
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return ''
   return date.toLocaleDateString('ar-TN', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
@@ -439,24 +440,51 @@ const toggleOrder = (orderId) => {
   expandedOrder.value = expandedOrder.value === orderId ? null : orderId
 }
 
+// ✅ LOAD ORDERS - avec fallback localStorage
 const loadOrders = async () => {
   loading.value = true
   try {
     const response = await api.get('/orders/my-orders')
     if (response.data.success) {
-      orders.value = response.data.data || response.data.orders || []
-      console.log('✅ Orders loaded:', orders.value.length)
+      const apiOrders = response.data.data || response.data.orders || []
+      orders.value = apiOrders.map(order => ({
+        ...order,
+        items: Array.isArray(order.items) ? order.items : (order.order_items || []),
+        shippingAddress: order.shippingAddress || order.address,
+        customerName: order.customerName || order.customer_name,
+        customerPhone: order.customerPhone || order.customerPhone1,
+        customerEmail: order.customerEmail || order.customer_email
+      }))
+      console.log('✅ Orders loaded from API:', orders.value.length)
+
+      // Sauvegarder dans localStorage
+      localStorage.setItem('userOrders', JSON.stringify(orders.value))
+    } else {
+      throw new Error('Invalid response')
     }
   } catch (error) {
-    console.error('Error loading orders:', error)
-    showNotification('❌ فشل تحميل الطلبات', 'error')
+    console.error('Error loading orders from API:', error)
+
+    // ✅ Fallback: Charger depuis localStorage
+    const localOrders = localStorage.getItem('userOrders')
+    if (localOrders) {
+      try {
+        orders.value = JSON.parse(localOrders)
+        console.log('📦 Orders loaded from localStorage:', orders.value.length)
+        showNotification('📦 تم تحميل الطلبات من التخزين المحلي', 'info')
+      } catch (e) {
+        orders.value = []
+      }
+    } else {
+      orders.value = []
+      showNotification('❌ فشل تحميل الطلبات', 'error')
+    }
   } finally {
     loading.value = false
   }
 }
 
 const contactSupport = (order) => {
-  // Rediriger vers le chat ou la page de contact
   router.push(`/contact?order=${order.id}`)
 }
 
@@ -477,6 +505,7 @@ const cancelOrder = (order) => {
   showCancelModal.value = true
 }
 
+// ✅ CONFIRM CANCEL ORDER - avec fallback localStorage
 const confirmCancelOrder = async () => {
   if (!orderToCancel.value) return
 
@@ -491,13 +520,29 @@ const confirmCancelOrder = async () => {
       if (index !== -1) {
         orders.value[index].status = 'cancelled'
       }
+      // Sauvegarder dans localStorage
+      localStorage.setItem('userOrders', JSON.stringify(orders.value))
       showNotification('✅ تم إلغاء الطلب بنجاح', 'success')
       showCancelModal.value = false
       cancelReason.value = ''
+    } else {
+      throw new Error('API returned error')
     }
   } catch (error) {
     console.error('Error cancelling order:', error)
-    showNotification('❌ فشل إلغاء الطلب', 'error')
+
+    // ✅ Fallback: Mise à jour locale uniquement
+    const index = orders.value.findIndex(o => o.id === orderToCancel.value.id)
+    if (index !== -1) {
+      orders.value[index].status = 'cancelled'
+      // Sauvegarder dans localStorage
+      localStorage.setItem('userOrders', JSON.stringify(orders.value))
+      showNotification('✅ تم إلغاء الطلب محلياً', 'success')
+      showCancelModal.value = false
+      cancelReason.value = ''
+    } else {
+      showNotification('❌ فشل إلغاء الطلب', 'error')
+    }
   } finally {
     cancelling.value = false
   }
@@ -548,7 +593,6 @@ onMounted(() => {
   margin-bottom: 25px;
   font-size: 15px;
   color: #64748b;
-  font-family: 'Amiri', serif;
 }
 
 .breadcrumb a {
@@ -615,7 +659,6 @@ onMounted(() => {
   font-weight: 800;
   color: #1e293b;
   margin: 0 0 5px;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .page-title {
@@ -626,7 +669,6 @@ onMounted(() => {
   margin: 0;
   color: #64748b;
   font-size: 15px;
-  font-family: 'Amiri', serif;
 }
 
 .stats-summary {
@@ -643,13 +685,11 @@ onMounted(() => {
   font-size: 28px;
   font-weight: 800;
   color: #08717f;
-  font-family: 'Amiri', serif;
 }
 
 .stat-label {
   font-size: 14px;
   color: #64748b;
-  font-family: 'Amiri', serif;
 }
 
 /* Filters Bar */
@@ -681,7 +721,6 @@ onMounted(() => {
   color: #64748b;
   cursor: pointer;
   transition: all 0.2s;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .filter-tab {
@@ -712,7 +751,6 @@ onMounted(() => {
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  font-family: 'Amiri', serif;
 }
 
 .filter-tab.active .filter-count {
@@ -733,7 +771,6 @@ onMounted(() => {
   color: #64748b;
   cursor: pointer;
   transition: all 0.2s;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .refresh-btn {
@@ -773,7 +810,6 @@ onMounted(() => {
 }
 
 .loading-state p {
-  font-family: 'Amiri', serif;
   font-size: 16px;
   color: #64748b;
 }
@@ -851,7 +887,6 @@ onMounted(() => {
   font-weight: 700;
   font-size: 17px;
   color: #1e293b;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .order-number {
@@ -864,7 +899,6 @@ onMounted(() => {
   gap: 6px;
   color: #64748b;
   font-size: 14px;
-  font-family: 'Amiri', serif;
 }
 
 .order-status-wrapper {
@@ -881,7 +915,6 @@ onMounted(() => {
   border-radius: 30px;
   font-size: 14px;
   font-weight: 600;
-  font-family: 'Amiri', serif;
 }
 
 .status-dot {
@@ -934,7 +967,6 @@ onMounted(() => {
   font-weight: 700;
   font-size: 17px;
   color: #d30025;
-  font-family: 'Amiri', serif;
 }
 
 .expand-btn {
@@ -1010,7 +1042,6 @@ onMounted(() => {
   font-weight: 600;
   color: #94a3b8;
   transition: all 0.3s;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .step-icon {
@@ -1035,7 +1066,6 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 500;
   color: #64748b;
-  font-family: 'Amiri', serif;
 }
 
 .progress-step.active .step-label,
@@ -1079,7 +1109,6 @@ onMounted(() => {
   font-weight: 700;
   color: #1e293b;
   margin: 0 0 16px;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .section-title {
@@ -1129,7 +1158,6 @@ onMounted(() => {
   font-weight: 600;
   color: #1e293b;
   margin: 0 0 6px;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .item-name {
@@ -1142,7 +1170,6 @@ onMounted(() => {
   font-size: 13px;
   color: #64748b;
   margin-bottom: 6px;
-  font-family: 'Amiri', serif;
 }
 
 .color-dot {
@@ -1162,19 +1189,16 @@ onMounted(() => {
 .item-price {
   font-weight: 600;
   color: #d30025;
-  font-family: 'Amiri', serif;
 }
 
 .item-quantity {
   color: #64748b;
-  font-family: 'Amiri', serif;
 }
 
 .item-total {
   font-weight: 700;
   font-size: 17px;
   color: #1e293b;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .item-total {
@@ -1199,7 +1223,6 @@ onMounted(() => {
   padding: 8px 0;
   font-size: 15px;
   color: #64748b;
-  font-family: 'Amiri', serif;
 }
 
 .summary-row.total {
@@ -1242,7 +1265,6 @@ onMounted(() => {
   padding: 8px 0;
   color: #475569;
   font-size: 15px;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .shipping-row {
@@ -1274,7 +1296,6 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  font-family: 'Amiri', serif;
 }
 
 .action-btn.secondary {
@@ -1324,7 +1345,6 @@ onMounted(() => {
   font-weight: 700;
   color: #1e293b;
   margin-bottom: 12px;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .empty-state h2 {
@@ -1335,7 +1355,6 @@ onMounted(() => {
   color: #64748b;
   margin-bottom: 30px;
   font-size: 17px;
-  font-family: 'Amiri', serif;
 }
 
 .shop-now-btn {
@@ -1350,7 +1369,6 @@ onMounted(() => {
   font-weight: 700;
   font-size: 18px;
   transition: all 0.3s;
-  font-family: 'Amiri', serif;
 }
 
 .shop-now-btn:hover {
@@ -1402,7 +1420,6 @@ onMounted(() => {
   font-weight: 700;
   color: #1e293b;
   margin: 0;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .modal-header h3 {
@@ -1418,7 +1435,6 @@ onMounted(() => {
   cursor: pointer;
   font-size: 18px;
   transition: all 0.2s;
-  font-family: 'Amiri', serif;
 }
 
 .close-modal:hover {
@@ -1434,7 +1450,6 @@ onMounted(() => {
   margin: 0 0 20px;
   color: #475569;
   font-size: 16px;
-  font-family: 'Amiri', serif;
 }
 
 .form-group {
@@ -1447,7 +1462,6 @@ onMounted(() => {
   font-weight: 600;
   color: #1e293b;
   margin-bottom: 8px;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .form-group label {
@@ -1461,7 +1475,6 @@ onMounted(() => {
   border-radius: 12px;
   font-size: 15px;
   background: white;
-  font-family: 'Amiri', serif;
 }
 
 .dark-mode .form-select {
@@ -1483,7 +1496,6 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  font-family: 'Amiri', serif;
   font-size: 16px;
 }
 
@@ -1522,7 +1534,6 @@ onMounted(() => {
 }
 
 .toast-message {
-  font-family: 'Amiri', serif;
   font-size: 15px;
 }
 
@@ -1661,5 +1672,120 @@ onMounted(() => {
   .filter-tab {
     padding: 8px 12px;
   }
+}
+
+/* Dark mode styles */
+.orders-page.dark-mode {
+  background: #161627 !important;
+}
+
+.orders-page.dark-mode .breadcrumb a {
+  color: #94a3b8 !important;
+}
+
+.orders-page.dark-mode .breadcrumb a:hover {
+  color: #2dd4bf !important;
+}
+
+.orders-page.dark-mode .page-header {
+  background: #1e1e30 !important;
+}
+
+.orders-page.dark-mode .page-title {
+  color: #f1f5f9 !important;
+}
+
+.orders-page.dark-mode .stat-value {
+  color: #2dd4bf !important;
+}
+
+.orders-page.dark-mode .stat-label {
+  color: #94a3b8 !important;
+}
+
+.orders-page.dark-mode .filter-tab {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.orders-page.dark-mode .filter-tab.active {
+  background: #08717f !important;
+  color: white !important;
+}
+
+.orders-page.dark-mode .order-card {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.orders-page.dark-mode .order-number {
+  color: #f1f5f9 !important;
+}
+
+.orders-page.dark-mode .order-total {
+  color: #ef4444 !important;
+}
+
+.orders-page.dark-mode .order-status.pending {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+}
+
+.orders-page.dark-mode .order-status.processing {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #60a5fa !important;
+}
+
+.orders-page.dark-mode .order-status.shipped {
+  background: rgba(139, 92, 246, 0.15) !important;
+  color: #a78bfa !important;
+}
+
+.orders-page.dark-mode .order-status.delivered {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+
+.orders-page.dark-mode .order-status.cancelled {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+.orders-page.dark-mode .modal-container {
+  background: #1e1e30 !important;
+}
+
+.orders-page.dark-mode .close-modal {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.orders-page.dark-mode .close-modal:hover {
+  background: #ef4444 !important;
+  color: white !important;
+}
+
+.orders-page.dark-mode .form-select {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.orders-page.dark-mode .cancel-btn {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.orders-page.dark-mode .empty-state {
+  background: #1e1e30 !important;
+}
+
+.orders-page.dark-mode .empty-state h2 {
+  color: #f1f5f9 !important;
+}
+
+.orders-page.dark-mode .toast-notification {
+  background: #1e1e30 !important;
 }
 </style>

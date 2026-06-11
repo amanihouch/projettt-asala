@@ -1,15 +1,55 @@
-<!-- frontend/src/views/Artisans.vue - DESIGN AVANCÉ AVEC RECHERCHE ET ILLUSTRATION -->
+<!-- frontend/src/views/Artisans.vue -->
 <template>
   <div class="artisans-page" :class="{ 'dark-mode': isDarkMode }">
-    <!-- Hero Section avec Illustration -->
+
+    <!-- Hero Section -->
     <section class="hero-section">
       <div class="container">
-        <div class="hero-grid">
+
+        <!-- MOBILE: layout vertical empilé -->
+        <div class="hero-mobile">
+          <div class="hero-text-block">
+            <h1 class="hero-title">حرفيونا</h1>
+            <p class="hero-subtitle">اكتشف نخبة من أمهر الحرفيين التونسيين وأعمالهم الفريدة</p>
+          </div>
+          <div class="hero-img-block">
+            <img
+              src="/src/assets/images/artisan/artisan-hero.jpg"
+              alt="حرفي تونسي"
+              class="hero-image"
+              @error="handleHeroImageError"
+            />
+          </div>
+          <div class="hero-search-block">
+            <div class="search-wrapper">
+              <input
+                type="text"
+                v-model="searchQuery"
+                placeholder="ابحث عن حرفي بالاسم أو التخصص أو الموقع"
+                class="search-input"
+                @keyup.enter="handleSearch"
+              />
+              <button class="search-btn" @click="handleSearch">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="11" cy="11" r="8" stroke-width="2"/>
+                  <path d="M21 21l-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <button v-if="searchQuery" class="clear-search" @click="clearSearch">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <line x1="18" y1="6" x2="6" y2="18" stroke-width="2.5"/>
+                <line x1="6" y1="6" x2="18" y2="18" stroke-width="2.5"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- DESKTOP: layout côte à côte -->
+        <div class="hero-desktop">
           <div class="hero-content">
             <h1 class="hero-title">حرفيونا</h1>
             <p class="hero-subtitle">اكتشف نخبة من أمهر الحرفيين التونسيين وأعمالهم الفريدة</p>
-
-            <!-- Barre de Recherche dans le Hero -->
             <div class="hero-search">
               <div class="search-wrapper">
                 <input
@@ -44,8 +84,8 @@
             <div class="illustration-frame"></div>
           </div>
         </div>
+
       </div>
-      <div class="hero-pattern"></div>
     </section>
 
     <!-- Filters Section -->
@@ -55,22 +95,20 @@
           <span class="filters-label">تصفية حسب</span>
           <span class="results-info" v-if="filteredVendors.length > 0">
             <span class="results-count">{{ filteredVendors.length }}</span>
-            <span>حرفي</span>
+            <span> حرفي</span>
           </span>
         </div>
-        <div class="filters-wrapper">
-          <div class="filters-list">
-            <button
-              v-for="filter in filterOptions"
-              :key="filter.value"
-              class="filter-chip"
-              :class="{ active: activeFilter === filter.value }"
-              @click="setFilter(filter.value)"
-            >
-              <span class="chip-label">{{ filter.label }}</span>
-              <span class="filter-badge">{{ getFilterCount(filter.value) }}</span>
-            </button>
-          </div>
+        <div class="filters-list">
+          <button
+            v-for="filter in filterOptions"
+            :key="filter.value"
+            class="filter-chip"
+            :class="{ active: activeFilter === filter.value }"
+            @click="setFilter(filter.value)"
+          >
+            <span class="chip-label">{{ filter.label }}</span>
+            <span class="filter-badge">{{ getFilterCount(filter.value) }}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -78,6 +116,7 @@
     <!-- Main Content -->
     <main class="main-content">
       <div class="container">
+
         <!-- Loading -->
         <div v-if="loading" class="loading-container">
           <div class="loading-spinner"></div>
@@ -87,7 +126,7 @@
         <!-- Empty -->
         <div v-else-if="filteredVendors.length === 0" class="empty-container">
           <div class="empty-symbol">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M12 2L15 9H22L16 14L19 21L12 16.5L5 21L8 14L2 9H9L12 2Z" stroke-width="1.5" stroke-linejoin="round"/>
             </svg>
           </div>
@@ -96,17 +135,10 @@
           <p v-else>لم يتم العثور على حرفيين حالياً</p>
           <div class="empty-actions">
             <button v-if="searchQuery || activeFilter !== 'all'" class="btn-reset" @click="resetFilters">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M3 12L21 12M3 12L7 8M3 12L7 16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
               <span>إعادة تعيين</span>
             </button>
             <router-link to="/become-vendor" class="btn-join">
               <span>انضم كحرفي</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M5 12L19 12" stroke-width="2" stroke-linecap="round"/>
-                <path d="M12 5L19 12L12 19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
             </router-link>
           </div>
         </div>
@@ -119,7 +151,7 @@
             class="artisan-card"
             @click="goToVendor(vendor.id)"
           >
-            <!-- Cover Image -->
+            <!-- Cover -->
             <div class="card-cover">
               <img
                 :src="getCoverImage(vendor)"
@@ -129,7 +161,7 @@
               />
               <div class="cover-gradient"></div>
               <div v-if="vendor.verified || vendor.approved === 1" class="verified-mark">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <polyline points="20 6 9 17 4 12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </div>
@@ -145,29 +177,11 @@
               />
             </div>
 
-            <!-- Card Info -->
+            <!-- Info -->
             <div class="card-info">
               <h3 class="shop-name">{{ vendor.shopName || 'حرفي' }}</h3>
               <p class="owner-name">{{ vendor.name || vendor.fullName || '' }}</p>
-
-              <div class="specialty-tag">
-                <span>{{ getSpecialtyName(vendor.specialty) }}</span>
-              </div>
-
-              <!-- Stats -->
-              <div class="stats-row">
-                <div class="stat-item">
-                  <span class="stat-value">{{ vendor.productsCount || 0 }}</span>
-                  <span class="stat-label">منتج</span>
-                </div>
-                <div class="stat-divider"></div>
-                <div class="stat-item">
-                  <span class="stat-value">{{ vendor.followersCount || 0 }}</span>
-                  <span class="stat-label">متابع</span>
-                </div>
-              </div>
-
-              <!-- Location -->
+              <div class="specialty-tag">{{ getSpecialtyName(vendor.specialty) }}</div>
               <div v-if="vendor.location" class="location">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
@@ -175,11 +189,9 @@
                 </svg>
                 <span>{{ vendor.location }}</span>
               </div>
-
-              <!-- View Profile Button -->
               <button class="view-btn">
                 <span>عرض الملف</span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M5 12L19 12" stroke-width="2" stroke-linecap="round"/>
                   <path d="M12 5L19 12L12 19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -187,16 +199,18 @@
             </div>
           </div>
         </div>
+
       </div>
     </main>
 
-    <!-- Toast Notification -->
+    <!-- Toast -->
     <Transition name="toast">
       <div v-if="toast.show" class="toast-notification" :class="toast.type">
-        <span class="toast-message">{{ toast.message }}</span>
+        <span>{{ toast.message }}</span>
         <div class="toast-progress"></div>
       </div>
     </Transition>
+
   </div>
 </template>
 
@@ -206,26 +220,18 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useThemeStore } from '../stores/theme'
 import api from '../services/api'
-import {
-  getCoverImage,
-  getAvatarImage,
-  DEFAULT_AVATAR,
-  DEFAULT_COVER
-} from '../utils/image'
+import { getCoverImage, getAvatarImage, DEFAULT_AVATAR, DEFAULT_COVER } from '../utils/image'
 
 const router = useRouter()
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
 
 const isDarkMode = computed(() => themeStore.isDarkMode)
-
-// State
 const loading = ref(true)
 const searchQuery = ref('')
 const activeFilter = ref('all')
 const vendorsList = ref([])
 
-// Filter options
 const filterOptions = [
   { value: 'all', label: 'الكل' },
   { value: 'verified', label: 'موثوق' },
@@ -233,298 +239,248 @@ const filterOptions = [
   { value: 'popular', label: 'الأكثر متابعة' }
 ]
 
-// Toast
 const toast = ref({ show: false, message: '', type: 'success' })
 
-// Computed
 const vendors = computed(() => vendorsList.value)
 
 const filteredVendors = computed(() => {
   let result = [...vendors.value]
-
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const q = searchQuery.value.toLowerCase()
     result = result.filter(v =>
-      (v.shopName && v.shopName.toLowerCase().includes(query)) ||
-      (v.name && v.name.toLowerCase().includes(query)) ||
-      (v.specialty && v.specialty.toLowerCase().includes(query)) ||
-      (v.location && v.location.toLowerCase().includes(query))
+      (v.shopName && v.shopName.toLowerCase().includes(q)) ||
+      (v.name && v.name.toLowerCase().includes(q)) ||
+      (v.specialty && v.specialty.toLowerCase().includes(q)) ||
+      (v.location && v.location.toLowerCase().includes(q))
     )
   }
-
   switch (activeFilter.value) {
-    case 'verified':
-      result = result.filter(v => v.verified === true || v.verified === 1 || v.approved === 1)
-      break
-    case 'new':
-      result = result.filter(v => isNewVendor(v))
-      break
-    case 'popular':
-      result = [...result].sort((a, b) => (b.followersCount || 0) - (a.followersCount || 0))
-      break
+    case 'verified': result = result.filter(v => v.verified || v.approved === 1); break
+    case 'new': result = result.filter(v => isNewVendor(v)); break
+    case 'popular': result = [...result].sort((a, b) => (b.followersCount || 0) - (a.followersCount || 0)); break
   }
-
   return result
 })
 
-// Methods
 const getFilterCount = (filter) => {
-  switch (filter) {
-    case 'verified': return vendors.value.filter(v => v.verified === true || v.verified === 1 || v.approved === 1).length
-    case 'new': return vendors.value.filter(v => isNewVendor(v)).length
-    default: return vendors.value.length
-  }
+  if (filter === 'verified') return vendors.value.filter(v => v.verified || v.approved === 1).length
+  if (filter === 'new') return vendors.value.filter(v => isNewVendor(v)).length
+  return vendors.value.length
 }
 
 const getSpecialtyName = (specialty) => {
-  const specialties = {
-    pottery: 'فخار وسيراميك',
-    textiles: 'منسوجات وسجاد',
-    jewelry: 'مجوهرات وحلي',
-    woodwork: 'أعمال خشبية',
-    metalwork: 'أعمال معدنية',
-    leather: 'منتجات جلدية',
-    other: 'حرف أخرى'
+  const map = {
+    pottery: 'فخار وسيراميك', textiles: 'منسوجات وسجاد',
+    jewelry: 'مجوهرات وحلي', woodwork: 'أعمال خشبية',
+    metalwork: 'أعمال معدنية', leather: 'منتجات جلدية', other: 'حرف أخرى'
   }
-  return specialties[specialty] || specialty || 'حرفي'
+  return map[specialty] || specialty || 'حرفي'
 }
 
-const isNewVendor = (vendor) => {
-  if (!vendor.createdAt) return false
-  try {
-    const created = new Date(vendor.createdAt)
-    const now = new Date()
-    const diffDays = Math.floor((now - created) / (1000 * 60 * 60 * 24))
-    return diffDays <= 30
-  } catch (e) {
-    return false
-  }
+const isNewVendor = (v) => {
+  if (!v.createdAt) return false
+  try { return Math.floor((new Date() - new Date(v.createdAt)) / 86400000) <= 30 }
+  catch { return false }
 }
 
-const handleSearch = () => {
-  // La recherche est déjà réactive via computed
-}
-
-const clearSearch = () => {
-  searchQuery.value = ''
-}
-
-const setFilter = (filter) => {
-  activeFilter.value = filter
-}
-
-const resetFilters = () => {
-  searchQuery.value = ''
-  activeFilter.value = 'all'
-}
-
-const goToVendor = (vendorId) => {
-  if (vendorId) router.push(`/vendor/${vendorId}`)
-}
-
-const handleAvatarError = (event) => {
-  event.target.src = DEFAULT_AVATAR
-}
-
-const handleCoverError = (event) => {
-  event.target.src = DEFAULT_COVER
-}
-
-const handleHeroImageError = (event) => {
-  event.target.src = 'https://placehold.co/600x400/08717f/ffffff?text=حرفي+تونسي'
-}
+const handleSearch = () => {}
+const clearSearch = () => { searchQuery.value = '' }
+const setFilter = (f) => { activeFilter.value = f }
+const resetFilters = () => { searchQuery.value = ''; activeFilter.value = 'all' }
+const goToVendor = (id) => { if (id) router.push(`/vendor/${id}`) }
+const handleAvatarError = (e) => { e.target.src = DEFAULT_AVATAR }
+const handleCoverError = (e) => { e.target.src = DEFAULT_COVER }
+const handleHeroImageError = (e) => { e.target.src = 'https://placehold.co/600x400/08717f/ffffff?text=حرفي+تونسي' }
 
 const showNotification = (message, type = 'success') => {
   toast.value = { show: true, message, type }
   setTimeout(() => { toast.value.show = false }, 3000)
 }
 
-// Fetch vendors
 const fetchVendors = async () => {
   loading.value = true
   try {
     const response = await api.get('/vendors')
     if (response.data.success) {
-      let vendorsData = response.data.data?.data || response.data.data || []
-      if (!Array.isArray(vendorsData)) vendorsData = []
-
-      vendorsData = vendorsData.map(vendor => ({
-        ...vendor,
-        id: vendor.id || vendor.vendorId,
-        shopName: vendor.shopName || vendor.shop_name || vendor.name || 'حرفي',
-        name: vendor.name || vendor.fullName || vendor.user_name || '',
-        rating: parseFloat(vendor.rating) || 0,
-        productsCount: vendor.productsCount || vendor.products_count || 0,
-        followersCount: vendor.followersCount || vendor.followers_count || 0,
-        verified: vendor.verified === 1 || vendor.verified === true,
-        approved: vendor.approved === 1 || vendor.approved === true,
-        location: vendor.location || 'تونس',
-        createdAt: vendor.createdAt || vendor.created_at,
-        avatar: vendor.avatar,
-        coverImage: vendor.coverImage || vendor.cover_image,
+      let data = response.data.data?.data || response.data.data || []
+      if (!Array.isArray(data)) data = []
+      vendorsList.value = data.map(v => ({
+        ...v,
+        id: v.id || v.vendorId,
+        shopName: v.shopName || v.shop_name || v.name || 'حرفي',
+        name: v.name || v.fullName || v.user_name || '',
+        productsCount: v.productsCount || v.products_count || 0,
+        followersCount: v.followersCount || v.followers_count || 0,
+        verified: v.verified === 1 || v.verified === true,
+        approved: v.approved === 1 || v.approved === true,
+        location: v.location || 'تونس',
+        createdAt: v.createdAt || v.created_at,
+        avatar: v.avatar,
+        coverImage: v.coverImage || v.cover_image,
       }))
-
-      vendorsList.value = vendorsData
     }
-  } catch (error) {
-    console.error('Error fetching vendors:', error)
+  } catch (e) {
+    console.error(e)
     showNotification('حدث خطأ', 'error')
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  fetchVendors()
-})
+onMounted(fetchVendors)
 </script>
 
 <style scoped>
-/* ===== IMPORT POLICE AMIRI ===== */
-@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
 
-/* ===== ARTISANS PAGE - DESIGN AVANCÉ ===== */
+/* ===================== BASE ===================== */
+* { box-sizing: border-box; }
+
 .artisans-page {
   background: #fafbfc;
   min-height: 100vh;
   font-family: 'Amiri', 'Cairo', serif;
   direction: rtl;
-  transition: all 0.3s ease;
+  overflow-x: hidden;
 }
 
-.artisans-page.dark-mode {
-  background: #0a0e14;
-  color: #e4e6eb;
-}
+.artisans-page.dark-mode { background: #161627; color: #e4e6eb; }
 
 .container {
+  width: 100%;
   max-width: 1440px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 20px;
 }
 
-/* ===== HERO SECTION AVEC ILLUSTRATION ===== */
+/* ===================== HERO ===================== */
 .hero-section {
-  position: relative;
-  padding: 48px 0 40px;
-  background: linear-gradient(135deg, rgba(8, 113, 127, 0.03) 0%, rgba(212, 0, 37, 0.02) 100%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  overflow: hidden;
+  padding: 36px 0 32px;
+  background: linear-gradient(135deg, rgba(8,113,127,0.04) 0%, rgba(212,0,37,0.02) 100%);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 .dark-mode .hero-section {
-  background: linear-gradient(135deg, rgba(8, 113, 127, 0.08) 0%, rgba(212, 0, 37, 0.05) 100%);
-  border-bottom-color: rgba(255, 255, 255, 0.04);
+  background: linear-gradient(135deg, rgba(8,113,127,0.1) 0%, rgba(212,0,37,0.06) 100%);
+  border-bottom-color: rgba(255,255,255,0.05);
 }
 
-.hero-pattern {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: radial-gradient(circle at 20% 30%, rgba(8, 113, 127, 0.03) 0%, transparent 50%);
-  pointer-events: none;
-}
+/* MOBILE layout: caché sur desktop */
+.hero-mobile { display: none; }
 
-.hero-grid {
+/* DESKTOP layout: caché sur mobile */
+.hero-desktop {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
+  grid-template-columns: 1.3fr 0.7fr;
   gap: 48px;
   align-items: center;
-  position: relative;
-  z-index: 2;
 }
 
-.hero-content {
-  text-align: right;
-}
+.hero-content { text-align: right; }
 
 .hero-title {
   font-size: 3rem;
   font-weight: 700;
   color: #1a1a2e;
-  margin-bottom: 12px;
+  margin: 0 0 12px;
   font-family: 'Amiri', serif;
-  letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
-.dark-mode .hero-title {
-  color: #f0f0f0;
-}
+.dark-mode .hero-title { color: #f1f5f9; }
 
 .hero-subtitle {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: #64748b;
-  font-weight: 300;
-  margin-bottom: 32px;
+  margin: 0 0 28px;
+  line-height: 1.8;
 }
 
-.dark-mode .hero-subtitle {
-  color: #94a3b8;
-}
+.dark-mode .hero-subtitle { color: #94a3b8; }
 
-/* Barre de Recherche dans Hero */
 .hero-search {
   display: flex;
   align-items: center;
-  gap: 12px;
-  max-width: 500px;
+  gap: 10px;
+  max-width: 480px;
 }
 
+/* Image desktop */
+.hero-illustration { position: relative; }
+
+.hero-image {
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  border-radius: 24px;
+  border: 4px solid white;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.08);
+  display: block;
+}
+
+.dark-mode .hero-image {
+  border-color: #1e1e30;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+}
+
+.illustration-frame {
+  position: absolute;
+  inset: -10px;
+  border: 2px dashed rgba(8,113,127,0.2);
+  border-radius: 32px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Search components */
 .search-wrapper {
   flex: 1;
   display: flex;
   align-items: center;
   background: white;
-  border-radius: 60px;
-  border: 1.5px solid rgba(8, 113, 127, 0.15);
-  transition: all 0.3s ease;
+  border-radius: 50px;
+  border: 1.5px solid rgba(8,113,127,0.18);
   overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  min-width: 0;
 }
 
 .dark-mode .search-wrapper {
-  background: #1f2937;
-  border-color: rgba(45, 212, 191, 0.15);
+  background: #1e1e30;
+  border-color: rgba(45,212,191,0.2);
 }
 
 .search-wrapper:focus-within {
   border-color: #08717f;
-  box-shadow: 0 0 0 4px rgba(8, 113, 127, 0.08);
+  box-shadow: 0 0 0 3px rgba(8,113,127,0.1);
 }
 
 .dark-mode .search-wrapper:focus-within {
   border-color: #2dd4bf;
-  box-shadow: 0 0 0 4px rgba(45, 212, 191, 0.08);
+  box-shadow: 0 0 0 3px rgba(45,212,191,0.1);
 }
 
 .search-input {
   flex: 1;
-  padding: 16px 20px;
+  padding: 13px 18px;
   border: none;
   background: transparent;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #1a1a2e;
   font-family: 'Amiri', serif;
+  direction: rtl;
+  min-width: 0;
+  width: 100%;
 }
 
-.dark-mode .search-input {
-  color: #f0f0f0;
-}
-
-.search-input::placeholder {
-  color: #94a3b8;
-  font-weight: 300;
-}
-
-.search-input:focus {
-  outline: none;
-}
+.dark-mode .search-input { color: #f1f5f9; }
+.search-input::placeholder { color: #94a3b8; }
+.search-input:focus { outline: none; }
 
 .search-btn {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -532,196 +488,136 @@ onMounted(() => {
   border: none;
   color: #08717f;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: color 0.2s;
 }
 
-.search-btn:hover {
-  color: #065a69;
-}
+.dark-mode .search-btn { color: #2dd4bf; }
+.search-btn:hover { color: #065a69; }
 
 .clear-search {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(0,0,0,0.05);
   border: none;
   border-radius: 50%;
   color: #64748b;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
 }
 
-.dark-mode .clear-search {
-  background: rgba(255, 255, 255, 0.04);
-  color: #94a3b8;
-}
+.dark-mode .clear-search { background: rgba(255,255,255,0.06); color: #94a3b8; }
+.clear-search:hover { background: rgba(212,0,37,0.1); color: #d40025; }
 
-.clear-search:hover {
-  background: rgba(212, 0, 37, 0.1);
-  color: #d40025;
-}
-
-/* Illustration */
-.hero-illustration {
-  position: relative;
-}
-
-.hero-image {
-  width: 100%;
-  height: auto;
-  border-radius: 32px;
-  object-fit: cover;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-  border: 4px solid white;
-}
-
-.dark-mode .hero-image {
-  border-color: #1a1a2e;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-}
-
-.illustration-frame {
-  position: absolute;
-  top: -12px;
-  left: -12px;
-  right: -12px;
-  bottom: -12px;
-  border: 2px dashed rgba(8, 113, 127, 0.2);
-  border-radius: 40px;
-  pointer-events: none;
-  z-index: -1;
-}
-
-/* ===== FILTERS SECTION ===== */
+/* ===================== FILTERS ===================== */
 .filters-section {
-  background: white;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  padding: 16px 0;
+  background: rgba(255,255,255,0.96);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding: 14px 0;
   position: sticky;
   top: 0;
   z-index: 100;
   backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .dark-mode .filters-section {
-  background: rgba(10, 14, 20, 0.95);
-  border-bottom-color: rgba(255, 255, 255, 0.04);
+  background: rgba(22,22,39,0.96);
+  border-bottom-color: rgba(255,255,255,0.05);
 }
 
 .filters-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .filters-label {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: #08717f;
 }
 
-.results-info {
-  font-size: 0.85rem;
-  color: #64748b;
-}
+.dark-mode .filters-label { color: #2dd4bf; }
 
-.dark-mode .results-info {
-  color: #94a3b8;
-}
+.results-info { font-size: 0.85rem; color: #64748b; }
+.dark-mode .results-info { color: #94a3b8; }
 
 .results-count {
   font-weight: 700;
   color: #08717f;
-  margin-left: 4px;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
-.filters-wrapper {
-  display: flex;
-  justify-content: center;
-}
+.dark-mode .results-count { color: #2dd4bf; }
 
 .filters-list {
   display: flex;
   gap: 8px;
-  justify-content: center;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
 }
 
+.filters-list::-webkit-scrollbar { display: none; }
+
 .filter-chip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
+  gap: 6px;
+  padding: 7px 16px;
   background: #f1f5f9;
   border: none;
   border-radius: 40px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
   color: #475569;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s;
   font-family: 'Amiri', serif;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.dark-mode .filter-chip {
-  background: #1e293b;
-  color: #94a3b8;
-}
-
-.filter-chip:hover {
-  background: #e2e8f0;
-  color: #1a1a2e;
-}
-
-.dark-mode .filter-chip:hover {
-  background: #334155;
-  color: #f0f0f0;
-}
+.dark-mode .filter-chip { background: #1e293b; color: #94a3b8; }
+.filter-chip:hover { background: #e2e8f0; color: #1a1a2e; }
+.dark-mode .filter-chip:hover { background: #2a2a40; color: #f1f5f9; }
 
 .filter-chip.active {
   background: #08717f;
   color: white;
-  box-shadow: 0 4px 12px rgba(8, 113, 127, 0.2);
+  box-shadow: 0 4px 12px rgba(8,113,127,0.25);
 }
 
-.chip-label {
-  font-weight: 500;
-}
+.dark-mode .filter-chip.active { background: #08717f; }
 
 .filter-badge {
-  background: rgba(0, 0, 0, 0.06);
-  padding: 2px 8px;
+  background: rgba(0,0,0,0.07);
+  padding: 1px 7px;
   border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 700;
 }
 
-.filter-chip.active .filter-badge {
-  background: rgba(255, 255, 255, 0.2);
-}
+.filter-chip.active .filter-badge { background: rgba(255,255,255,0.25); }
 
-/* ===== MAIN CONTENT ===== */
-.main-content {
-  padding: 32px 0 64px;
-}
+/* ===================== MAIN ===================== */
+.main-content { padding: 28px 0 60px; }
 
 /* Loading */
-.loading-container {
-  text-align: center;
-  padding: 80px 20px;
-}
+.loading-container { text-align: center; padding: 80px 20px; }
 
 .loading-spinner {
-  width: 44px;
-  height: 44px;
-  border: 2px solid rgba(8, 113, 127, 0.1);
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(8,113,127,0.1);
   border-top-color: #08717f;
   border-right-color: #d40025;
   border-radius: 50%;
@@ -729,149 +625,110 @@ onMounted(() => {
   margin: 0 auto 16px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.loading-container p {
-  color: #64748b;
-  font-size: 0.95rem;
-}
-
-.dark-mode .loading-container p {
-  color: #94a3b8;
-}
+.loading-container p { color: #64748b; font-size: 0.9rem; }
+.dark-mode .loading-container p { color: #94a3b8; }
 
 /* Empty */
 .empty-container {
   text-align: center;
-  padding: 80px 20px;
+  padding: 60px 20px;
   background: white;
-  border-radius: 24px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 20px;
+  border: 1px solid rgba(0,0,0,0.05);
 }
 
-.dark-mode .empty-container {
-  background: #111827;
-  border-color: rgba(255, 255, 255, 0.04);
-}
+.dark-mode .empty-container { background: #1e1e30; border-color: #2a2a40; }
 
-.empty-symbol {
-  margin-bottom: 20px;
-  color: #cbd5e1;
-}
+.empty-symbol { margin-bottom: 16px; color: #cbd5e1; }
 
 .empty-container h3 {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 600;
   color: #1a1a2e;
-  margin-bottom: 8px;
+  margin: 0 0 8px;
   font-family: 'Amiri', serif;
 }
 
-.dark-mode .empty-container h3 {
-  color: #f0f0f0;
-}
-
-.empty-container p {
-  color: #64748b;
-  margin-bottom: 24px;
-}
-
-.dark-mode .empty-container p {
-  color: #94a3b8;
-}
+.dark-mode .empty-container h3 { color: #f1f5f9; }
+.empty-container p { color: #64748b; margin: 0 0 24px; }
+.dark-mode .empty-container p { color: #94a3b8; }
 
 .empty-actions {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
-.btn-reset {
+.btn-reset, .btn-join {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 28px;
-  background: #f1f5f9;
-  border: none;
+  padding: 11px 24px;
   border-radius: 40px;
-  color: #475569;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s;
   font-family: 'Amiri', serif;
-}
-
-.dark-mode .btn-reset {
-  background: #1e293b;
-  color: #94a3b8;
-}
-
-.btn-reset:hover {
-  background: #e2e8f0;
-  color: #1a1a2e;
-}
-
-.btn-join {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 28px;
-  background: #08717f;
-  color: white;
+  border: none;
   text-decoration: none;
-  border-radius: 40px;
-  font-size: 0.95rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  font-family: 'Amiri', serif;
 }
 
-.btn-join:hover {
-  background: #065a69;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(8, 113, 127, 0.2);
-}
+.btn-reset { background: #f1f5f9; color: #475569; }
+.dark-mode .btn-reset { background: #2a2a40; color: #94a3b8; }
+.btn-reset:hover { background: #e2e8f0; color: #1a1a2e; }
 
-/* ===== ARTISANS GRID ===== */
+.btn-join { background: #08717f; color: white; }
+.btn-join:hover { background: #065a69; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(8,113,127,0.25); }
+
+/* ===================== GRID ===================== */
 .artisans-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 20px;
+  gap: 18px;
 }
 
-/* Card */
+/* ===================== CARD ===================== */
 .artisan-card {
   background: white;
-  border-radius: 20px;
+  border-radius: 18px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s, border-color 0.35s;
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
 }
 
 .dark-mode .artisan-card {
-  background: #111827;
-  border-color: rgba(255, 255, 255, 0.04);
+  background: #1e1e30;
+  border-color: #2a2a40;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .artisan-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-  border-color: rgba(8, 113, 127, 0.2);
+  transform: translateY(-5px);
+  box-shadow: 0 16px 32px rgba(0,0,0,0.08);
+  border-color: rgba(8,113,127,0.2);
+}
+
+.dark-mode .artisan-card:hover {
+  box-shadow: 0 16px 32px rgba(0,0,0,0.35);
+  border-color: rgba(45,212,191,0.3);
 }
 
 /* Cover */
 .card-cover {
   position: relative;
-  height: 100px;
+  height: 90px;
   overflow: hidden;
+  background: #f1f5f9;
 }
+
+.dark-mode .card-cover { background: #2a2a40; }
 
 .cover-img {
   width: 100%;
@@ -880,45 +737,38 @@ onMounted(() => {
   transition: transform 0.5s ease;
 }
 
-.artisan-card:hover .cover-img {
-  transform: scale(1.05);
-}
+.artisan-card:hover .cover-img { transform: scale(1.06); }
 
 .cover-gradient {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 40px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.3), transparent);
+  bottom: 0; left: 0; right: 0;
+  height: 36px;
+  background: linear-gradient(to top, rgba(0,0,0,0.25), transparent);
 }
 
-/* Verified Badge */
 .verified-mark {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 7px;
+  right: 7px;
+  width: 22px;
+  height: 22px;
+  background: #08717f;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: #08717f;
-  border-radius: 50%;
   color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
-.dark-mode .verified-mark {
-  border-color: #111827;
-}
+.dark-mode .verified-mark { border-color: #1e1e30; }
 
 /* Avatar */
 .avatar-wrapper {
-  width: 56px;
-  height: 56px;
-  margin: -28px auto 8px;
+  width: 52px;
+  height: 52px;
+  margin: -26px auto 8px;
   position: relative;
   z-index: 2;
 }
@@ -929,353 +779,274 @@ onMounted(() => {
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
 }
 
-.dark-mode .avatar-img {
-  border-color: #111827;
-}
+.dark-mode .avatar-img { border-color: #1e1e30; }
 
 /* Card Info */
 .card-info {
-  padding: 0 12px 16px;
+  padding: 0 10px 14px;
   text-align: center;
 }
 
 .shop-name {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: #1a1a2e;
-  margin-bottom: 2px;
+  margin: 0 0 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: 'Amiri', serif;
 }
 
-.dark-mode .shop-name {
-  color: #f0f0f0;
-}
+.dark-mode .shop-name { color: #f1f5f9; }
 
 .owner-name {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: #64748b;
-  margin-bottom: 8px;
+  margin: 0 0 8px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.dark-mode .owner-name {
-  color: #94a3b8;
-}
+.dark-mode .owner-name { color: #94a3b8; }
 
-/* Specialty Tag */
 .specialty-tag {
   display: inline-block;
-  padding: 4px 10px;
-  background: rgba(8, 113, 127, 0.08);
+  padding: 3px 10px;
+  background: rgba(8,113,127,0.08);
   border-radius: 20px;
-  font-size: 0.6rem;
-  font-weight: 600;
-  color: #08717f;
-  margin-bottom: 10px;
-}
-
-.dark-mode .specialty-tag {
-  background: rgba(45, 212, 191, 0.08);
-  color: #2dd4bf;
-}
-
-/* Stats */
-.stats-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.04);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  margin-bottom: 8px;
-}
-
-.dark-mode .stats-row {
-  border-color: rgba(255, 255, 255, 0.04);
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.stat-value {
-  font-size: 0.75rem;
+  font-size: 0.58rem;
   font-weight: 700;
-  color: #1a1a2e;
-}
-
-.dark-mode .stat-value {
-  color: #f0f0f0;
-}
-
-.stat-label {
-  font-size: 0.5rem;
-  color: #64748b;
-  text-transform: uppercase;
+  color: #08717f;
+  margin-bottom: 8px;
   letter-spacing: 0.3px;
 }
 
-.dark-mode .stat-label {
-  color: #94a3b8;
-}
+.dark-mode .specialty-tag { background: rgba(45,212,191,0.08); color: #2dd4bf; }
 
-.stat-divider {
-  width: 1px;
-  height: 16px;
-  background: rgba(0, 0, 0, 0.06);
-}
-
-.dark-mode .stat-divider {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-/* Location */
 .location {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   font-size: 0.6rem;
   color: #64748b;
   margin-bottom: 10px;
 }
 
-.location svg {
-  stroke: #08717f;
-}
+.location svg { stroke: #08717f; flex-shrink: 0; }
+.dark-mode .location { color: #94a3b8; }
+.dark-mode .location svg { stroke: #2dd4bf; }
 
-.dark-mode .location svg {
-  stroke: #2dd4bf;
-}
-
-/* View Button */
 .view-btn {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px;
-  background: rgba(8, 113, 127, 0.06);
+  gap: 5px;
+  padding: 8px 0;
+  background: rgba(8,113,127,0.07);
   border: none;
-  border-radius: 30px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  border-radius: 28px;
+  font-size: 0.68rem;
+  font-weight: 700;
   color: #08717f;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s;
   font-family: 'Amiri', serif;
+  letter-spacing: 0.2px;
 }
 
-.dark-mode .view-btn {
-  background: rgba(45, 212, 191, 0.06);
-  color: #2dd4bf;
-}
+.dark-mode .view-btn { background: rgba(45,212,191,0.07); color: #2dd4bf; }
 
-.view-btn:hover {
-  background: #08717f;
-  color: white;
-  gap: 10px;
-}
+.view-btn:hover { background: #08717f; color: white; }
+.dark-mode .view-btn:hover { background: #2dd4bf; color: #161627; }
 
-.dark-mode .view-btn:hover {
-  background: #2dd4bf;
-  color: #0a0e14;
-}
-
-/* ===== TOAST ===== */
+/* ===================== TOAST ===================== */
 .toast-notification {
   position: fixed;
-  bottom: 32px;
-  right: 32px;
+  bottom: 28px;
+  right: 28px;
   background: white;
-  padding: 12px 24px;
+  padding: 12px 22px;
   border-radius: 40px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
-  z-index: 1000;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.12);
+  z-index: 9999;
   font-size: 0.85rem;
+  font-weight: 500;
+  color: #1a1a2e;
   border-right: 4px solid #08717f;
-  animation: slideUp 0.3s ease;
   overflow: hidden;
 }
 
-.dark-mode .toast-notification {
-  background: #1f2937;
-}
-
-.toast-notification.success {
-  border-right-color: #10b981;
-}
-
-.toast-notification.error {
-  border-right-color: #ef4444;
-}
-
-.toast-message {
-  color: #1a1a2e;
-  font-weight: 500;
-}
-
-.dark-mode .toast-message {
-  color: #f0f0f0;
-}
+.dark-mode .toast-notification { background: #1e1e30; color: #f1f5f9; }
+.toast-notification.error { border-right-color: #ef4444; }
+.toast-notification.success { border-right-color: #10b981; }
 
 .toast-progress {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
+  bottom: 0; left: 0;
   height: 3px;
   background: linear-gradient(90deg, #08717f, #d40025);
   animation: toastProgress 3s linear forwards;
+  width: 0;
 }
 
-@keyframes toastProgress {
-  from { width: 0; }
-  to { width: 100%; }
+@keyframes toastProgress { to { width: 100%; } }
+
+.toast-enter-active, .toast-leave-active { transition: all 0.3s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(16px); }
+
+/* ===================== RESPONSIVE ===================== */
+
+/* <= 1280px: 5 cols */
+@media (max-width: 1280px) {
+  .artisans-grid { grid-template-columns: repeat(5, 1fr); }
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* <= 1024px: 4 cols */
+@media (max-width: 1024px) {
+  .artisans-grid { grid-template-columns: repeat(4, 1fr); }
+  .hero-desktop { gap: 32px; }
+  .hero-title { font-size: 2.5rem; }
 }
 
-/* ===== TRANSITIONS ===== */
-.toast-enter-active,
-.toast-leave-active {
-  transition: all 0.3s ease;
-}
-
-.toast-enter-from,
-.toast-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 1200px) {
-  .artisans-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (max-width: 1000px) {
-  .hero-grid {
-    grid-template-columns: 1fr;
-    gap: 32px;
+/* <= 860px: passer en mobile layout */
+@media (max-width: 860px) {
+  /* Cacher desktop hero, montrer mobile hero */
+  .hero-desktop { display: none; }
+  .hero-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
 
-  .hero-illustration {
-    max-width: 400px;
-    margin: 0 auto;
-  }
-
-  .hero-content {
+  /* Texte en haut */
+  .hero-text-block {
     text-align: center;
+    padding-bottom: 20px;
   }
 
-  .hero-search {
-    margin: 0 auto;
+  .hero-text-block .hero-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 10px;
+    font-family: 'Amiri', serif;
+    line-height: 1.3;
   }
 
-  .artisans-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
+  .dark-mode .hero-text-block .hero-title { color: #f1f5f9; }
 
-@media (max-width: 768px) {
-  .hero-title {
-    font-size: 2.2rem;
-  }
-
-  .artisans-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+  .hero-text-block .hero-subtitle {
+    font-size: 0.95rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.7;
   }
 
-  .filters-list {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    justify-content: flex-start;
-    padding-bottom: 4px;
-  }
+  .dark-mode .hero-text-block .hero-subtitle { color: #94a3b8; }
 
-  .filter-chip {
+  /* Image au milieu */
+  .hero-img-block {
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 18px;
+    overflow: hidden;
+    height: 190px;
     flex-shrink: 0;
   }
 
-  .container {
-    padding: 0 16px;
-  }
-
-  .hero-section {
-    padding: 32px 0 32px;
-  }
-
-  .hero-search {
+  .hero-img-block .hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 25%;
+    border-radius: 18px;
+    border: 3px solid white;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    display: block;
     max-width: 100%;
   }
 
-  .search-wrapper {
-    max-width: 100%;
+  .dark-mode .hero-img-block .hero-image {
+    border-color: #1e1e30;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
   }
 
-  .filters-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+  /* Search en bas */
+  .hero-search-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .hero-search-block .search-wrapper {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .artisans-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+  .hero-section { padding: 24px 0 28px; }
+}
+
+/* <= 640px: 2 cols grid */
+@media (max-width: 640px) {
+  .hero-section { padding: 20px 0 24px; }
+
+  .hero-text-block .hero-title { font-size: 1.75rem; }
+
+  .hero-img-block { height: 170px; }
+  .hero-img-block .hero-image { height: 100%; }
+
+  .artisans-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .card-cover { height: 80px; }
+
+  .container { padding: 0 14px; }
+
+  .main-content { padding: 20px 0 50px; }
+
+  .filters-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+
+  .toast-notification {
+    bottom: 70px;
+    right: 14px;
+    left: 14px;
+    border-radius: 14px;
+    text-align: center;
   }
 }
 
-@media (max-width: 480px) {
-  .artisans-grid {
-    grid-template-columns: 1fr;
-  }
+/* <= 420px: encore plus compact */
+@media (max-width: 420px) {
+  .hero-text-block .hero-title { font-size: 1.55rem; }
+  .hero-text-block .hero-subtitle { font-size: 0.88rem; }
+  .hero-img-block { height: 155px; border-radius: 14px; }
+  .hero-img-block .hero-image { border-radius: 14px; height: 100%; }
 
-  .card-cover {
-    height: 120px;
-  }
+  .container { padding: 0 12px; }
 
-  .avatar-wrapper {
-    width: 64px;
-    height: 64px;
-    margin-top: -32px;
-  }
+  .artisans-grid { gap: 10px; }
 
-  .shop-name {
-    font-size: 1rem;
-  }
+  .card-cover { height: 75px; }
 
-  .hero-title {
-    font-size: 1.8rem;
-  }
+  .avatar-wrapper { width: 46px; height: 46px; margin-top: -23px; }
 
-  .empty-actions {
-    flex-direction: column;
-    width: 100%;
-  }
+  .shop-name { font-size: 0.8rem; }
 
-  .btn-reset,
-  .btn-join {
-    width: 100%;
-    justify-content: center;
-  }
+  .filter-chip { padding: 6px 12px; font-size: 0.8rem; }
+
+  .empty-actions { flex-direction: column; }
+  .btn-reset, .btn-join { width: 100%; justify-content: center; }
 }
 </style>

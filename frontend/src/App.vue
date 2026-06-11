@@ -1,5 +1,4 @@
 <template>
-  <!-- AJOUTEZ :class="{ 'dark-mode': isDarkMode }" ICI -->
   <div id="app" :class="{ 'dark-mode': isDarkMode }" dir="rtl">
     <Header />
     <CartSidebar />
@@ -17,29 +16,33 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import Header from './components/Header.vue'
 import Footer from './components/Footer.vue'
 import CartSidebar from './components/CartSidebar.vue'
 import WishlistSidebar from './components/WishlistSidebar.vue'
 import ChatWidget from './components/ChatWidget.vue'
 import { useThemeStore } from './stores/theme'
-import { useAuthStore } from './stores/auth'
-import { useMessageStore } from './stores/messageStore'
-import './assets/admin.css'
-import './assets/theme.css'
+import { useVisitTracker } from './composables/useVisitTracker'
 
+const route = useRoute()
+const { trackPageView } = useVisitTracker()
 const themeStore = useThemeStore()
-const authStore = useAuthStore()
-const messageStore = useMessageStore()
 
 const isDarkMode = computed(() => themeStore.isDarkMode)
+
+// ✅ Suivre les changements de page
+watch(() => route.path, (newPath) => {
+  trackPageView(newPath)
+}, { immediate: false })
 
 onMounted(() => {
   themeStore.initTheme()
   console.log('🎨 Thème actuel:', themeStore.theme)
 })
 </script>
+
 
 <style>
 /* ===== STYLES GLOBAUX ===== */

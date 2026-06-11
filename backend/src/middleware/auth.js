@@ -1,6 +1,14 @@
-// backend/src/middleware/auth.js - Version CORRIGÉE avec support de 'pending'
+// backend/src/middleware/auth.js - Version CORRIGÉE
 const jwt = require('jsonwebtoken');
 const db = require('../models/db');
+
+// Normalize result helper
+const normalizeResult = (result) => {
+  if (Array.isArray(result)) return result;
+  if (result?.rows) return result.rows;
+  if (result?.data) return result.data;
+  return [];
+};
 
 // Middleware to protect routes
 const protect = async (req, res, next) => {
@@ -9,7 +17,7 @@ const protect = async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      console.log('🔑 Token reçu:', token.substring(0, 50) + '...');
+      console.log('🔑 Token reçu');
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
       console.log('✅ Token décodé:', { id: decoded.id });
@@ -20,7 +28,9 @@ const protect = async (req, res, next) => {
         [decoded.id]
       );
 
-      if (!users || users.length === 0) {
+      const normalizedUsers = normalizeResult(users);
+      
+      if (!normalizedUsers || normalizedUsers.length === 0) {
         console.log('❌ Utilisateur non trouvé');
         return res.status(401).json({
           success: false,
@@ -28,7 +38,7 @@ const protect = async (req, res, next) => {
         });
       }
 
-      const user = users[0];
+      const user = normalizedUsers[0];
 
       // Check if user is active
       if (!user.isActive) {
@@ -45,9 +55,10 @@ const protect = async (req, res, next) => {
       
       try {
         const vendors = await db.query('SELECT id, approved FROM vendors WHERE userId = ?', [user.id]);
-        if (vendors.length > 0) {
-          vendorId = vendors[0].id;
-          vendorApproved = vendors[0].approved === 1;
+        const normalizedVendors = normalizeResult(vendors);
+        if (normalizedVendors.length > 0) {
+          vendorId = normalizedVendors[0].id;
+          vendorApproved = normalizedVendors[0].approved === 1;
           console.log('🏪 Vendor ID trouvé:', vendorId, 'Approuvé:', vendorApproved);
         }
       } catch (err) {
@@ -88,15 +99,79 @@ const protect = async (req, res, next) => {
   }
 };
 
-// ===== FONCTION AUTHORIZE (GÉNÉRIQUE) =====
+// Middleware to check if user is admin
+const adminOnly = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Non authentifié' });
+  }
+  
+  if (req.user.role === 'admin') {
+    next();
+  } else {
+    console.log('❌ Accès refusé - utilisateur non admin:', req.user?.role);
+    res.status(403).json({
+      success: false,
+      message: 'Accès réservé aux administrateurs'
+    });
+  }
+};
+
+// Middleware to check if user is vendor (any vendor status: pending or approved)
+const vendorOnly = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Non authentifié' });
+  }
+  
+  if (req.user.role === 'vendor' || req.user.role === 'admin') {
+    next();
+  } else if (req.user.role === 'pending') {
+    res.status(403).json({
+      success: false,
+      message: 'Votre compte vendeur est en attente de validation'
+    });
+  } else {
+    console.log('❌ Accès refusé - utilisateur non vendor:', req.user?.role);
+    res.status(403).json({
+      success: false,
+      message: 'Accès réservé aux vendeurs'
+    });
+  }
+};
+
+// Middleware to check if user is approved vendor
+const approvedVendorOnly = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Non authentifié' });
+  }
+  
+  if (req.user.role === 'admin') {
+    return next();
+  }
+  
+  if (req.user.role === 'vendor' && req.user.vendorApproved === true) {
+    return next();
+  }
+  
+  if (req.user.role === 'pending' || (req.user.role === 'vendor' && req.user.vendorApproved === false)) {
+    console.log('⏳ Compte en attente de validation');
+    return res.status(403).json({
+      success: false,
+      message: 'Votre compte vendeur est en attente de validation. Veuillez patienter.'
+    });
+  }
+  
+  console.log('❌ Accès refusé - vendeur non approuvé:', req.user?.vendorApproved);
+  res.status(403).json({
+    success: false,
+    message: 'Accès réservé aux vendeurs approuvés'
+  });
+};
+
+// Generic authorize middleware
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
-      console.log('❌ Accès refusé - utilisateur non authentifié');
-      return res.status(401).json({
-        success: false,
-        message: 'Non authentifié'
-      });
+      return res.status(401).json({ success: false, message: 'Non authentifié' });
     }
     
     if (!roles.includes(req.user.role)) {
@@ -112,61 +187,11 @@ const authorize = (...roles) => {
   };
 };
 
-// Middleware to check if user is admin
-const adminOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    next();
-  } else {
-    console.log('❌ Accès refusé - utilisateur non admin:', req.user?.role);
-    res.status(403).json({
-      success: false,
-      message: 'Accès réservé aux administrateurs'
-    });
-  }
-};
-
-// Middleware to check if user is vendor, admin or pending
-const vendorOnly = (req, res, next) => {
-  if (req.user && (req.user.role === 'vendor' || req.user.role === 'admin' || req.user.role === 'pending')) {
-    next();
-  } else {
-    console.log('❌ Accès refusé - utilisateur non vendor:', req.user?.role);
-    res.status(403).json({
-      success: false,
-      message: 'Accès réservé aux vendeurs'
-    });
-  }
-};
-
-// Middleware to check if user is approved vendor
-const approvedVendorOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
-    next();
-  } else if (req.user && req.user.role === 'vendor' && req.user.vendorApproved === true) {
-    next();
-  } else if (req.user && req.user.role === 'pending') {
-    console.log('⏳ Compte en attente de validation');
-    res.status(403).json({
-      success: false,
-      message: 'Votre compte vendeur est en attente de validation. Veuillez patienter.'
-    });
-  } else {
-    console.log('❌ Accès refusé - vendeur non approuvé:', req.user?.vendorApproved);
-    res.status(403).json({
-      success: false,
-      message: 'Accès réservé aux vendeurs approuvés. Votre compte est en attente de validation.'
-    });
-  }
-};
-
 // Middleware to check if user is the owner of a resource
 const isOwner = (getResourceUserId) => {
   return async (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Non authentifié'
-      });
+      return res.status(401).json({ success: false, message: 'Non authentifié' });
     }
     
     // Admin can access everything
@@ -209,5 +234,4 @@ module.exports = {
   isOwner,
   isAdmin,
   isVendor,
-  checkRole
-};
+  checkRole};

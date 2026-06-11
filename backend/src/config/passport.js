@@ -1,7 +1,7 @@
 // backend/src/config/passport.js
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const FacebookStrategy = require('passport-facebook').Strategy;
+const FacebookStrategy = require('passport-facebook');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 

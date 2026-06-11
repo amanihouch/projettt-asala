@@ -1,54 +1,72 @@
+// backend/src/controllers/orderController.js - Version corrigée avec gestion robuste du vendorId
 const Order = require('../models/Order');
+const db = require('../models/db');
 
-const normalizeOrderPayload = (body, userId) => {
-  return {
-    userId,
-    customerName: body.customerName ?? body.customer?.name ?? '',
-    customerEmail: body.customerEmail ?? body.customer?.email ?? '',
-    customerPhone1: body.customerPhone1 ?? body.customer?.phone1 ?? '',
-    customerPhone2: body.customerPhone2 ?? body.customer?.phone2 ?? null,
-    governorate: body.governorate ?? body.delivery?.governorate ?? '',
-    delegation: body.delegation ?? body.delivery?.delegation ?? '',
-    postalCode: body.postalCode ?? body.delivery?.postalCode ?? null,
-    address: body.address ?? body.delivery?.address ?? '',
-    items: Array.isArray(body.items) ? body.items : [],
-    subtotal: Number(body.subtotal ?? 0),
-    shipping: Number(body.shipping ?? body.shippingCost ?? 0),
-    total: Number(body.total ?? 0),
-    paymentMethod: body.paymentMethod ?? 'cash_on_delivery',
-    notes: body.notes ?? null
-  };
+// ===== HELPER : résoudre le vendorId depuis req.user =====
+const resolveVendorId = async (req) => {
+  // 1. Disponible directement sur req.user (mis par le middleware auth)
+  if (req.user.vendorId) return req.user.vendorId;
+
+  // 2. Lookup DB par userId
+  const vendor = await db.getOne('SELECT id FROM vendors WHERE userId = ?', [req.user.id]);
+  return vendor ? vendor.id : null;
 };
 
-// @desc    Create order
-// @route   POST /api/v1/orders
-// @access  Private
+// ===== CRÉER UNE COMMANDE =====
 exports.createOrder = async (req, res) => {
   try {
-    const payload = normalizeOrderPayload(req.body, req.user.id);
+    console.log('📦 [createOrder] Données reçues:', req.body);
 
-    if (!payload.customerName || !payload.customerEmail || !payload.customerPhone1) {
-      return res.status(400).json({
-        success: false,
-        message: 'Les informations client sont incomplètes'
-      });
+    const orderData = {
+      vendorId: req.body.vendorId,
+      vendorName: req.body.vendorName,
+      userId: req.user?.id || req.body.userId || null,
+      customerName: req.body.customerName,
+      customerEmail: req.body.customerEmail,
+      customerPhone1: req.body.customerPhone1,
+      customerPhone2: req.body.customerPhone2 || null,
+      governorate: req.body.governorate,
+      delegation: req.body.delegation,
+      postalCode: req.body.postalCode || null,
+      address: req.body.address,
+      items: req.body.items,
+      subtotal: req.body.subtotal || 0,
+      shipping: req.body.shipping || 0,
+      total: req.body.total || 0,
+      paymentMethod: req.body.paymentMethod || 'cash_on_delivery',
+      notes: req.body.notes || null,
+      promoCode: req.body.promoCode || null,
+      promoDiscount: req.body.promoDiscount || 0,
+      status: 'pending'
+    };
+
+    if (!orderData.vendorId) {
+      return res.status(400).json({ success: false, message: 'ID du vendeur requis' });
     }
 
-    if (!payload.governorate || !payload.delegation || !payload.address) {
-      return res.status(400).json({
-        success: false,
-        message: 'Les informations de livraison sont incomplètes'
-      });
+    if (!orderData.customerName || !orderData.customerEmail || !orderData.customerPhone1) {
+      return res.status(400).json({ success: false, message: 'Nom, email et téléphone sont obligatoires' });
     }
 
-    if (!payload.items.length) {
-      return res.status(400).json({
-        success: false,
-        message: 'La commande doit contenir au moins un article'
-      });
+    if (!orderData.governorate || !orderData.delegation || !orderData.address) {
+      return res.status(400).json({ success: false, message: 'Adresse complète requise (gouvernorat, délégation, adresse)' });
     }
 
-    const order = await Order.createWithItems(payload);
+    if (!orderData.items || orderData.items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Au moins un produit requis' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(orderData.customerEmail)) {
+      return res.status(400).json({ success: false, message: 'Format d\'email invalide' });
+    }
+
+    const phoneRegex = /^[0-9]{8}$/;
+    if (!phoneRegex.test(orderData.customerPhone1)) {
+      return res.status(400).json({ success: false, message: 'Numéro de téléphone invalide (8 chiffres requis)' });
+    }
+
+    const order = await Order.create(orderData);
 
     res.status(201).json({
       success: true,
@@ -65,155 +83,114 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-// @desc    Get user orders
-// @route   GET /api/v1/orders/my-orders
-// @access  Private
+// ===== RÉCUPÉRER LES COMMANDES D'UN VENDEUR =====
+exports.getVendorOrders = async (req, res) => {
+  try {
+    console.log('📦 [getVendorOrders] User:', req.user?.id, 'vendorId:', req.user?.vendorId);
+
+    const vendorId = await resolveVendorId(req);
+
+    if (!vendorId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Vous devez être un vendeur pour accéder à cette ressource'
+      });
+    }
+
+    const { page = 1, limit = 20, status = null, search = '' } = req.query;
+
+    const result = await Order.getByVendor(vendorId, {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      status: status && status !== 'all' ? status : null,
+      search: search || ''
+    });
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ Erreur getVendorOrders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des commandes du vendeur',
+      error: error.message
+    });
+  }
+};
+
+// ===== RÉCUPÉRER UNE COMMANDE PAR ID =====
+exports.getOrderById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Commande non trouvée' });
+    }
+
+    const isAdmin = req.user?.role === 'admin';
+    const isVendorOwner = req.user?.vendorId === order.vendor_id;
+    const isOrderOwner = req.user?.id === order.user_id;
+
+    if (!isAdmin && !isVendorOwner && !isOrderOwner) {
+      return res.status(403).json({ success: false, message: 'Accès non autorisé à cette commande' });
+    }
+
+    res.json({ success: true, data: { order } });
+  } catch (error) {
+    console.error('❌ Erreur getOrderById:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de la récupération de la commande' });
+  }
+};
+
+// ===== RÉCUPÉRER LES COMMANDES DE L'UTILISATEUR CONNECTÉ =====
 exports.getMyOrders = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
-    const result = await Order.getByUser(req.user.id, { page, limit });
+    const { page = 1, limit = 20, status = null } = req.query;
+    const userId = req.user.id;
+
+    const result = await Order.getByUser(userId, {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      status: status && status !== 'all' ? status : null
+    });
 
     res.json({
       success: true,
-      data: result.orders,
-      pagination: result.pagination
+      data: result.data || result,
+      pagination: result.pagination || { page: parseInt(page), limit: parseInt(limit), total: 0, pages: 1 }
     });
   } catch (error) {
     console.error('❌ Erreur getMyOrders:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors du chargement des commandes',
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: 'Erreur lors de la récupération des commandes' });
   }
 };
 
-// @desc    Get order by ID
-// @route   GET /api/v1/orders/:id
-// @access  Private
-exports.getOrderById = async (req, res) => {
+// ===== METTRE À JOUR LE STATUT D'UNE COMMANDE =====
+exports.updateOrderStatus = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
+    const { id } = req.params;
+    const { status, notes } = req.body;
+    const userRole = req.user.role;
 
+    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Statut invalide' });
+    }
+
+    const order = await Order.findById(id);
     if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Commande non trouvée'
-      });
+      return res.status(404).json({ success: false, message: 'Commande non trouvée' });
     }
 
-    if (order.userId !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Vous n\'êtes pas autorisé à voir cette commande'
-      });
+    const isAdmin = userRole === 'admin';
+    const vendorId = await resolveVendorId(req);
+    const isVendorOwner = vendorId && (vendorId === order.vendorId || vendorId === order.vendor_id);
+
+    if (!isAdmin && !isVendorOwner) {
+      return res.status(403).json({ success: false, message: 'Vous n\'êtes pas autorisé à modifier cette commande' });
     }
 
-    res.json({
-      success: true,
-      data: { order }
-    });
-  } catch (error) {
-    console.error('❌ Erreur getOrderById:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors du chargement de la commande',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Cancel order
-// @route   PATCH /api/v1/orders/:id/cancel
-// @access  Private
-exports.cancelOrder = async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Commande non trouvée'
-      });
-    }
-
-    if (order.userId !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Vous n\'êtes pas autorisé à annuler cette commande'
-      });
-    }
-
-    if (!['pending', 'processing'].includes(order.status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cette commande ne peut plus être annulée'
-      });
-    }
-
-    const updatedOrder = await Order.updateStatus(req.params.id, {
-      status: 'cancelled',
-      cancellationReason: req.body.reason || 'Annulé par le client'
-    });
-
-    res.json({
-      success: true,
-      message: 'Commande annulée avec succès',
-      data: { order: updatedOrder }
-    });
-  } catch (error) {
-    console.error('❌ Erreur cancelOrder:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de l\'annulation',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Admin: Get all orders
-// @route   GET /api/v1/orders/admin/all
-// @access  Private/Admin
-exports.adminGetAllOrders = async (req, res) => {
-  try {
-    const { page = 1, limit = 10, status, search } = req.query;
-    const result = await Order.getAll({ page, limit, status, search });
-
-    res.json({
-      success: true,
-      data: result.orders,
-      pagination: result.pagination
-    });
-  } catch (error) {
-    console.error('❌ Erreur adminGetAllOrders:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors du chargement des commandes',
-      error: error.message
-    });
-  }
-};
-
-// @desc    Admin: Update order status
-// @route   PATCH /api/v1/orders/admin/:id/status
-// @access  Private/Admin
-exports.adminUpdateOrderStatus = async (req, res) => {
-  try {
-    const { status, trackingNumber, adminNotes } = req.body;
-
-    const order = await Order.findById(req.params.id);
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Commande non trouvée'
-      });
-    }
-
-    const updatedOrder = await Order.updateStatus(req.params.id, {
-      status,
-      trackingNumber,
-      adminNotes
-    });
+    const updatedOrder = await Order.updateStatus(id, status, req.user.id, notes);
 
     res.json({
       success: true,
@@ -221,11 +198,113 @@ exports.adminUpdateOrderStatus = async (req, res) => {
       data: { order: updatedOrder }
     });
   } catch (error) {
-    console.error('❌ Erreur adminUpdateOrderStatus:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la mise à jour',
-      error: error.message
-    });
+    console.error('❌ Erreur updateOrderStatus:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de la mise à jour du statut' });
+  }
+};
+
+// ===== ANNULER UNE COMMANDE =====
+exports.cancelOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Commande non trouvée' });
+    }
+
+    const isAdmin = userRole === 'admin';
+    const vendorId = await resolveVendorId(req);
+    const isVendorOwner = vendorId && (vendorId === order.vendorId || vendorId === order.vendor_id);
+    const isOrderOwner = (order.userId || order.user_id) === userId;
+
+    if (!isAdmin && !isVendorOwner && !isOrderOwner) {
+      return res.status(403).json({ success: false, message: 'Vous n\'êtes pas autorisé à annuler cette commande' });
+    }
+
+    if (order.status === 'delivered') {
+      return res.status(400).json({ success: false, message: 'Les commandes livrées ne peuvent pas être annulées' });
+    }
+
+    if (order.status === 'cancelled') {
+      return res.status(400).json({ success: false, message: 'Cette commande est déjà annulée' });
+    }
+
+    const updatedOrder = await Order.updateStatus(id, 'cancelled', userId, reason || 'Annulée');
+
+    res.json({ success: true, message: 'Commande annulée avec succès', data: { order: updatedOrder } });
+  } catch (error) {
+    console.error('❌ Erreur cancelOrder:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de l\'annulation de la commande' });
+  }
+};
+
+// ===== STATISTIQUES POUR VENDEUR =====
+exports.getVendorStats = async (req, res) => {
+  try {
+    const vendorId = await resolveVendorId(req);
+
+    if (!vendorId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Vous devez être un vendeur pour accéder à cette ressource'
+      });
+    }
+
+    const stats = await Order.getVendorStats(vendorId);
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error('❌ Erreur getVendorStats:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de la récupération des statistiques' });
+  }
+};
+
+// ===== RÉCUPÉRER TOUTES LES COMMANDES (ADMIN) =====
+exports.getAllOrders = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Accès réservé aux administrateurs' });
+    }
+
+    const { page = 1, limit = 20, status = null, search = '', vendorId = null } = req.query;
+    const result = await Order.getAll({ page, limit, status, search, vendorId });
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ Erreur getAllOrders:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de la récupération des commandes' });
+  }
+};
+
+// ===== STATISTIQUES GLOBALES (ADMIN) =====
+exports.getGlobalStats = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Accès réservé aux administrateurs' });
+    }
+
+    const stats = await Order.getGlobalStats();
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error('❌ Erreur getGlobalStats:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de la récupération des statistiques' });
+  }
+};
+
+// ===== SUPPRIMER UNE COMMANDE (ADMIN) =====
+exports.deleteOrder = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Accès réservé aux administrateurs' });
+    }
+
+    await Order.delete(req.params.id);
+    res.json({ success: true, message: 'Commande supprimée avec succès' });
+  } catch (error) {
+    console.error('❌ Erreur deleteOrder:', error);
+    res.status(500).json({ success: false, message: 'Erreur lors de la suppression de la commande' });
   }
 };

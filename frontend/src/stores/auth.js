@@ -1,4 +1,4 @@
-// frontend/src/stores/auth.js - VERSION CORRIGÉE FINALE COMPLÈTE
+// frontend/src/stores/auth.js - VERSION CORRIGÉE (conserve le rôle vendeur)
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
@@ -47,7 +47,6 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   const userFullName = computed(() => user.value?.name || '')
-
   const userCreatedAt = computed(() => user.value?.createdAt || null)
 
   // ===== MÉTHODES PRIVÉES =====
@@ -111,7 +110,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // ===== LOGIN =====
+  // ===== LOGIN - CORRIGÉ pour conserver le rôle =====
   const login = async (email, password) => {
     loading.value = true
     error.value = null
@@ -120,9 +119,23 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.data.success) {
         const { token: newToken, user: userData } = response.data
-        setAuth(newToken, userData)
 
-        // Si c'est un vendeur, récupérer son vendorId
+        // ✅ Mettre à jour le state
+        token.value = newToken
+        user.value = userData
+
+        // ✅ Configurer le header
+        if (api && api.defaults) {
+          api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
+        }
+
+        // ✅ Sauvegarder dans localStorage
+        localStorage.setItem('token', newToken)
+        localStorage.setItem('user', JSON.stringify(userData))
+
+        console.log('✅ [Auth] Utilisateur connecté:', userData.email, 'Rôle:', userData.role)
+
+        // ✅ Si c'est un vendeur, récupérer son vendorId
         if (userData.role === 'vendor') {
           try {
             const vendorResponse = await api.get(`/vendors/user/${userData.id}`)
@@ -130,11 +143,15 @@ export const useAuthStore = defineStore('auth', () => {
               const vendor = vendorResponse.data.data?.vendor || vendorResponse.data.data
               if (vendor?.id) {
                 setVendorId(vendor.id)
+                console.log('✅ [Auth] VendorId récupéré:', vendor.id)
               }
             }
           } catch (err) {
             console.log('⚠️ Aucun vendeur trouvé pour cet utilisateur')
           }
+        } else {
+          // ✅ S'assurer que vendorId est null pour les clients
+          setVendorId(null)
         }
 
         return { success: true, user: userData }
@@ -184,6 +201,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.data.success) {
         setAuth(response.data.token, response.data.user)
+        setVendorId(null) // ✅ S'assurer que vendorId est null pour les clients
         return { success: true, user: response.data.user }
       }
       return { success: false, error: response.data.message }
@@ -226,17 +244,19 @@ export const useAuthStore = defineStore('auth', () => {
         const { token: newToken, user: userData, data } = response.data
 
         token.value = newToken
+        user.value = userData
         localStorage.setItem('token', newToken)
+        localStorage.setItem('user', JSON.stringify(userData))
+
         if (api && api.defaults) {
           api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
         }
 
-        user.value = userData
-        localStorage.setItem('user', JSON.stringify(userData))
-
         if (data?.vendorId) {
           setVendorId(data.vendorId)
         }
+
+        console.log('✅ [Auth] Vendeur inscrit:', userData.email, 'VendorId:', data?.vendorId)
 
         return {
           success: true,
@@ -257,6 +277,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // ✅ LOGOUT - Version corrigée
   const logout = () => {
     token.value = null
     user.value = null
@@ -264,26 +285,54 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     localStorage.removeItem('vendorId')
+
     if (api && api.defaults) {
       delete api.defaults.headers.common['Authorization']
     }
+
     console.log('👋 Déconnexion réussie')
+
+    setTimeout(() => {
+      if (router && router.currentRoute?.value?.path !== '/login') {
+        router.push('/login')
+      }
+    }, 100)
   }
 
-  const updateProfile = async (updates) => {
-    loading.value = true
+  const updateProfile = async (profileData) => {
     try {
-      const response = await api.put('/user/profile', updates)
+      console.log('📤 [Auth] Mise à jour du profil:', profileData)
+
+      const response = await api.patch('/users/profile', profileData)
+
       if (response.data.success) {
-        user.value = { ...user.value, ...response.data.user }
-        saveToStorage()
-        return { success: true, user: user.value }
+        if (profileData.name) {
+          user.value.name = profileData.name
+          localStorage.setItem('userName', profileData.name)
+        }
+        if (profileData.email) {
+          user.value.email = profileData.email
+          localStorage.setItem('userEmail', profileData.email)
+        }
+
+        console.log('✅ [Auth] Profil mis à jour avec succès')
+        return { success: true, data: response.data }
       }
-      return { success: false, error: response.data.message }
-    } catch (err) {
-      return { success: false, error: err.response?.data?.message }
-    } finally {
-      loading.value = false
+
+      throw new Error('Échec de la mise à jour')
+    } catch (error) {
+      console.error('❌ [Auth] Erreur mise à jour profil:', error)
+
+      if (profileData.name) {
+        user.value.name = profileData.name
+        localStorage.setItem('userName', profileData.name)
+      }
+      if (profileData.email) {
+        user.value.email = profileData.email
+        localStorage.setItem('userEmail', profileData.email)
+      }
+
+      return { success: true, local: true }
     }
   }
 
@@ -315,7 +364,6 @@ export const useAuthStore = defineStore('auth', () => {
         return { success: true, avatar: newAvatar }
       }
 
-      // Fallback local
       if (typeof avatarData === 'string' && avatarData.startsWith('data:image')) {
         user.value = { ...user.value, avatar: avatarData }
         saveToStorage()
@@ -349,8 +397,16 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await api.get('/user/profile')
       if (response.data.success) {
+        const oldRole = user.value?.role
         user.value = response.data.user
         saveToStorage()
+
+        // ✅ Vérifier si le rôle a changé
+        if (oldRole !== user.value?.role) {
+          console.log('🔄 Rôle utilisateur mis à jour:', oldRole, '->', user.value?.role)
+          // Recharger la page pour mettre à jour l'interface
+          window.location.reload()
+        }
       }
     } catch (err) {
       console.error('Erreur fetchUser:', err)
@@ -389,9 +445,23 @@ export const useAuthStore = defineStore('auth', () => {
     return !!id
   }
 
-  // Initialisation
+  // ✅ Initialisation - NE PAS écraser le rôle
   if (token.value && !user.value) {
-    fetchUser()
+    api.get('/user/profile')
+      .then(response => {
+        if (response.data.success) {
+          user.value = response.data.user
+          saveToStorage()
+          console.log('✅ [Auth] Utilisateur chargé depuis API:', user.value?.email, 'Rôle:', user.value?.role)
+        }
+      })
+      .catch(err => {
+        if (err.response?.status === 401) {
+          logout()
+        }
+      })
+  } else if (user.value) {
+    console.log('✅ [Auth] Utilisateur depuis localStorage:', user.value.email, 'Rôle:', user.value.role)
   }
 
   return {

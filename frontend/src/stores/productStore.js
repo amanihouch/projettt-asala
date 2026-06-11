@@ -140,7 +140,7 @@ export const useProductStore = defineStore('products', () => {
       }
 
       try {
-        const response = await api.get('/products/sponsored')
+        const response = await api.get('/sponsored-products?active=true')
         if (response.data.success) {
           let apiProducts = response.data.data || response.data.products || []
           if (!Array.isArray(apiProducts)) apiProducts = []
@@ -179,7 +179,7 @@ export const useProductStore = defineStore('products', () => {
       const sponsoredProduct = { ...product, sponsoredAt: new Date().toISOString(), sponsoredBy: 'admin' }
 
       try {
-        await api.post('/products/sponsored', { productId: product.id, product: sponsoredProduct })
+        await api.post('/sponsored-products/admin', { postId: product.id })
       } catch (apiError) {
         // API non disponible
       }
@@ -202,7 +202,7 @@ export const useProductStore = defineStore('products', () => {
 
     try {
       try {
-        await api.delete(`/products/sponsored/${productId}`)
+        await api.delete(`/sponsored-products/admin/${productId}`)
       } catch (apiError) {
         // API non disponible
       }
@@ -331,7 +331,7 @@ export const useProductStore = defineStore('products', () => {
       const postsInCategory = getAllProducts.value.filter(p => p.category === category)
 
       try {
-        const response = await api.get(`/products/category/${category}`, { params })
+        const response = await api.get(`/categories/${category}/products`, { params })
         if (response.data.success) {
           let apiProducts = response.data.data || response.data.products || []
           if (!Array.isArray(apiProducts)) apiProducts = []

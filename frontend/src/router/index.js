@@ -4,7 +4,8 @@ import Login from '../views/Login.vue'
 import AdminLayout from '../views/admin/AdminLayout.vue'
 import PendingReels from '../views/admin/PendingReels.vue'
 import Orders from '../views/Orders.vue'
-
+import SponsoredProducts from '../views/admin/SponsoredProducts.vue'
+import VendorPasswords from '../views/admin/VendorPasswords.vue'
 const routes = [
   // ===== ROUTES PUBLIQUES (accessibles SANS connexion) =====
   { path: '/', name: 'home', component: Homepage },
@@ -20,12 +21,12 @@ const routes = [
   // ===== ROUTES PROTÉGÉES (connexion requise) =====
   { path: '/vendor/edit/:id', name: 'VendorEdit', component: () => import('../views/VendorEdit.vue'), meta: { auth: true } },
   { path: '/profile', name: 'profile', component: () => import('../views/Profile.vue'), meta: { auth: true } },
-  { path: '/pending-vendor', name: 'pending-vendor', component: () => import('../views/PendingVendor.vue'), meta: { auth: true } },
   { path: '/orders', name: 'Orders', component: Orders, meta: { auth: true } },
   { path: '/checkout', name: 'checkout', component: () => import('../views/Checkout.vue'), meta: { auth: true } },
   { path: '/order-details/:id', name: 'OrderDetails', component: () => import('../views/OrderDetails.vue'), meta: { auth: true } },
   { path: '/order-tracking/:id', name: 'OrderTracking', component: () => import('../views/OrderTracking.vue'), meta: { auth: true } },
-  { path: '/order-confirmation/:id', name: 'OrderConfirmation', component: () => import('../views/OrderConfirmation.vue'), meta: { auth: true } },
+  { path: '/order-confirmation/:id', name:
+    'OrderConfirmation', component: () => import('../views/OrderConfirmation.vue'), meta: { auth: true } },
   { path: '/notification-settings', name: 'NotificationSettings', component: () => import('../views/NotificationSettings.vue'), meta: { auth: true } },
 
   // ===== ADMIN =====
@@ -45,6 +46,25 @@ const routes = [
       { path: 'pending-vendors', name: 'admin-pending-vendors', component: () => import('../views/admin/PendingVendors.vue') },
       { path: 'statistics', name: 'admin-statistics', component: () => import('../views/admin/Statistics.vue') },
       { path: 'contact-messages', name: 'AdminContactMessages', component: () => import('../views/admin/ContactMessages.vue') },
+      // Dans router/index.js
+// Dans votre router/index.js
+
+
+// Dans les routes admin
+{
+  path: '/admin/vendors-passwords',
+  name: 'AdminVendorPasswords',
+  component: VendorPasswords,
+  meta: { requiresAuth: true, role: 'admin' }
+},
+
+// Dans le tableau routes, ajoutez :
+{
+  path: '/admin/sponsored-products',
+  name: 'SponsoredProducts',
+  component: SponsoredProducts,
+  meta: { requiresAuth: true, role: 'admin' }
+},
     ],
   },
 

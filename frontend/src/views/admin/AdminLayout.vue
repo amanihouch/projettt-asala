@@ -1,4 +1,4 @@
-<!-- frontend/src/views/admin/AdminLayout.vue - VERSION CORRIGÉE ET COMPLÈTE -->
+<!-- frontend/src/views/admin/AdminLayout.vue - AVEC PRODUITS SPONSORISÉS ET VENDORS PASSWORDS -->
 <template>
   <div class="admin-dashboard" dir="rtl">
     <div class="admin-container">
@@ -8,7 +8,7 @@
           <div class="logo-area">
             <div class="logo-icon">𐎚</div>
             <div class="logo-text">
-              <h2 class="sidebar-title">توراث</h2>
+              <h2 class="sidebar-title">Asala</h2>
               <p class="sidebar-subtitle">لوحة التحكم</p>
             </div>
           </div>
@@ -20,75 +20,74 @@
         </div>
 
         <nav class="sidebar-nav">
-          <!-- Dashboard -->
           <router-link to="/admin" class="nav-item" exact-active-class="active">
             <span class="nav-icon">📊</span>
             <span class="nav-text">الرئيسية</span>
           </router-link>
 
-          <!-- Utilisateurs -->
           <router-link to="/admin/users" class="nav-item" active-class="active">
             <span class="nav-icon">👥</span>
             <span class="nav-text">المستخدمين</span>
           </router-link>
 
-          <!-- Vendeurs -->
           <router-link to="/admin/vendors" class="nav-item" active-class="active">
             <span class="nav-icon">🏪</span>
             <span class="nav-text">البائعين</span>
           </router-link>
 
-          <!-- Vendeurs en attente -->
+          <!-- ✅ NOUVEAU LIEN VENDEURS MOTS DE PASSE -->
+          <router-link to="/admin/vendors-passwords" class="nav-item" active-class="active">
+            <span class="nav-icon">🔐</span>
+            <span class="nav-text">كلمات مرور البائعين</span>
+          </router-link>
+
           <router-link to="/admin/pending-vendors" class="nav-item" active-class="active">
             <span class="nav-icon">⏳</span>
             <span class="nav-text">طلبات البائعين</span>
             <span v-if="pendingVendorsCount > 0" class="badge-pending">{{ pendingVendorsCount }}</span>
           </router-link>
 
-          <!-- Produits -->
           <router-link to="/admin/products" class="nav-item" active-class="active">
             <span class="nav-icon">📦</span>
             <span class="nav-text">المنتجات</span>
           </router-link>
 
-          <!-- Offres -->
+          <router-link to="/admin/sponsored-products" class="nav-item" active-class="active">
+            <span class="nav-icon">⭐</span>
+            <span class="nav-text">المنتجات المروّجة</span>
+          </router-link>
+
           <router-link to="/admin/offers" class="nav-item" active-class="active">
             <span class="nav-icon">🎁</span>
             <span class="nav-text">العروض الخاصة</span>
           </router-link>
 
-          <!-- Commandes -->
           <router-link to="/admin/orders" class="nav-item" active-class="active">
             <span class="nav-icon">🛒</span>
             <span class="nav-text">الطلبات</span>
           </router-link>
 
-          <!-- Catégories -->
           <router-link to="/admin/categories" class="nav-item" active-class="active">
             <span class="nav-icon">📂</span>
             <span class="nav-text">التصنيفات</span>
           </router-link>
 
-          <!-- Posts en attente -->
           <router-link to="/admin/pending-posts" class="nav-item" active-class="active">
             <span class="nav-icon">📝</span>
             <span class="nav-text">المنشورات للمراجعة</span>
           </router-link>
 
-          <!-- Reels en attente -->
           <router-link to="/admin/pending-reels" class="nav-item" active-class="active">
             <span class="nav-icon">🎬</span>
             <span class="nav-text">Reels للمراجعة</span>
             <span v-if="pendingReelsCount > 0" class="badge-pending">{{ pendingReelsCount > 9 ? '9+' : pendingReelsCount }}</span>
           </router-link>
 
-          <!-- Statistiques -->
           <router-link to="/admin/statistics" class="nav-item" active-class="active">
             <span class="nav-icon">📈</span>
             <span class="nav-text">الإحصائيات</span>
           </router-link>
 
-          <!-- Messages contact -->
           <router-link to="/admin/contact-messages" class="nav-item" active-class="active">
             <span class="nav-icon">✉️</span>
             <span class="nav-text">رسائل الاتصال</span>
@@ -97,13 +96,11 @@
 
           <div class="nav-divider"></div>
 
-          <!-- Retour au site -->
           <router-link to="/" class="nav-item">
             <span class="nav-icon">🏠</span>
             <span class="nav-text">العودة للموقع</span>
           </router-link>
 
-          <!-- Déconnexion -->
           <button @click="logout" class="nav-item logout-btn">
             <span class="nav-icon">🚪</span>
             <span class="nav-text">تسجيل الخروج</span>
@@ -146,8 +143,6 @@
   </div>
 </template>
 
-<!-- frontend/src/views/admin/AdminLayout.vue - Version CORRIGÉE -->
-<!-- frontend/src/views/admin/AdminLayout.vue - Version FINALE CORRIGÉE -->
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -180,8 +175,10 @@ const pageTitle = computed(() => {
     '/admin': 'لوحة التحكم',
     '/admin/users': 'إدارة المستخدمين',
     '/admin/vendors': 'إدارة البائعين',
+    '/admin/vendors-passwords': 'كلمات مرور البائعين', // ✅ AJOUTÉ
     '/admin/pending-vendors': 'طلبات البائعين',
     '/admin/products': 'إدارة المنتجات',
+    '/admin/sponsored-products': 'المنتجات المروّجة',
     '/admin/offers': 'العروض الخاصة',
     '/admin/orders': 'إدارة الطلبات',
     '/admin/categories': 'إدارة التصنيفات',
@@ -193,53 +190,39 @@ const pageTitle = computed(() => {
   return titles[route.path] || 'لوحة التحكم'
 })
 
-// ===== FONCTION PRINCIPALE POUR CHARGER LE COMPTEUR =====
+// ===== FONCTIONS =====
 const loadUnreadContactMessagesCount = () => {
   try {
-    // Charger depuis localStorage (même clé que ContactMessages.vue)
     const saved = localStorage.getItem('contact_messages')
     if (saved) {
       const messages = JSON.parse(saved)
       const unreadCount = messages.filter(m => !m.isRead).length
       unreadContactCount.value = unreadCount
-      console.log('📧 Messages non lus (localStorage):', unreadCount)
     } else {
-      // Données de démo par défaut
       const demoMessages = [
         { isRead: false }, { isRead: false }, { isRead: true }, { isRead: false }, { isRead: true }
       ]
-      const unreadCount = demoMessages.filter(m => !m.isRead).length
-      unreadContactCount.value = unreadCount
-      console.log('📧 Messages non lus (démo):', unreadCount)
+      unreadContactCount.value = demoMessages.filter(m => !m.isRead).length
     }
   } catch (error) {
-    console.error('❌ Erreur chargement messages:', error)
     unreadContactCount.value = 0
   }
 }
 
-// ✅ Handler pour les mises à jour en temps réel
 const handleContactMessagesUpdate = (event) => {
-  console.log('🔄 Événement contact-messages-updated reçu:', event.detail)
-
   if (event.detail && typeof event.detail.unreadCount === 'number') {
     unreadContactCount.value = event.detail.unreadCount
-    console.log('📧 Compteur mis à jour par événement:', unreadContactCount.value)
   } else {
-    // Recharger depuis localStorage
     loadUnreadContactMessagesCount()
   }
 }
 
-// ✅ Écouter les changements de localStorage (pour les onglets)
 const handleStorageChange = (e) => {
   if (e.key === 'contact_messages') {
-    console.log('🔄 Changement localStorage détecté, rechargement...')
     loadUnreadContactMessagesCount()
   }
 }
 
-// Charger les autres compteurs
 const loadPendingVendorsCount = async () => {
   try {
     const response = await api.get('/vendors/admin/pending')
@@ -256,7 +239,6 @@ const loadPendingVendorsCount = async () => {
       }
     }
   } catch (error) {
-    console.error('❌ Erreur chargement vendeurs en attente:', error)
     pendingVendorsCount.value = 0
   }
 }
@@ -268,7 +250,6 @@ const loadPendingReelsCount = async () => {
       pendingReelsCount.value = response.data.data?.count || response.data.count || 0
     }
   } catch (error) {
-    console.log('ℹ️ Route reels admin/pending/count non disponible')
     pendingReelsCount.value = 0
   }
 }
@@ -295,16 +276,13 @@ onMounted(() => {
     return
   }
 
-  // Charger tous les compteurs
   loadPendingVendorsCount()
   loadPendingReelsCount()
   loadUnreadContactMessagesCount()
 
-  // Ajouter les écouteurs
   window.addEventListener('contact-messages-updated', handleContactMessagesUpdate)
   window.addEventListener('storage', handleStorageChange)
 
-  // Rafraîchissement périodique
   refreshInterval = setInterval(() => {
     loadPendingVendorsCount()
     loadPendingReelsCount()
@@ -313,39 +291,42 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval)
-  }
+  if (refreshInterval) clearInterval(refreshInterval)
   window.removeEventListener('contact-messages-updated', handleContactMessagesUpdate)
   window.removeEventListener('storage', handleStorageChange)
 })
 </script>
+
 <style>
-/* ===== IMPORT POLICE AMIRI ===== */
+/* [All styles remain the same as original] */
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@400;500;600;700;800&display=swap');
 </style>
 
 <style scoped>
-/* ===== APPLICATION DE LA POLICE AMIRI ===== */
+/* [All scoped styles remain the same as original] */
 .admin-dashboard {
   font-family: 'Amiri', 'Cairo', serif;
-}
-
-.admin-dashboard * {
-  font-family: 'Amiri', 'Cairo', serif;
-}
-
-.admin-dashboard {
   min-height: 100vh;
   background: #f8fafc;
 }
 
-.admin-container {
-  display: flex;
+.admin-dashboard * { font-family: 'Amiri', 'Cairo', serif; }
+
+.admin-container { display: flex; min-height: 100vh; }
+
+/* ... rest of the styles remain identical to your original ... */
+</style>
+<style scoped>
+.admin-dashboard {
+  font-family: 'Amiri', 'Cairo', serif;
   min-height: 100vh;
+  background: #f8fafc;
 }
 
-/* ===== SIDEBAR ===== */
+.admin-dashboard * { font-family: 'Amiri', 'Cairo', serif; }
+
+.admin-container { display: flex; min-height: 100vh; }
+
 .admin-sidebar {
   width: 260px;
   background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
@@ -477,9 +458,7 @@ onUnmounted(() => {
   text-align: center;
 }
 
-.nav-text {
-  flex: 1;
-}
+.nav-text { flex: 1; }
 
 .nav-divider {
   height: 1px;
@@ -508,7 +487,7 @@ onUnmounted(() => {
   text-align: center;
 }
 
-/* ===== MAIN CONTENT ===== */
+/* Main Content */
 .admin-main {
   flex: 1;
   display: flex;
@@ -539,9 +518,7 @@ onUnmounted(() => {
   border-radius: 8px;
 }
 
-.menu-toggle:hover {
-  background: #f1f5f9;
-}
+.menu-toggle:hover { background: #f1f5f9; }
 
 .header-title h1 {
   font-size: 1.5rem;
@@ -567,13 +544,9 @@ onUnmounted(() => {
   transition: all 0.2s ease;
 }
 
-.admin-profile:hover {
-  background: #f1f5f9;
-}
+.admin-profile:hover { background: #f1f5f9; }
 
-.admin-info {
-  text-align: right;
-}
+.admin-info { text-align: right; }
 
 .admin-name {
   font-weight: 700;
@@ -587,9 +560,7 @@ onUnmounted(() => {
   color: #64748b;
 }
 
-.admin-avatar-wrapper {
-  position: relative;
-}
+.admin-avatar-wrapper { position: relative; }
 
 .admin-avatar {
   width: 40px;
@@ -610,11 +581,9 @@ onUnmounted(() => {
   border: 2px solid white;
 }
 
-.content-wrapper {
-  padding: 32px;
-}
+.content-wrapper { padding: 32px; }
 
-/* ===== RESPONSIVE ===== */
+/* Responsive */
 @media (max-width: 768px) {
   .admin-sidebar {
     position: fixed;
@@ -623,47 +592,394 @@ onUnmounted(() => {
     transition: right 0.3s ease;
   }
 
-  .admin-sidebar:not(.collapsed) {
-    right: 0;
-  }
+  .admin-sidebar:not(.collapsed) { right: 0; }
 
-  .menu-toggle {
-    display: block;
-  }
+  .menu-toggle { display: block; }
 
-  .header-title h1 {
-    font-size: 1.2rem;
-  }
+  .header-title h1 { font-size: 1.2rem; }
 
-  .content-wrapper {
-    padding: 20px;
-  }
+  .content-wrapper { padding: 20px; }
 
-  .admin-info {
-    display: none;
-  }
+  .admin-info { display: none; }
 
   .admin-profile {
     padding: 4px;
     background: transparent;
   }
 
-  .admin-profile:hover {
-    background: transparent;
-  }
+  .admin-profile:hover { background: transparent; }
 }
 
 @media (max-width: 480px) {
+  .main-header { padding: 12px 16px; }
+
+  .header-title h1 { font-size: 1rem; }
+
+  .content-wrapper { padding: 16px; }
+}
+
+/* Dark mode */
+.main-header.dark-mode,
+.admin-dashboard.dark-mode .main-header {
+  background: #1e1e30 !important;
+  border-bottom: 1px solid #2a2a40 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.main-header.dark-mode .header-title h1,
+.admin-dashboard.dark-mode .header-title h1 {
+  color: #f1f5f9 !important;
+}
+
+.main-header.dark-mode .menu-toggle,
+.admin-dashboard.dark-mode .menu-toggle {
+  color: #f1f5f9 !important;
+}
+
+.main-header.dark-mode .menu-toggle:hover,
+.admin-dashboard.dark-mode .menu-toggle:hover {
+  background: #2a2a40 !important;
+}
+
+.main-header.dark-mode .admin-profile,
+.admin-dashboard.dark-mode .admin-profile {
+  background: #121220 !important;
+}
+
+.main-header.dark-mode .admin-profile:hover,
+.admin-dashboard.dark-mode .admin-profile:hover {
+  background: #1a1a2e !important;
+}
+
+.main-header.dark-mode .admin-name,
+.admin-dashboard.dark-mode .admin-name {
+  color: #f1f5f9 !important;
+}
+
+.main-header.dark-mode .admin-role,
+.admin-dashboard.dark-mode .admin-role {
+  color: #94a3b8 !important;
+}
+
+.main-header.dark-mode .avatar-status,
+.admin-dashboard.dark-mode .avatar-status {
+  border-color: #1e1e30 !important;
+}
+
+.admin-dashboard.dark-mode .content-wrapper {
+  background: #161627 !important;
+}
+
+.admin-dashboard.dark-mode {
+  background: #161627 !important;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .admin-container {
+    flex-direction: column !important;
+    position: relative !important;
+  }
+
+  .admin-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 280px !important;
+    max-width: 85vw !important;
+    z-index: 1001 !important;
+    transform: translateX(100%) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: -4px 0 30px rgba(0, 0, 0, 0.3) !important;
+    border-radius: 20px 0 0 20px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+  }
+
+  .admin-sidebar:not(.collapsed) {
+    transform: translateX(0) !important;
+  }
+
+  .sidebar-header {
+    padding: 20px 16px !important;
+    border-radius: 20px 0 0 0 !important;
+    position: sticky !important;
+    top: 0 !important;
+    background: #0f172a !important;
+    z-index: 10 !important;
+  }
+
+  .logo-icon {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 1.3rem !important;
+    border-radius: 10px !important;
+  }
+
+  .sidebar-title {
+    font-size: 1.2rem !important;
+  }
+
+  .sidebar-subtitle {
+    font-size: 0.7rem !important;
+  }
+
+  .collapse-btn {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+  }
+
+  .sidebar-nav {
+    padding: 16px 10px !important;
+    gap: 2px !important;
+  }
+
+  .nav-item {
+    padding: 12px 14px !important;
+    gap: 12px !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+    min-height: 48px !important;
+    cursor: pointer !important;
+  }
+
+  .nav-item:active {
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .nav-item.active {
+    border-right-width: 3px !important;
+  }
+
+  .nav-icon {
+    width: 22px !important;
+    font-size: 18px !important;
+  }
+
+  .nav-divider {
+    margin: 12px 10px !important;
+  }
+
+  .badge-pending {
+    font-size: 10px !important;
+    padding: 2px 7px !important;
+    border-radius: 12px !important;
+    min-width: 20px !important;
+  }
+
+  .logout-btn {
+    margin-top: auto !important;
+    color: #f87171 !important;
+  }
+
+  .logout-btn:active {
+    background: rgba(248, 113, 113, 0.2) !important;
+  }
+
+  .admin-sidebar:not(.collapsed) ~ .admin-main::before,
+  .admin-container:has(.admin-sidebar:not(.collapsed))::after {
+    content: '' !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+    z-index: 1000 !important;
+  }
+
+  .admin-main {
+    width: 100% !important;
+  }
+
   .main-header {
-    padding: 12px 16px;
+    padding: 12px 16px !important;
+    min-height: 56px !important;
+    gap: 12px !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
+    background: #ffffff !important;
+  }
+
+  .admin-dashboard.dark-mode .main-header {
+    background: #1e1e30 !important;
+    border-bottom-color: #2a2a40 !important;
+  }
+
+  .menu-toggle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    border-radius: 10px !important;
+    background: #f1f5f9 !important;
+    border: 1px solid #e2e8f0 !important;
+    cursor: pointer !important;
+  }
+
+  .admin-dashboard.dark-mode .menu-toggle {
+    background: #2a2a40 !important;
+    border-color: #2a2a40 !important;
+    color: #94a3b8 !important;
+  }
+
+  .menu-toggle:active {
+    background: #e2e8f0 !important;
+    transform: scale(0.95) !important;
+  }
+
+  .menu-toggle svg {
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .header-title {
+    flex: 1 !important;
+    min-width: 0 !important;
   }
 
   .header-title h1 {
-    font-size: 1rem;
+    font-size: 16px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    color: #1e293b !important;
+  }
+
+  .admin-dashboard.dark-mode .header-title h1 {
+    color: #f1f5f9 !important;
+  }
+
+  .header-right {
+    gap: 8px !important;
+  }
+
+  .admin-profile {
+    padding: 4px !important;
+    background: transparent !important;
+    border-radius: 50% !important;
+    gap: 0 !important;
+    cursor: pointer !important;
+  }
+
+  .admin-profile:hover {
+    background: transparent !important;
+  }
+
+  .admin-info {
+    display: none !important;
+  }
+
+  .admin-avatar-wrapper {
+    width: 38px !important;
+    height: 38px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .admin-avatar {
+    width: 38px !important;
+    height: 38px !important;
+    border-width: 2px !important;
+    border-radius: 50% !important;
+  }
+
+  .avatar-status {
+    width: 8px !important;
+    height: 8px !important;
+    bottom: 1px !important;
+    left: 1px !important;
+    border-width: 1.5px !important;
   }
 
   .content-wrapper {
-    padding: 16px;
+    padding: 16px !important;
+    min-height: calc(100vh - 56px) !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .admin-sidebar {
+    width: 260px !important;
+    max-width: 90vw !important;
+  }
+
+  .main-header {
+    padding: 10px 12px !important;
+  }
+
+  .header-title h1 {
+    font-size: 14px !important;
+  }
+
+  .content-wrapper {
+    padding: 12px !important;
+  }
+
+  .nav-item {
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+    min-height: 44px !important;
+  }
+
+  .nav-icon {
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+  .admin-sidebar {
+    width: 300px !important;
+    max-width: 50vw !important;
+  }
+
+  .sidebar-nav {
+    max-height: 60vh !important;
+    overflow-y: auto !important;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  .admin-sidebar {
+    height: -webkit-fill-available !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  }
+
+  .sidebar-header {
+    padding-top: calc(20px + env(safe-area-inset-top, 0px)) !important;
+  }
+
+  .content-wrapper {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-sidebar::-webkit-scrollbar {
+    width: 3px !important;
+  }
+
+  .admin-sidebar::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  .admin-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 3px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar {
+    transition: none !important;
   }
 }
 </style>

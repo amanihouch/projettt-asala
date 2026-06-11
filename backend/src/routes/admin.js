@@ -1,4 +1,4 @@
-// backend/src/routes/admin.js
+// backend/src/routes/admin.js - VERSION COMPLÈTE CORRIGÉE
 const express = require('express');
 const router = express.Router();
 const { protect, adminOnly } = require('../middleware/auth');
@@ -10,7 +10,9 @@ const contactController = require('../controllers/contactController');
 // Toutes les routes admin nécessitent authentification et rôle admin
 router.use(protect, adminOnly);
 
-// ===== STATISTIQUES GÉNÉRALES =====
+// ============================================
+// STATISTIQUES GÉNÉRALES
+// ============================================
 router.get('/stats', async (req, res) => {
   try {
     const totalUsers = await User.count();
@@ -64,30 +66,172 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// ===== VENDEURS EN ATTENTE =====
-router.get('/vendors/pending', async (req, res) => {
+// ============================================
+// LISTE COMPLÈTE DES VENDEURS (AVEC FILTRE STATUS)
+// ============================================
+router.get('/vendors', async (req, res) => {
   try {
-    const { page = 1, limit = 20, search = '' } = req.query;
-    const result = await Vendor.getPending({ page, limit, search });
+    const { page = 1, limit = 100, search = '', status = 'all' } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const params = [];
+
+    console.log('📋 Paramètres reçus:', { status, page, limit, search });
+
+    let whereSql = '';
     
-    const baseURL = `${req.protocol}://${req.get('host')}`;
-    if (result.data && Array.isArray(result.data)) {
-      result.data = result.data.map(vendor => {
-        if (vendor.userAvatar && !vendor.userAvatar.startsWith('http')) {
-          vendor.userAvatar = `${baseURL}${vendor.userAvatar}`;
-        }
-        return vendor;
-      });
+    // Filtre par statut (approved)
+    if (status === 'pending') {
+      whereSql = ' WHERE v.approved = 0';
+      console.log('🔍 Filtre: vendeurs en attente (approved = 0)');
+    } else if (status === 'approved') {
+      whereSql = ' WHERE v.approved = 1';
+      console.log('🔍 Filtre: vendeurs approuvés (approved = 1)');
+    } else if (status === 'rejected') {
+      whereSql = ' WHERE v.approved = 2';
+      console.log('🔍 Filtre: vendeurs rejetés (approved = 2)');
+    } else {
+      console.log('🔍 Filtre: tous les vendeurs');
     }
     
-    res.json({ success: true, data: result });
+    // Filtre par recherche
+    if (search) {
+      if (whereSql) {
+        whereSql += ' AND (v.shopName LIKE ? OR u.name LIKE ? OR v.email LIKE ?)';
+      } else {
+        whereSql = ' WHERE (v.shopName LIKE ? OR u.name LIKE ? OR v.email LIKE ?)';
+      }
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
+    }
+
+    const sql = `
+      SELECT 
+        v.id,
+        v.shopName,
+        v.approved,
+        v.status as vendorStatus,
+        v.phone as vendorPhone,
+        v.email as vendorEmail,
+        v.createdAt,
+        u.id as userId,
+        u.name as userName,
+        u.email as userEmail,
+        u.phone as userPhone,
+        u.avatar as userAvatar,
+        vp.plain_password as password
+      FROM vendors v
+      LEFT JOIN users u ON v.userId = u.id
+      LEFT JOIN vendor_passwords vp ON vp.vendor_id = v.id
+      ${whereSql}
+      ORDER BY v.createdAt DESC
+      LIMIT ? OFFSET ?
+    `;
+    
+    const vendors = await db.query(sql, [...params, parseInt(limit), offset]);
+    
+    console.log(`✅ ${vendors.length} vendeurs trouvés`);
+    
+    // Compter le total
+    let countSql = `SELECT COUNT(*) as total FROM vendors v LEFT JOIN users u ON v.userId = u.id`;
+    let countParams = [...params];
+    
+    if (whereSql) {
+      countSql += whereSql;
+    }
+    
+    const countRow = await db.getOne(countSql, countParams);
+    console.log(`📊 Total avec filtre: ${countRow?.total || 0}`);
+
+    res.json({
+      success: true,
+      data: {
+        data: vendors,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: countRow?.total || 0,
+          pages: Math.ceil((countRow?.total || 0) / parseInt(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Erreur liste vendors:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ============================================
+// VENDEURS EN ATTENTE - ROUTE SPÉCIFIQUE
+// ============================================
+router.get('/vendors/pending', async (req, res) => {
+  try {
+    console.log('📋 Route /vendors/pending appelée');
+    
+    const { page = 1, limit = 100, search = '' } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const params = [];
+    
+    let whereSql = ' WHERE v.approved = 0';
+    
+    if (search) {
+      whereSql += ' AND (v.shopName LIKE ? OR u.name LIKE ? OR v.email LIKE ?)';
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
+    }
+    
+    const vendors = await db.query(`
+      SELECT 
+        v.id,
+        v.shopName,
+        v.approved,
+        v.status as vendorStatus,
+        v.phone as vendorPhone,
+        v.email as vendorEmail,
+        v.createdAt,
+        u.id as userId,
+        u.name as userName,
+        u.email as userEmail,
+        u.phone as userPhone,
+        u.avatar as userAvatar,
+        vp.plain_password as password
+      FROM vendors v
+      LEFT JOIN users u ON v.userId = u.id
+      LEFT JOIN vendor_passwords vp ON vp.vendor_id = v.id
+      ${whereSql}
+      ORDER BY v.createdAt DESC
+      LIMIT ? OFFSET ?
+    `, [...params, parseInt(limit), offset]);
+    
+    // Compter le total
+    let countSql = `SELECT COUNT(*) as total FROM vendors v LEFT JOIN users u ON v.userId = u.id WHERE v.approved = 0`;
+    if (search) {
+      countSql += ' AND (v.shopName LIKE ? OR u.name LIKE ? OR v.email LIKE ?)';
+    }
+    const countRow = await db.getOne(countSql, params);
+    
+    console.log(`✅ ${vendors.length} vendeurs en attente trouvés (total: ${countRow?.total || 0})`);
+    
+    res.json({
+      success: true,
+      data: {
+        data: vendors,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: countRow?.total || 0,
+          pages: Math.ceil((countRow?.total || 0) / parseInt(limit))
+        }
+      }
+    });
   } catch (error) {
     console.error('❌ Erreur pending vendors:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// ===== STATISTIQUES VENDEURS =====
+// ============================================
+// STATISTIQUES VENDEURS
+// ============================================
 router.get('/vendors/stats', async (req, res) => {
   try {
     const total = await Vendor.count();
@@ -99,7 +243,11 @@ router.get('/vendors/stats', async (req, res) => {
     res.json({
       success: true,
       data: {
-        total, approved, pending, rejected, verified,
+        total, 
+        approved, 
+        pending, 
+        rejected, 
+        verified,
         pendingPercentage: total > 0 ? ((pending / total) * 100).toFixed(1) : 0,
         approvedPercentage: total > 0 ? ((approved / total) * 100).toFixed(1) : 0
       }
@@ -110,7 +258,9 @@ router.get('/vendors/stats', async (req, res) => {
   }
 });
 
-// ===== APPROUVER UN VENDEUR =====
+// ============================================
+// APPROUVER UN VENDEUR
+// ============================================
 router.put('/vendors/:id/approve', async (req, res) => {
   try {
     const vendorId = req.params.id;
@@ -119,11 +269,11 @@ router.put('/vendors/:id/approve', async (req, res) => {
     if (!vendor) {
       return res.status(404).json({ success: false, message: 'Vendeur non trouvé' });
     }
-    if (vendor.approved) {
+    if (vendor.approved === 1) {
       return res.status(400).json({ success: false, message: 'Vendeur déjà approuvé' });
     }
     
-    await db.query('UPDATE vendors SET approved = 1, verified = 1 WHERE id = ?', [vendorId]);
+    await db.query('UPDATE vendors SET approved = 1, verified = 1, status = "approved" WHERE id = ?', [vendorId]);
     await db.query('UPDATE users SET role = "vendor" WHERE id = ?', [vendor.userId]);
     
     const updatedVendor = await Vendor.findById(vendorId);
@@ -134,7 +284,9 @@ router.put('/vendors/:id/approve', async (req, res) => {
   }
 });
 
-// ===== REJETER UN VENDEUR =====
+// ============================================
+// REJETER UN VENDEUR
+// ============================================
 router.put('/vendors/:id/reject', async (req, res) => {
   try {
     const vendorId = req.params.id;
@@ -145,7 +297,7 @@ router.put('/vendors/:id/reject', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Vendeur non trouvé' });
     }
     
-    await db.query('UPDATE vendors SET approved = 0, status = "rejected", rejectionReason = ? WHERE id = ?', [reason || 'Non spécifié', vendorId]);
+    await db.query('UPDATE vendors SET approved = 2, status = "rejected", rejectionReason = ? WHERE id = ?', [reason || 'Non spécifié', vendorId]);
     res.json({ success: true, message: 'Vendeur rejeté', data: { vendorId, reason } });
   } catch (error) {
     console.error('❌ Erreur reject vendor:', error);
@@ -153,7 +305,68 @@ router.put('/vendors/:id/reject', async (req, res) => {
   }
 });
 
-// ===== MESSAGES CONTACT =====
+// ============================================
+// RÉINITIALISER MOT DE PASSE VENDEUR
+// ============================================
+router.post('/vendors/:id/reset-password', async (req, res) => {
+  try {
+    const vendorId = req.params.id;
+    const { newPassword } = req.body;
+    const bcrypt = require('bcryptjs');
+
+    const vendor = await db.getOne(
+      `SELECT v.id, v.userId, v.shopName, u.email
+       FROM vendors v 
+       LEFT JOIN users u ON v.userId = u.id
+       WHERE v.id = ?`,
+      [vendorId]
+    );
+
+    if (!vendor) {
+      return res.status(404).json({ success: false, message: 'Vendeur non trouvé' });
+    }
+
+    // Générer un mot de passe si non fourni
+    const plainPassword = newPassword?.trim() ||
+      Math.random().toString(36).slice(-4).toUpperCase() +
+      Math.random().toString(36).slice(-4) +
+      Math.floor(Math.random() * 90 + 10);
+
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+    // Mettre à jour le mot de passe hashé dans users
+    await db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, vendor.userId]);
+
+    // Mettre à jour ou créer l'entrée dans vendor_passwords
+    const existing = await db.getOne('SELECT id FROM vendor_passwords WHERE vendor_id = ?', [vendorId]);
+    if (existing) {
+      await db.query(
+        'UPDATE vendor_passwords SET plain_password = ?, updated_at = NOW() WHERE vendor_id = ?',
+        [plainPassword, vendorId]
+      );
+    } else {
+      await db.query(
+        'INSERT INTO vendor_passwords (vendor_id, user_id, plain_password) VALUES (?, ?, ?)',
+        [vendorId, vendor.userId, plainPassword]
+      );
+    }
+
+    console.log(`🔑 Mot de passe réinitialisé: vendeur ${vendorId} (${vendor.shopName})`);
+
+    res.json({
+      success: true,
+      message: 'Mot de passe réinitialisé avec succès',
+      data: { newPassword: plainPassword, vendorId, shopName: vendor.shopName }
+    });
+  } catch (error) {
+    console.error('❌ Erreur reset password:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ============================================
+// MESSAGES CONTACT
+// ============================================
 router.get('/contact/messages', contactController.getAdminMessages);
 router.get('/contact/stats', contactController.getAdminStats);
 router.get('/contact/messages/:id', contactController.getAdminMessageById);
@@ -162,9 +375,9 @@ router.put('/contact/messages/:id/status', contactController.updateMessageStatus
 router.delete('/contact/messages/:id', contactController.deleteMessage);
 router.post('/contact/reply', contactController.replyToMessage);
 
-// backend/src/routes/admin.js - Remplacez la section des posts par ceci
-
-// ===== POSTS APPROUVÉS (VERSION SIMPLIFIÉE) =====
+// ============================================
+// POSTS APPROUVÉS
+// ============================================
 router.get('/posts/approved', async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
@@ -172,9 +385,6 @@ router.get('/posts/approved', async (req, res) => {
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
     
-    console.log('📊 Chargement posts approuvés - page:', pageNum, 'limit:', limitNum);
-    
-    // Requête simplifiée sans jointures complexes
     const posts = await db.query(`
       SELECT 
         p.id,
@@ -195,18 +405,12 @@ router.get('/posts/approved', async (req, res) => {
       LIMIT ? OFFSET ?
     `, [limitNum, offset]);
     
-    console.log(`📊 ${posts.length} posts approuvés trouvés`);
-    
-    // Compter le total
     const totalResult = await db.getOne(`
-      SELECT COUNT(*) as total 
-      FROM posts 
-      WHERE status = 'approved'
+      SELECT COUNT(*) as total FROM posts WHERE status = 'approved'
     `);
     
     const total = totalResult?.total || 0;
     
-    // Formater les résultats
     const formattedPosts = posts.map(post => {
       let images = [];
       if (post.images) {
@@ -244,26 +448,21 @@ router.get('/posts/approved', async (req, res) => {
         }
       }
     });
-    
   } catch (error) {
     console.error('❌ Erreur approved posts:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// ===== POSTS EN ATTENTE (VERSION SIMPLIFIÉE) =====
+// ============================================
+// POSTS EN ATTENTE
+// ============================================
 router.get('/posts/pending', async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
-    
-    console.log('📊 Chargement posts en attente - page:', pageNum, 'limit:', limitNum);
     
     const posts = await db.query(`
       SELECT 
@@ -282,8 +481,6 @@ router.get('/posts/pending', async (req, res) => {
       ORDER BY p.createdAt DESC
       LIMIT ? OFFSET ?
     `, [limitNum, offset]);
-    
-    console.log(`📊 ${posts.length} posts en attente trouvés`);
     
     const totalResult = await db.getOne(`
       SELECT COUNT(*) as total FROM posts WHERE status = 'pending'
@@ -326,14 +523,15 @@ router.get('/posts/pending', async (req, res) => {
         }
       }
     });
-    
   } catch (error) {
     console.error('❌ Erreur pending posts:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// ===== POSTS REJETÉS (VERSION SIMPLIFIÉE) =====
+// ============================================
+// POSTS REJETÉS
+// ============================================
 router.get('/posts/rejected', async (req, res) => {
   try {
     const { page = 1, limit = 20 } = req.query;
@@ -402,14 +600,15 @@ router.get('/posts/rejected', async (req, res) => {
         }
       }
     });
-    
   } catch (error) {
     console.error('❌ Erreur rejected posts:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// ===== STATISTIQUES DES POSTS =====
+// ============================================
+// STATISTIQUES DES POSTS
+// ============================================
 router.get('/posts/stats', async (req, res) => {
   try {
     const pending = await db.getOne('SELECT COUNT(*) as total FROM posts WHERE status = "pending"');
@@ -431,7 +630,9 @@ router.get('/posts/stats', async (req, res) => {
   }
 });
 
-// ===== APPROUVER UN POST =====
+// ============================================
+// APPROUVER UN POST
+// ============================================
 router.put('/posts/:id/approve', async (req, res) => {
   try {
     const postId = req.params.id;
@@ -443,7 +644,9 @@ router.put('/posts/:id/approve', async (req, res) => {
   }
 });
 
-// ===== REJETER UN POST =====
+// ============================================
+// REJETER UN POST
+// ============================================
 router.put('/posts/:id/reject', async (req, res) => {
   try {
     const postId = req.params.id;

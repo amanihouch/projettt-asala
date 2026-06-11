@@ -1,4 +1,4 @@
-<!-- frontend/src/views/VendorEdit.vue - Version finale qui fonctionne -->
+<!-- frontend/src/views/VendorEdit.vue - Version finale avec Dark Mode corrigé -->
 <template>
   <div class="vendor-edit-page" :class="{ 'dark-mode': isDarkMode }" dir="rtl">
     <div class="container">
@@ -200,7 +200,6 @@ const saveChanges = async () => {
   isSaving.value = true
 
   try {
-    // ✅ UTILISER PUT AU LIEU DE PATCH - c'est la correction principale !
     const vendorUpdateData = {
       shopName: form.shopName,
       specialty: form.specialty,
@@ -211,9 +210,7 @@ const saveChanges = async () => {
 
     console.log('📤 Mise à jour vendeur ID:', vendor.value.id)
     console.log('📤 Données:', vendorUpdateData)
-    console.log('📤 Méthode: PUT /vendors/', vendor.value.id)
 
-    // ✅ Utiliser PUT (existe dans votre backend)
     const response = await api.put(`/vendors/${vendor.value.id}`, vendorUpdateData)
 
     console.log('📥 Réponse:', response.data)
@@ -222,13 +219,11 @@ const saveChanges = async () => {
       const updatedVendor = response.data.data?.vendor || response.data.data
       if (updatedVendor) {
         vendor.value = { ...vendor.value, ...updatedVendor }
-        // Mettre à jour le store si nécessaire
         if (vendorStore.currentVendor?.id === vendor.value.id) {
           vendorStore.currentVendor = vendor.value
         }
       }
 
-      // Mettre à jour les informations utilisateur (téléphone et adresse)
       const userUpdateData = {}
       if (form.phone && form.phone !== authStore.user?.phone) userUpdateData.phone = form.phone
       if (form.address && form.address !== authStore.user?.address) userUpdateData.address = form.address
@@ -292,7 +287,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Tous les styles restent identiques à votre version originale */
+/* ===== BASE ===== */
 .vendor-edit-page {
   min-height: 100vh;
   background: #f8fafc;
@@ -300,17 +295,22 @@ onMounted(() => {
   font-family: 'Cairo', sans-serif;
   direction: rtl;
 }
+
 .vendor-edit-page.dark-mode {
-  background: #0f172a;
+  background: #161627;
 }
+
 .container {
   max-width: 800px;
   margin: 0 auto;
   padding: 0 20px;
 }
+
+/* ===== PAGE HEADER ===== */
 .page-header {
   margin-bottom: 30px;
 }
+
 .back-btn {
   display: inline-flex;
   align-items: center;
@@ -326,39 +326,62 @@ onMounted(() => {
   transition: all 0.3s ease;
   margin-bottom: 20px;
 }
+
 .dark-mode .back-btn {
-  background: #1e293b;
-  border-color: #334155;
+  background: #1e1e30;
+  border-color: #2a2a40;
   color: #94a3b8;
 }
+
 .back-btn:hover {
   border-color: #08717f;
   color: #08717f;
   transform: translateX(-5px);
 }
+
+.dark-mode .back-btn:hover {
+  border-color: #2dd4bf;
+  color: #2dd4bf;
+}
+
 .back-icon {
   font-size: 1.2rem;
 }
+
 .page-title {
   font-size: 2rem;
   font-weight: 800;
   color: #1e293b;
   margin-bottom: 8px;
 }
+
 .dark-mode .page-title {
   color: #f1f5f9;
 }
+
 .page-subtitle {
   color: #64748b;
   font-size: 1rem;
 }
+
 .dark-mode .page-subtitle {
   color: #94a3b8;
 }
+
+/* ===== LOADING ===== */
 .loading-state {
   text-align: center;
   padding: 60px;
 }
+
+.loading-state p {
+  color: #64748b;
+}
+
+.dark-mode .loading-state p {
+  color: #94a3b8;
+}
+
 .spinner {
   width: 50px;
   height: 50px;
@@ -368,22 +391,33 @@ onMounted(() => {
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
 }
+
+.dark-mode .spinner {
+  border-color: #2a2a40;
+  border-top-color: #2dd4bf;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ===== FORM ===== */
 .edit-form {
   background: white;
   border-radius: 24px;
   padding: 30px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
 }
+
 .dark-mode .edit-form {
-  background: #1e293b;
+  background: #1e1e30;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
 }
+
 .form-group {
   margin-bottom: 24px;
 }
+
 .form-label {
   display: block;
   font-size: 0.95rem;
@@ -391,9 +425,11 @@ onMounted(() => {
   color: #1e293b;
   margin-bottom: 8px;
 }
+
 .dark-mode .form-label {
   color: #cbd5e1;
 }
+
 .form-input,
 .form-select,
 .form-textarea {
@@ -407,13 +443,15 @@ onMounted(() => {
   background: white;
   color: #1e293b;
 }
+
 .dark-mode .form-input,
 .dark-mode .form-select,
 .dark-mode .form-textarea {
-  background: #0f172a;
-  border-color: #334155;
+  background: #121220;
+  border-color: #2a2a40;
   color: #f1f5f9;
 }
+
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
@@ -421,10 +459,20 @@ onMounted(() => {
   border-color: #08717f;
   box-shadow: 0 0 0 3px rgba(8, 113, 127, 0.1);
 }
+
+.dark-mode .form-input:focus,
+.dark-mode .form-select:focus,
+.dark-mode .form-textarea:focus {
+  border-color: #2dd4bf;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.2);
+}
+
 .form-textarea {
   resize: vertical;
   min-height: 100px;
 }
+
+/* ===== PHONE INPUT ===== */
 .phone-input-wrapper {
   display: flex;
   align-items: center;
@@ -434,14 +482,22 @@ onMounted(() => {
   transition: all 0.3s ease;
   background: white;
 }
+
 .dark-mode .phone-input-wrapper {
-  background: #0f172a;
-  border-color: #334155;
+  background: #121220;
+  border-color: #2a2a40;
 }
+
 .phone-input-wrapper:focus-within {
   border-color: #08717f;
   box-shadow: 0 0 0 3px rgba(8, 113, 127, 0.1);
 }
+
+.dark-mode .phone-input-wrapper:focus-within {
+  border-color: #2dd4bf;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.2);
+}
+
 .country-code {
   padding: 12px 16px;
   background: #f1f5f9;
@@ -449,16 +505,20 @@ onMounted(() => {
   font-weight: 700;
   border-left: 2px solid #e2e8f0;
 }
+
 .dark-mode .country-code {
-  background: #1e293b;
-  color: #0a94a6;
-  border-left-color: #334155;
+  background: #1e1e30;
+  color: #2dd4bf;
+  border-left-color: #2a2a40;
 }
+
 .phone-field {
   flex: 1;
   border: none !important;
   box-shadow: none !important;
 }
+
+/* ===== FORM ACTIONS ===== */
 .form-actions {
   display: flex;
   gap: 15px;
@@ -466,9 +526,11 @@ onMounted(() => {
   padding-top: 20px;
   border-top: 1px solid #e2e8f0;
 }
+
 .dark-mode .form-actions {
-  border-top-color: #334155;
+  border-top-color: #2a2a40;
 }
+
 .btn-cancel,
 .btn-save {
   flex: 1;
@@ -480,32 +542,40 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.3s ease;
 }
+
 .btn-cancel {
   background: #f1f5f9;
   color: #64748b;
 }
+
 .dark-mode .btn-cancel {
-  background: #334155;
+  background: #2a2a40;
   color: #94a3b8;
 }
+
 .btn-cancel:hover {
   background: #e2e8f0;
 }
+
 .dark-mode .btn-cancel:hover {
-  background: #475569;
+  background: #3a3a55;
 }
+
 .btn-save {
   background: linear-gradient(135deg, #08717f, #065a69);
   color: white;
 }
+
 .btn-save:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(8, 113, 127, 0.3);
 }
+
 .btn-save:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
+
 .loading-spinner {
   display: inline-block;
   width: 20px;
@@ -515,22 +585,29 @@ onMounted(() => {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+
+/* ===== NOT FOUND ===== */
 .not-found {
   text-align: center;
   padding: 60px 20px;
   background: white;
   border-radius: 24px;
 }
+
 .dark-mode .not-found {
-  background: #1e293b;
+  background: #1e1e30;
 }
+
 .not-found h2 {
   color: #1e293b;
   margin-bottom: 20px;
 }
+
 .dark-mode .not-found h2 {
   color: #f1f5f9;
 }
+
+/* ===== TOAST ===== */
 .toast-notification {
   position: fixed;
   bottom: 30px;
@@ -547,30 +624,39 @@ onMounted(() => {
   border-right: 4px solid;
   animation: slideInRight 0.3s ease;
 }
+
 .dark-mode .toast-notification {
-  background: #1e293b;
+  background: #1e1e30;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
+
 .toast-notification.success {
   border-right-color: #10b981;
 }
+
 .toast-notification.error {
   border-right-color: #ef4444;
 }
+
 @keyframes slideInRight {
   from { opacity: 0; transform: translateX(30px); }
   to { opacity: 1; transform: translateX(0); }
 }
+
 .toast-icon {
   font-size: 1.3rem;
 }
+
 .toast-message {
   color: #1e293b;
   font-size: 0.95rem;
 }
+
 .dark-mode .toast-message {
   color: #f1f5f9;
 }
+
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .vendor-edit-page {
     padding: 20px 0;

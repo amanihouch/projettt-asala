@@ -1,30 +1,29 @@
-// frontend/src/services/api.js - VERSION COMPLÈTE CORRIGÉE
+// frontend/src/services/api.js  ✅ CORRIGÉ
 import axios from 'axios';
 
 // ==================== URLS DE BASE ====================
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const AI_API_URL = 'http://localhost:5001';
+// BASE_URL = http://localhost:5000  (PAS de /api/v1)
+const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api\/v1\/?$/, '');
+
+// ✅ API_URL ajoute /api/v1 une seule fois
+const API_URL = `${BASE_URL}/api/v1`;
+const AI_API_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:5001';
 
 // ==================== INSTANCE AXIOS PRINCIPALE ====================
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  headers: { 'Content-Type': 'application/json' }
 });
 
-// ==================== INSTANCE POUR LES ROUTES CONTACT ====================
-const contactApi = axios.create({
-  baseURL: 'http://localhost:5000/api',
-  headers: {
-    'Content-Type': 'application/json'
-  }
+// ==================== INSTANCE PUBLIQUE (SANS TOKEN) ====================
+export const publicApi = axios.create({
+  baseURL: API_URL,
+  headers: { 'Content-Type': 'application/json' }
 });
 
-// ==================== INTERCEPTEUR REQUÊTE (CORRIGÉ) ====================
+// ==================== INTERCEPTEUR REQUÊTE ====================
 const requestInterceptor = (config) => {
   const token = localStorage.getItem('token');
-  // N'ajouter le token QUE s'il existe et n'est pas null/undefined
   if (token && token !== 'null' && token !== 'undefined') {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -34,50 +33,41 @@ const requestInterceptor = (config) => {
   return config;
 };
 
-const requestErrorHandler = (error) => Promise.reject(error);
+api.interceptors.request.use(requestInterceptor, (error) => Promise.reject(error));
 
-api.interceptors.request.use(requestInterceptor, requestErrorHandler);
-contactApi.interceptors.request.use(requestInterceptor, requestErrorHandler);
+// ✅ publicApi n'a PAS d'intercepteur token
 
-// ==================== INTERCEPTEUR RÉPONSE (CORRIGÉ - NE REDIRIGE PLUS LES VISITEURS) ====================
-const responseErrorHandler = (error) => {
-  // ✅ CORRECTION : Vérifier si l'utilisateur ÉTAIT connecté avant de rediriger
-  const token = localStorage.getItem('token');
+// ==================== INTERCEPTEUR RÉPONSE ====================
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const token = localStorage.getItem('token');
+    const url = error.config?.url || '';
 
-  if (error.response?.status === 401) {
-    // Si l'utilisateur avait un token (donc il était connecté)
-    // Cela signifie que son token est expiré ou invalide
-    if (token && token !== 'null' && token !== 'undefined') {
-      console.warn('⚠️ Token expiré ou invalide, déconnexion...');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('vendorId');
+    const publicRoutes = ['/visits/start', '/visits/heartbeat', '/sponsored-products', '/reels', '/posts/feed', '/categories'];
+    const isPublicRoute = publicRoutes.some(route => url.includes(route));
+    const isOAuthRoute = url.includes('/auth/google') || url.includes('/auth/facebook');
 
-      // Éviter les redirections en boucle
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+    if (error.response?.status === 401 && !isPublicRoute && !isOAuthRoute) {
+      if (token && token !== 'null' && token !== 'undefined') {
+        console.warn('⚠️ Token expiré, redirection vers login...');
+        localStorage.clear();
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     }
-    // ✅ Si pas de token, l'utilisateur est un simple visiteur
-    // On laisse l'erreur se propager sans rediriger
+
+    return Promise.reject(error);
   }
-
-  return Promise.reject(error);
-};
-
-api.interceptors.response.use((response) => response, responseErrorHandler);
-contactApi.interceptors.response.use((response) => response, responseErrorHandler);
+);
 
 // ==================== UTILITAIRES ====================
 export const formatImageUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('/uploads')) {
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    return `${baseUrl}${url}`;
-  }
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-  return `${baseUrl}/uploads/${url}`;
+  if (url.startsWith('/uploads')) return `${BASE_URL}${url}`;
+  return `${BASE_URL}/uploads/${url}`;
 };
 
 // ==================== SERVICE IA ====================
@@ -126,7 +116,7 @@ export const userService = {
   async getProfile() { const response = await api.get('/user/profile'); return response.data; },
   async updateProfile(data) { const response = await api.put('/user/profile', data); return response.data; },
   async changePassword(currentPassword, newPassword) { const response = await api.post('/user/change-password', { currentPassword, newPassword }); return response.data; },
-  async updateAvatar(file) { const formData = new FormData(); formData.append('avatar', file); const response = await api.post('/user/avatar', formData, { headers: { 'Content-Type': 'multipart/form-data' } }); return response.data; },
+  async updateAvatar(file) { const formData = new FormData(); formData.append('avatar', file); const response = await api.post('/user/avatar', formData); return response.data; },
   async getWishlist() { const response = await api.get('/user/wishlist'); return response.data; },
   async addToWishlist(productId) { const response = await api.post(`/user/wishlist/${productId}`); return response.data; },
   async removeFromWishlist(productId) { const response = await api.delete(`/user/wishlist/${productId}`); return response.data; }
@@ -175,110 +165,35 @@ export const orderService = {
   async trackOrder(orderNumber) { const response = await api.get(`/orders/track/${orderNumber}`); return response.data; }
 };
 
-// ==================== POST SERVICE ====================
-export const postService = {
-  async getFeed(page = 1, limit = 10) { const response = await api.get('/posts/feed', { params: { page, limit } }); return response.data; },
-  async getPostsByVendor(vendorId, page = 1, limit = 20) { const response = await api.get(`/posts/vendor/${vendorId}`, { params: { page, limit } }); return response.data; },
-  async getPostById(id) { const response = await api.get(`/posts/${id}`); return response.data; },
-  async createPost(data) { const response = await api.post('/posts', data); return response.data; },
-  async updatePost(id, data) { const response = await api.put(`/posts/${id}`, data); return response.data; },
-  async deletePost(id) { const response = await api.delete(`/posts/${id}`); return response.data; },
-  async toggleLike(postId) { const response = await api.post(`/posts/${postId}/like`); return response.data; },
-  async addComment(postId, comment) { const response = await api.post(`/posts/${postId}/comment`, { text: comment }); return response.data; },
-  async getComments(postId) { const response = await api.get(`/posts/${postId}/comments`); return response.data; }
+// ==================== PUBLIC SERVICE ====================
+export const publicService = {
+  async getCategories() { const response = await publicApi.get('/categories'); return response.data; },
+  async getCategoryBySlug(slug) { const response = await publicApi.get(`/categories/${slug}`); return response.data; },
+  async getCategoryHierarchy() { const response = await publicApi.get('/categories/hierarchy'); return response.data; },
+
+  async getFeed(page = 1, limit = 2000) {
+    const response = await publicApi.get('/posts/feed', { params: { page, limit } });
+    return response.data;
+  },
+
+  async getReels(limit = 12) {
+    const response = await publicApi.get('/reels', { params: { limit } });
+    return response.data;
+  },
+
+  async getSponsoredProducts() {
+    const response = await publicApi.get('/sponsored-products?active=true');
+    return response.data;
+  },
+
+  async startVisit(payload) {
+    const response = await publicApi.post('/visits/start', payload);
+    return response.data;
+  },
+  async sendHeartbeat(payload) {
+    const response = await publicApi.post('/visits/heartbeat', payload);
+    return response.data;
+  }
 };
 
-// ==================== REEL SERVICE ====================
-export const reelService = {
-  getVendorReels: (vendorId, params = {}) => api.get(`/reels/vendor/${vendorId}`, { params }).then(res => res.data),
-  getProductReels: (productId) => api.get(`/reels/product/${productId}`).then(res => res.data),
-  getReelById: (id) => api.get(`/reels/${id}`).then(res => res.data),
-  getMyReels: (params = {}) => api.get('/reels/my-reels', { params }).then(res => res.data),
-  createReel: (formData, onUploadProgress) => api.post('/reels', formData, { headers: { 'Content-Type': 'multipart/form-data' }, onUploadProgress }).then(res => res.data),
-  updateReel: (id, data) => api.put(`/reels/${id}`, data).then(res => res.data),
-  deleteReel: (id) => api.delete(`/reels/${id}`).then(res => res.data),
-  toggleLike: (id) => api.post(`/reels/${id}/like`).then(res => res.data),
-  addComment: (id, text) => api.post(`/reels/${id}/comment`, { text }).then(res => res.data),
-  getComments: (id) => api.get(`/reels/${id}/comments`).then(res => res.data),
-  viewReel: (id) => api.post(`/reels/${id}/view`).then(res => res.data)
-};
-
-// ==================== CATEGORY SERVICE ====================
-export const categoryService = {
-  async getAllCategories() { const response = await api.get('/categories'); return response.data; },
-  async getCategoryBySlug(slug) { const response = await api.get(`/categories/${slug}`); return response.data; },
-  async getHierarchy() { const response = await api.get('/categories/hierarchy'); return response.data; },
-  async getProductsByCategory(slug, params = {}) { const response = await api.get(`/categories/${slug}/products`, { params }); return response.data; }
-};
-
-// ==================== MESSAGE SERVICE ====================
-export const messageService = {
-  async getConversations() { const response = await api.get('/messages/conversations'); return response.data; },
-  async startConversation(otherUserId, otherUserRole) { const response = await api.post('/messages/conversation', { otherUserId, otherUserRole }); return response.data; },
-  async getMessages(conversationId) { const response = await api.get(`/messages/conversation/${conversationId}`); return response.data; },
-  async sendMessage(receiverId, message, conversationId = null) { const response = await api.post('/messages/send', { receiverId, message, conversationId }); return response.data; },
-  async deleteMessage(messageId) { const response = await api.delete(`/messages/${messageId}`); return response.data; },
-  async deleteConversation(conversationId) { const response = await api.delete(`/messages/conversation/${conversationId}`); return response.data; },
-  async getUnreadCount() { const response = await api.get('/messages/unread'); return response.data; },
-  async markAsRead(conversationId) { const response = await api.post(`/messages/conversation/${conversationId}/read`); return response.data; }
-};
-
-// ==================== NEWSLETTER SERVICE ====================
-export const newsletterService = {
-  async subscribe(email) { const response = await api.post('/newsletter/subscribe', { email }); return response.data; },
-  async unsubscribe(email) { const response = await api.get(`/newsletter/unsubscribe/${email}`); return response.data; },
-  async getSubscribers() { const response = await api.get('/newsletter/subscribers'); return response.data; },
-  async sendNewsletter(data) { const response = await api.post('/newsletter/send', data); return response.data; }
-};
-
-// ==================== CONTACT SERVICE ====================
-export const contactService = {
-  async sendMessage(data) { const response = await contactApi.post('/contact/send', data); return response.data; },
-  async getMyMessages() { const response = await contactApi.get('/contact/my-messages'); return response.data; },
-  async getMessageById(id) { const response = await contactApi.get(`/contact/messages/${id}`); return response.data; },
-  async deleteMyMessage(id) { const response = await contactApi.delete(`/contact/messages/${id}`); return response.data; }
-};
-
-// ==================== ADMIN SERVICE ====================
-export const adminService = {
-  async getDashboardStats() { const response = await api.get('/admin/dashboard'); return response.data; },
-  async getAllUsers(params = {}) { const response = await api.get('/admin/users', { params }); return response.data; },
-  async getUserById(id) { const response = await api.get(`/admin/users/${id}`); return response.data; },
-  async updateUser(id, data) { const response = await api.put(`/admin/users/${id}`, data); return response.data; },
-  async toggleUserStatus(id) { const response = await api.patch(`/admin/users/${id}/toggle-status`); return response.data; },
-  async deleteUser(id) { const response = await api.delete(`/admin/users/${id}`); return response.data; },
-  async getAllVendors(params = {}) { const response = await api.get('/admin/vendors', { params }); return response.data; },
-  async getVendorById(id) { const response = await api.get(`/admin/vendors/${id}`); return response.data; },
-  async approveVendor(id) { const response = await api.post(`/admin/vendors/${id}/approve`); return response.data; },
-  async rejectVendor(id, reason = '') { const response = await api.post(`/admin/vendors/${id}/reject`, { reason }); return response.data; },
-  async getAllProducts(params = {}) { const response = await api.get('/admin/products', { params }); return response.data; },
-  async approveProduct(id) { const response = await api.post(`/admin/products/${id}/approve`); return response.data; },
-  async rejectProduct(id, reason = '') { const response = await api.post(`/admin/products/${id}/reject`, { reason }); return response.data; },
-  async getAllPosts(params = {}) { const response = await api.get('/admin/posts', { params }); return response.data; },
-  async approvePost(id) { const response = await api.patch(`/admin/posts/${id}/approve`); return response.data; },
-  async rejectPost(id, reason = '') { const response = await api.patch(`/admin/posts/${id}/reject`, { reason }); return response.data; },
-  async getAllReels(params = {}) { const response = await api.get('/admin/reels', { params }); return response.data; },
-  async approveReel(id) { const response = await api.post(`/admin/reels/${id}/approve`); return response.data; },
-  async rejectReel(id, reason = '') { const response = await api.post(`/admin/reels/${id}/reject`, { reason }); return response.data; },
-  async getAllOrders(params = {}) { const response = await api.get('/admin/orders', { params }); return response.data; },
-  async updateOrderStatus(id, status) { const response = await api.put(`/admin/orders/${id}/status`, { status }); return response.data; },
-  async getAllCategories() { const response = await api.get('/admin/categories'); return response.data; },
-  async createCategory(data) { const response = await api.post('/admin/categories', data); return response.data; },
-  async updateCategory(id, data) { const response = await api.put(`/admin/categories/${id}`, data); return response.data; },
-  async deleteCategory(id) { const response = await api.delete(`/admin/categories/${id}`); return response.data; },
-  async getContactMessages(params = {}) { const query = new URLSearchParams(params).toString(); const response = await contactApi.get(`/contact/admin/messages${query ? `?${query}` : ''}`); return response.data; },
-  async getContactStats() { const response = await contactApi.get('/contact/admin/stats'); return response.data; },
-  async getContactMessageById(id) { const response = await contactApi.get(`/contact/admin/messages/${id}`); return response.data; },
-  async updateContactMessageStatus(id, status, adminNotes = null) { const response = await contactApi.patch(`/contact/admin/messages/${id}/status`, { status, adminNotes }); return response.data; },
-  async deleteContactMessage(id) { const response = await contactApi.delete(`/contact/admin/messages/${id}`); return response.data; }
-};
-
-// ==================== STATS SERVICE ====================
-export const statsService = {
-  async getGlobalStats() { const response = await api.get('/stats/global'); return response.data; },
-  async getVendorStats(vendorId) { const response = await api.get(`/stats/vendor/${vendorId}`); return response.data; },
-  async getProductStats(productId) { const response = await api.get(`/stats/product/${productId}`); return response.data; }
-};
-
-// ==================== EXPORT PAR DÉFAUT ====================
 export default api;

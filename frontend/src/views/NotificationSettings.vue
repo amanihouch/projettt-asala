@@ -931,4 +931,126 @@ input:checked + .slider:before {
     font-size: 1rem;
   }
 }
+/* ===== DARK MODE COMPLET POUR NOTIFICATION SETTINGS ===== */
+/* Remplacez tous les styles .dark-mode existants par ceci : */
+
+/* Fond général */
+.notification-settings-page.dark-mode {
+  background: #161627 !important;
+}
+
+/* Titres */
+.notification-settings-page.dark-mode .page-title {
+  color: #f1f5f9 !important;
+}
+
+.notification-settings-page.dark-mode .page-subtitle {
+  color: #94a3b8 !important;
+}
+
+/* Carte */
+.notification-settings-page.dark-mode .settings-card {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Sections */
+.notification-settings-page.dark-mode .settings-section {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.notification-settings-page.dark-mode .section-title {
+  color: #f1f5f9 !important;
+  border-bottom-color: #2a2a40 !important;
+}
+
+/* Items */
+.notification-settings-page.dark-mode .setting-item {
+  background: #121220 !important;
+}
+
+.notification-settings-page.dark-mode .setting-item:hover {
+  background: #1a1a2e !important;
+}
+
+.notification-settings-page.dark-mode .setting-name {
+  color: #f1f5f9 !important;
+}
+
+.notification-settings-page.dark-mode .setting-desc {
+  color: #94a3b8 !important;
+}
+
+/* Switch */
+.notification-settings-page.dark-mode input:checked + .slider {
+  background: linear-gradient(135deg, #2dd4bf, #0a94a6) !important;
+}
+
+.notification-settings-page.dark-mode .slider {
+  background-color: #2a2a40 !important;
+}
+
+.notification-settings-page.dark-mode .slider:before {
+  background-color: #f1f5f9 !important;
+}
+
+/* Push Warning */
+.notification-settings-page.dark-mode .push-warning {
+  background: rgba(245, 158, 11, 0.08) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.15) !important;
+}
+
+/* Téléphone */
+.notification-settings-page.dark-mode .phone-number {
+  background: rgba(59, 130, 246, 0.08) !important;
+  border-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+.notification-settings-page.dark-mode .phone-label {
+  color: #60a5fa !important;
+}
+
+.notification-settings-page.dark-mode .phone-value {
+  color: #93c5fd !important;
+}
+
+.notification-settings-page.dark-mode .edit-phone {
+  color: #94a3b8 !important;
+}
+
+.notification-settings-page.dark-mode .edit-phone:hover {
+  background: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.notification-settings-page.dark-mode .no-phone {
+  background: rgba(245, 158, 11, 0.08) !important;
+  border: 1px solid rgba(245, 158, 11, 0.15) !important;
+}
+
+.notification-settings-page.dark-mode .no-phone p {
+  color: #fbbf24 !important;
+}
+
+/* Loading */
+.notification-settings-page.dark-mode .loading-state p {
+  color: #94a3b8 !important;
+}
+
+.notification-settings-page.dark-mode .spinner {
+  border-color: #2a2a40 !important;
+  border-top-color: #2dd4bf !important;
+}
+
+/* Toast */
+.notification-settings-page.dark-mode .toast-notification {
+  background: #1e1e30 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.notification-settings-page.dark-mode .toast-message {
+  color: #f1f5f9 !important;
+}
 </style>

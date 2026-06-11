@@ -1194,4 +1194,247 @@ onMounted(async () => {
     right: 20px;
   }
 }
+/* ===== DARK MODE UNIFORMISÉ POUR ADMIN/POST DETAIL ===== */
+/* Ajoutez à la fin du <style scoped> */
+
+.admin-page.dark-mode {
+  background: #161627 !important;
+}
+
+/* Header */
+.dark-mode .page-title {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .back-btn {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .back-btn:hover {
+  border-color: #2dd4bf !important;
+  color: #2dd4bf !important;
+}
+
+/* Post Card */
+.dark-mode .post-card {
+  background: #1e1e30 !important;
+  border: 1px solid #2a2a40 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Post Header */
+.dark-mode .post-header {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .vendor-avatar {
+  border-color: #1e1e30 !important;
+}
+
+.dark-mode .vendor-name {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .post-date {
+  color: #94a3b8 !important;
+}
+
+/* Status Badges */
+.dark-mode .status-badge.pending {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+}
+
+.dark-mode .status-badge.approved {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+
+.dark-mode .status-badge.rejected {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+/* Product Title */
+.dark-mode .product-title {
+  color: #f1f5f9 !important;
+}
+
+/* Info Grid */
+.dark-mode .info-grid {
+  background: #121220 !important;
+}
+
+.dark-mode .info-label {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .info-value {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .info-value.price {
+  color: #ef4444 !important;
+}
+
+.dark-mode .info-value.old-price {
+  color: #64748b !important;
+}
+
+.dark-mode .discount {
+  color: #34d399 !important;
+}
+
+/* Section Title */
+.dark-mode .section-title {
+  color: #f1f5f9 !important;
+  border-bottom-color: #2a2a40 !important;
+}
+
+/* Description */
+.dark-mode .description-text {
+  color: #cbd5e1 !important;
+}
+
+/* Colors */
+.dark-mode .color-dot {
+  border-color: #1e1e30 !important;
+}
+
+.dark-mode .color-names {
+  color: #94a3b8 !important;
+}
+
+/* Images */
+.dark-mode .image-item {
+  border-color: #2a2a40 !important;
+}
+
+/* Rejection Reason */
+.dark-mode .rejection-reason {
+  background: rgba(239, 68, 68, 0.08) !important;
+  border-right-color: #ef4444 !important;
+}
+
+.dark-mode .rejection-reason p {
+  color: #f87171 !important;
+}
+
+/* Admin Actions */
+.dark-mode .admin-actions {
+  border-top-color: #2a2a40 !important;
+}
+
+.dark-mode .action-btn.approve {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+
+.dark-mode .action-btn.approve:hover {
+  background: rgba(16, 185, 129, 0.25) !important;
+}
+
+.dark-mode .action-btn.reject {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+.dark-mode .action-btn.reject:hover {
+  background: rgba(239, 68, 68, 0.25) !important;
+}
+
+.dark-mode .action-btn.edit {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #60a5fa !important;
+}
+
+.dark-mode .action-btn.edit:hover {
+  background: rgba(59, 130, 246, 0.25) !important;
+}
+
+.dark-mode .action-btn.delete {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+.dark-mode .action-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.25) !important;
+}
+
+/* Loading */
+.dark-mode .loading-state p {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .spinner {
+  border-color: #2a2a40 !important;
+  border-top-color: #2dd4bf !important;
+}
+
+/* Not Found */
+.dark-mode .not-found {
+  background: #1e1e30 !important;
+}
+
+.dark-mode .not-found h2 {
+  color: #f1f5f9 !important;
+}
+
+/* Modal */
+.dark-mode .modal-content {
+  background: #1e1e30 !important;
+}
+
+.dark-mode .modal-header {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .modal-header h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .close-btn {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .modal-body p {
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .reject-textarea {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .reject-textarea:focus {
+  border-color: #2dd4bf !important;
+}
+
+.dark-mode .btn-cancel {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .btn-cancel:hover {
+  background: #3a3a55 !important;
+}
+
+/* Toast */
+.dark-mode .toast-notification {
+  background: #1e1e30 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9 !important;
+}
+
+/* Image Modal */
+.dark-mode .image-modal-content {
+  background: transparent !important;
+}
 </style>

@@ -906,4 +906,188 @@ onUnmounted(() => {
     justify-content: center;
   }
 }
+/* ===== DARK MODE CORRIGÉ POUR ORDER TRACKING ===== */
+/* Remplacez toute la section dark mode existante par ceci : */
+
+/* Fond général */
+.order-tracking-page.dark-mode {
+  background: #161627 !important;
+}
+
+/* Titre */
+.order-tracking-page.dark-mode .page-title {
+  color: #f1f5f9 !important;
+}
+
+/* Carte principale */
+.order-tracking-page.dark-mode .tracking-card {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* En-tête commande */
+.order-tracking-page.dark-mode .order-header {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.order-tracking-page.dark-mode .order-number {
+  background: #1a2e3a !important;
+  color: #2dd4bf !important;
+}
+
+.order-tracking-page.dark-mode .order-date {
+  color: #94a3b8 !important;
+}
+
+/* Timeline */
+.order-tracking-page.dark-mode .timeline-item:not(:last-child)::after {
+  background: #2a2a40 !important;
+}
+
+.order-tracking-page.dark-mode .timeline-item.completed:not(:last-child)::after {
+  background: #10b981 !important;
+}
+
+.order-tracking-page.dark-mode .timeline-icon {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.order-tracking-page.dark-mode .timeline-item.completed .timeline-icon {
+  background: #10b981 !important;
+  color: white !important;
+}
+
+.order-tracking-page.dark-mode .timeline-content h3 {
+  color: #f1f5f9 !important;
+}
+
+.order-tracking-page.dark-mode .timeline-content p {
+  color: #94a3b8 !important;
+}
+
+.order-tracking-page.dark-mode .timeline-content .pending {
+  color: #fbbf24 !important;
+}
+
+/* Résumé commande */
+.order-tracking-page.dark-mode .order-summary {
+  background: #121220 !important;
+}
+
+.order-tracking-page.dark-mode .summary-title {
+  color: #f1f5f9 !important;
+  border-bottom-color: #2a2a40 !important;
+}
+
+.order-tracking-page.dark-mode .summary-item {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.order-tracking-page.dark-mode .item-image {
+  border-color: #2a2a40 !important;
+}
+
+.order-tracking-page.dark-mode .item-details h4 {
+  color: #f1f5f9 !important;
+}
+
+.order-tracking-page.dark-mode .item-price {
+  color: #ef4444 !important;
+}
+
+.order-tracking-page.dark-mode .item-quantity {
+  color: #94a3b8 !important;
+}
+
+.order-tracking-page.dark-mode .item-total {
+  color: #2dd4bf !important;
+}
+
+/* Totaux */
+.order-tracking-page.dark-mode .summary-totals {
+  border-top-color: #2a2a40 !important;
+}
+
+.order-tracking-page.dark-mode .total-row {
+  color: #94a3b8 !important;
+}
+
+.order-tracking-page.dark-mode .total-row.final {
+  border-top-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Adresse livraison */
+.order-tracking-page.dark-mode .delivery-address {
+  background: #121220 !important;
+}
+
+.order-tracking-page.dark-mode .address-title {
+  color: #f1f5f9 !important;
+}
+
+.order-tracking-page.dark-mode .delivery-address p {
+  color: #94a3b8 !important;
+}
+
+/* Boutons */
+.order-tracking-page.dark-mode .btn-secondary {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+  border: 1px solid #2a2a40 !important;
+}
+
+.order-tracking-page.dark-mode .btn-secondary:hover {
+  background: #3a3a55 !important;
+  color: #f1f5f9 !important;
+}
+
+.order-tracking-page.dark-mode .btn-primary {
+  background: linear-gradient(135deg, #08717f, #065a69) !important;
+  color: white !important;
+}
+
+.order-tracking-page.dark-mode .btn-primary:hover {
+  box-shadow: 0 5px 15px rgba(8, 113, 127, 0.4) !important;
+}
+
+/* Page non trouvée */
+.order-tracking-page.dark-mode .not-found {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.order-tracking-page.dark-mode .not-found h2 {
+  color: #f1f5f9 !important;
+}
+
+.order-tracking-page.dark-mode .not-found p {
+  color: #94a3b8 !important;
+}
+
+.order-tracking-page.dark-mode .not-found-icon {
+  opacity: 0.3 !important;
+}
+
+/* Loading */
+.order-tracking-page.dark-mode .spinner {
+  border-color: #2a2a40 !important;
+  border-top-color: #2dd4bf !important;
+}
+
+.order-tracking-page.dark-mode .loading-state p {
+  color: #94a3b8 !important;
+}
+
+/* Toast */
+.order-tracking-page.dark-mode .toast-notification {
+  background: #1e1e30 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.order-tracking-page.dark-mode .toast-message {
+  color: #f1f5f9 !important;
+}
 </style>

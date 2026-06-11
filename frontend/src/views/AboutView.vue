@@ -1,4 +1,4 @@
-<!-- frontend/src/views/AboutPage.vue - Version avec Police Amiri -->
+<!-- frontend/src/views/AboutPage.vue - Version complète corrigée -->
 <template>
   <div class="about-page" :class="{ 'dark-mode': isDarkMode }">
     <!-- Platform Presentation Section avec Vidéo -->
@@ -170,6 +170,64 @@
       </div>
     </section>
 
+    <!-- Team Section -->
+    <section class="section-spacing team-section">
+      <div class="container">
+        <div class="section-header" data-aos="fade-up">
+          <span class="section-badge">
+            <span class="badge-icon">👥</span>
+            فريقنا
+          </span>
+          <h2 class="section-title">فريق <span class="gradient-text">آصالة</span></h2>
+          <p class="section-subtitle">شغفنا بالتراث التونسي يدفعنا لتقديم الأفضل</p>
+        </div>
+
+        <div class="team-grid">
+          <!-- Ikbel Damdoum -->
+          <div class="team-card" data-aos="fade-up" data-aos-delay="0">
+            <div class="team-icon">
+              <div class="icon-circle">
+                <span class="icon-emoji">I</span>
+              </div>
+            </div>
+            <div class="team-info">
+              <h3 class="team-name">ikbel damdoum</h3>
+              <p class="team-role">développeur full stack</p>
+              <div class="team-divider"></div>
+            </div>
+          </div>
+
+          <!-- Fakher Sakli -->
+          <div class="team-card featured-card" data-aos="fade-up" data-aos-delay="100">
+            <div class="team-icon">
+              <div class="icon-circle">
+                <span class="icon-emoji">F</span>
+              </div>
+            </div>
+            <div class="team-info">
+              <h3 class="team-name">fakher sakli</h3>
+              <p class="team-role">رائد أعمال</p>
+              <div class="team-divider"></div>
+            </div>
+          </div>
+
+          <!-- Ameni Houche -->
+          <div class="team-card" data-aos="fade-up" data-aos-delay="200">
+            <div class="team-icon">
+              <div class="icon-circle">
+                <span class="icon-emoji">A</span>
+              </div>
+            </div>
+            <div class="team-info">
+              <h3 class="team-name">Amani houch</h3>
+              <p class="team-role">développeur full stack</p>
+              <div class="team-divider"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Testimonials Section -->
     <section class="section-spacing testimonials-section">
       <div class="container">
@@ -198,18 +256,21 @@
               </div>
             </div>
 
-            <p class="testimonial-text">"{{ testimonial.quote }}"</p>
+            <p class="testimonial-text">{{ testimonial.quote }}</p>
 
             <div class="card-footer">
               <div class="author-info">
-                <img :src="testimonial.avatar" :alt="testimonial.name" class="author-avatar">
+                <!-- Avatar avec première lettre du nom -->
+                <div class="author-avatar-letter" :style="{ background: getAvatarColor(testimonial.id) }">
+                  <span class="avatar-initial">{{ getFirstLetter(testimonial.name) }}</span>
+                </div>
                 <div class="author-details">
                   <h4 class="author-name">{{ testimonial.name }}</h4>
                   <p class="author-specialty">{{ testimonial.specialty }}</p>
                 </div>
               </div>
               <div class="product-badge">
-                <span class="product-icon">🏺</span>
+                <span class="product-icon">{{ testimonial.productIcon }}</span>
                 <span>{{ testimonial.product }}</span>
               </div>
             </div>
@@ -267,62 +328,82 @@ const toggleMute = () => {
   isMuted.value = videoPlayer.value.muted
 }
 
-// Testimonials
+// Fonction pour obtenir la première lettre du nom
+const getFirstLetter = (name) => {
+  if (!name) return '?'
+  // Prendre la première lettre du nom (en arabe ou français)
+  return name.charAt(0)
+}
+
+// Fonction pour obtenir une couleur dynamique basée sur l'ID
+const getAvatarColor = (id) => {
+  const colors = [
+    'linear-gradient(135deg, #08717f, #065a69)',
+    'linear-gradient(135deg, #d40025, #b00020)',
+    'linear-gradient(135deg, #f59e0b, #d97706)',
+    'linear-gradient(135deg, #10b981, #059669)',
+    'linear-gradient(135deg, #3b82f6, #2563eb)',
+    'linear-gradient(135deg, #8b5cf6, #7c3aed)'
+  ]
+  return colors[(id - 1) % colors.length]
+}
+
+// Testimonials avec productIcon
 const testimonials = ref([
   {
     id: 1,
     name: 'فاطمة بن علي',
     specialty: 'فخّارة تقليدية',
-    avatar: 'https://i.pravatar.cc/150?img=25',
     rating: 5,
     quote: 'منصة آصالة غيرت حياتي المهنية. الآن منتوجاتي تسافر للعالم بأسره وأستطيع العيش من شغفي.',
     product: 'طقم فخاري',
+    productIcon: '🏺'
   },
   {
     id: 2,
     name: 'محمد الطرابلسي',
     specialty: 'حرفي جلود',
-    avatar: 'https://i.pravatar.cc/150?img=12',
     rating: 5,
     quote: 'منصة استثنائية تثمن عملنا الحرفي حقاً. الدعم الذي تقدمه آصالة للحرفيين لا يضاهى.',
     product: 'حقيبة جلدية',
+    productIcon: '👝'
   },
   {
     id: 3,
     name: 'ليلى المنصوري',
     specialty: 'مصممة مجوهرات',
-    avatar: 'https://i.pravatar.cc/150?img=9',
     rating: 5,
     quote: 'أفضل قرار كان الانضمام لهذه المنصة. المبيعات في تزايد مستمر والوصول لعملاء جدد أصبح سهلاً.',
     product: 'مجوهرات فضة',
+    productIcon: '💎'
   },
   {
     id: 4,
     name: 'نادية بن سالم',
     specialty: 'نساجة تقليدية',
-    avatar: 'https://i.pravatar.cc/150?img=29',
     rating: 5,
     quote: 'مجتمع رائع يحتفل بالحرف التونسية. فخورة بكوني جزء من هذه العائلة.',
     product: 'زرابي تقليدية',
+    productIcon: '🧵'
   },
   {
     id: 5,
     name: 'حسن بن عمر',
     specialty: 'نحات على الخشب',
-    avatar: 'https://i.pravatar.cc/150?img=41',
     rating: 5,
     quote: 'آصالة مكنتني من العيش بشغفي ومشاركته مع العالم. شكراً لثقتكم بي.',
     product: 'تحف خشبية',
+    productIcon: '🪵'
   },
   {
     id: 6,
     name: 'سنية بن شيخة',
     specialty: 'خزافة',
-    avatar: 'https://i.pravatar.cc/150?img=52',
     rating: 5,
     quote: 'المنصة المثالية لاكتشاف الأصالة التونسية. عمل متقن وتواصل ممتاز.',
     product: 'أواني خزفية',
-  },
+    productIcon: '🏺'
+  }
 ])
 
 // Toast
@@ -353,13 +434,12 @@ onUnmounted(() => {
 
 <style>
 /* ===== GOOGLE FONTS - AMIRI ===== */
-@import url('https://fonts.googleapis.com/css2?family=Amiri&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;500;600;700;800&display=swap');
 </style>
 
 <style scoped>
 /* ========================================
    DESIGN PREMIUM - صفحة من نحن
-   Colors: #08717f (Teal) & #d40025 (Red)
 ======================================== */
 
 * {
@@ -427,7 +507,6 @@ onUnmounted(() => {
   font-weight: 600;
   color: #08717f;
   margin-bottom: 24px;
-  font-family: 'Amiri', serif;
 }
 
 .about-page.dark-mode .hero-badge {
@@ -442,7 +521,6 @@ onUnmounted(() => {
 .platform-title {
   font-size: 3.5rem;
   font-weight: 800;
-  font-family: 'Amiri', serif;
   color: #1a1a2e;
   margin-bottom: 16px;
 }
@@ -456,7 +534,6 @@ onUnmounted(() => {
   color: #4a5568;
   margin-bottom: 24px;
   font-weight: 500;
-  font-family: 'Amiri', serif;
 }
 
 .about-page.dark-mode .platform-subtitle {
@@ -468,7 +545,6 @@ onUnmounted(() => {
   line-height: 1.7;
   color: #4a5568;
   margin-bottom: 20px;
-  font-family: 'Amiri', serif;
 }
 
 .about-page.dark-mode .platform-description {
@@ -494,7 +570,6 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   transition: all 0.3s ease;
-  font-family: 'Amiri', serif;
 }
 
 .btn-primary:hover {
@@ -511,7 +586,6 @@ onUnmounted(() => {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-family: 'Amiri', serif;
 }
 
 .about-page.dark-mode .btn-outline {
@@ -549,7 +623,6 @@ onUnmounted(() => {
   border-radius: 12px;
   transition: all 0.3s ease;
   border: 1px solid #e2e8f0;
-  font-family: 'Amiri', serif;
 }
 
 .about-page.dark-mode .platform-feature {
@@ -575,7 +648,7 @@ onUnmounted(() => {
 }
 
 /* ========================================
-   STYLES VIDÉO AVEC SON
+   STYLES VIDÉO
 ======================================== */
 .platform-video {
   position: relative;
@@ -703,7 +776,6 @@ onUnmounted(() => {
   color: white;
   z-index: 10;
   animation: fadeInUp 0.5s ease;
-  font-family: 'Amiri', serif;
 }
 
 .pulse-dot {
@@ -740,20 +812,6 @@ onUnmounted(() => {
   color: white;
   z-index: 10;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  font-family: 'Amiri', serif;
-}
-
-.video-badge .badge-icon {
-  font-size: 1rem;
-}
-
-.video-wrapper video.playing {
-  animation: videoReveal 0.8s ease;
-}
-
-@keyframes videoReveal {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
 }
 
 /* ========================================
@@ -785,7 +843,6 @@ onUnmounted(() => {
   font-weight: 700;
   font-size: 0.9rem;
   margin-bottom: 20px;
-  font-family: 'Amiri', serif;
 }
 
 .section-title {
@@ -793,7 +850,6 @@ onUnmounted(() => {
   font-weight: 800;
   margin-bottom: 24px;
   color: #1a1a2e;
-  font-family: 'Amiri', serif;
 }
 
 .about-page.dark-mode .section-title {
@@ -812,7 +868,6 @@ onUnmounted(() => {
   line-height: 1.8;
   color: #4a5568;
   margin-bottom: 20px;
-  font-family: 'Amiri', serif;
 }
 
 .about-page.dark-mode .section-text {
@@ -855,7 +910,6 @@ onUnmounted(() => {
   border-radius: 50px;
   font-weight: 700;
   color: #08717f;
-  font-family: 'Amiri', serif;
 }
 
 .image-shine {
@@ -884,13 +938,175 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   transition: all 0.3s ease;
-  font-family: 'Amiri', serif;
 }
 
 .btn-outline-glow:hover {
   background: #08717f;
   color: white;
   transform: translateY(-3px);
+}
+
+/* ========================================
+   TEAM SECTION
+======================================== */
+.team-section {
+  background: #ffffff;
+}
+
+.about-page.dark-mode .team-section {
+  background: #0f172a;
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  margin-bottom: 60px;
+}
+
+.team-card {
+  background: white;
+  border-radius: 28px;
+  padding: 40px 32px;
+  transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  border: 1px solid #e2e8f0;
+  position: relative;
+  text-align: center;
+}
+
+.about-page.dark-mode .team-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.team-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 25px 45px rgba(8, 113, 127, 0.12);
+  border-color: #08717f;
+}
+
+.about-page.dark-mode .team-card:hover {
+  box-shadow: 0 25px 45px rgba(45, 212, 191, 0.08);
+  border-color: #2dd4bf;
+}
+
+.team-card.featured-card {
+  position: relative;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(135deg, #08717f, #d40025) border-box;
+  border: 2px solid transparent;
+}
+
+.about-page.dark-mode .team-card.featured-card {
+  background: linear-gradient(#1e293b, #1e293b) padding-box,
+              linear-gradient(135deg, #2dd4bf, #d40025) border-box;
+}
+
+.team-icon {
+  margin-bottom: 24px;
+}
+
+.icon-circle {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #08717f15, #d4002515);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.team-card:hover .icon-circle {
+  transform: scale(1.1);
+  background: linear-gradient(135deg, #08717f25, #d4002525);
+}
+
+.about-page.dark-mode .icon-circle {
+  background: linear-gradient(135deg, #2dd4bf15, #d4002515);
+}
+
+.icon-emoji {
+  font-size: 2.5rem;
+}
+
+.team-info {
+  text-align: center;
+}
+
+.team-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 8px;
+}
+
+.about-page.dark-mode .team-name {
+  color: #f1f5f9;
+}
+
+.team-role {
+  font-size: 0.9rem;
+  color: #08717f;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.about-page.dark-mode .team-role {
+  color: #2dd4bf;
+}
+
+.team-divider {
+  width: 50px;
+  height: 2px;
+  background: linear-gradient(90deg, #08717f, #d40025);
+  margin: 16px auto;
+  border-radius: 2px;
+}
+
+.team-bio {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+.about-page.dark-mode .team-bio {
+  color: #94a3b8;
+}
+
+.team-skills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.team-skills span {
+  padding: 4px 12px;
+  background: #f1f5f9;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #08717f;
+  transition: all 0.3s ease;
+}
+
+.team-skills span:hover {
+  background: #08717f;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.about-page.dark-mode .team-skills span {
+  background: #334155;
+  color: #2dd4bf;
+}
+
+.about-page.dark-mode .team-skills span:hover {
+  background: #2dd4bf;
+  color: #161627;
 }
 
 /* ========================================
@@ -913,7 +1129,6 @@ onUnmounted(() => {
   font-size: 1rem;
   color: #64748b;
   margin-top: 16px;
-  font-family: 'Amiri', serif;
 }
 
 .testimonials-grid {
@@ -981,7 +1196,6 @@ onUnmounted(() => {
   margin-bottom: 28px;
   font-style: italic;
   min-height: 100px;
-  font-family: 'Amiri', serif;
 }
 
 .about-page.dark-mode .testimonial-text {
@@ -1004,12 +1218,30 @@ onUnmounted(() => {
   gap: 14px;
 }
 
-.author-avatar {
+/* Avatar avec première lettre */
+.author-avatar-letter {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #08717f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.author-avatar-letter:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.avatar-initial {
+  text-transform: uppercase;
+  font-family: 'Amiri', serif;
+  font-weight: 700;
 }
 
 .author-name {
@@ -1017,13 +1249,19 @@ onUnmounted(() => {
   font-weight: 800;
   color: #1a1a2e;
   margin-bottom: 4px;
-  font-family: 'Amiri', serif;
+}
+
+.about-page.dark-mode .author-name {
+  color: #f1f5f9;
 }
 
 .author-specialty {
   font-size: 0.75rem;
   color: #64748b;
-  font-family: 'Amiri', serif;
+}
+
+.about-page.dark-mode .author-specialty {
+  color: #94a3b8;
 }
 
 .product-badge {
@@ -1036,7 +1274,11 @@ onUnmounted(() => {
   font-size: 0.7rem;
   font-weight: 600;
   color: #08717f;
-  font-family: 'Amiri', serif;
+}
+
+.about-page.dark-mode .product-badge {
+  background: rgba(45, 212, 191, 0.1);
+  color: #2dd4bf;
 }
 
 .card-decoration {
@@ -1067,7 +1309,6 @@ onUnmounted(() => {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   animation: slideUp 0.3s ease;
-  font-family: 'Amiri', serif;
 }
 
 .toast-notification.dark-mode {
@@ -1122,6 +1363,10 @@ onUnmounted(() => {
 
   .platform-title {
     font-size: 2.8rem;
+  }
+
+  .team-grid {
+    gap: 30px;
   }
 }
 
@@ -1185,6 +1430,59 @@ onUnmounted(() => {
     padding: 6px 12px;
     font-size: 0.7rem;
   }
+
+  .team-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .team-card {
+    padding: 20px 16px;
+  }
+
+  .team-name {
+    font-size: 1rem;
+  }
+
+  .team-role {
+    font-size: 0.7rem;
+  }
+
+  .icon-circle {
+    width: 55px;
+    height: 55px;
+  }
+
+  .icon-emoji {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 650px) {
+  .team-grid {
+    gap: 12px;
+  }
+
+  .team-card {
+    padding: 15px 10px;
+  }
+
+  .team-name {
+    font-size: 0.85rem;
+  }
+
+  .team-role {
+    font-size: 0.6rem;
+  }
+
+  .icon-circle {
+    width: 48px;
+    height: 48px;
+  }
+
+  .icon-emoji {
+    font-size: 1.5rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1213,23 +1511,37 @@ onUnmounted(() => {
     width: 22px;
     height: 22px;
   }
-}
 
-.about-page.dark-mode ::-webkit-scrollbar {
-  width: 8px;
-}
+  .team-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
 
-.about-page.dark-mode ::-webkit-scrollbar-track {
-  background: #1e293b;
-}
+  .team-card {
+    padding: 12px 8px;
+  }
 
-.about-page.dark-mode ::-webkit-scrollbar-thumb {
-  background: #08717f;
-  border-radius: 4px;
-}
+  .team-name {
+    font-size: 0.7rem;
+  }
 
-.about-page.dark-mode ::selection {
-  background: #0a94a6;
-  color: white;
+  .team-role {
+    font-size: 0.5rem;
+  }
+
+  .icon-circle {
+    width: 40px;
+    height: 40px;
+  }
+
+  .icon-emoji {
+    font-size: 1.2rem;
+  }
+
+  .author-avatar-letter {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
 }
 </style>

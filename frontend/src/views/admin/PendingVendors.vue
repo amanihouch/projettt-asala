@@ -1,4 +1,4 @@
-<!-- frontend/src/views/admin/PendingVendors.vue - Version CORRIGÉE -->
+<!-- frontend/src/views/admin/PendingVendors.vue - VERSION COMPLÈTE CORRIGÉE -->
 <template>
   <div class="admin-page" :class="{ 'dark-mode': isDarkMode }">
     <div class="page-content">
@@ -51,9 +51,11 @@
             />
             <div class="vendor-info">
               <h3 class="vendor-name">{{ vendor.shopName }}</h3>
-              <p class="vendor-owner">بواسطة: {{ vendor.name }}</p>
-              <p class="vendor-email">{{ vendor.email }}</p>
-              <p class="vendor-phone" v-if="vendor.phone">{{ vendor.phone }}</p>
+              <p class="vendor-owner">بواسطة: {{ vendor.userName || vendor.name }}</p>
+              <p class="vendor-email">{{ vendor.vendorEmail || vendor.userEmail || vendor.email }}</p>
+              <p class="vendor-phone" v-if="vendor.vendorPhone || vendor.userPhone || vendor.phone">
+                {{ vendor.vendorPhone || vendor.userPhone || vendor.phone }}
+              </p>
             </div>
             <span class="pending-badge">⏳ في انتظار المراجعة</span>
           </div>
@@ -82,11 +84,19 @@
           </div>
 
           <div class="vendor-actions">
-            <button class="action-btn approve" @click="approveVendor(vendor)">
+            <button
+              class="action-btn approve"
+              @click="approveVendor(vendor)"
+              :disabled="submitting === vendor.id"
+            >
               <span class="btn-icon">✅</span>
-              قبول
+              {{ submitting === vendor.id ? 'جاري...' : 'قبول' }}
             </button>
-            <button class="action-btn reject" @click="openRejectModal(vendor)">
+            <button
+              class="action-btn reject"
+              @click="openRejectModal(vendor)"
+              :disabled="submitting === vendor.id"
+            >
               <span class="btn-icon">❌</span>
               رفض
             </button>
@@ -105,6 +115,7 @@
       </div>
     </div>
 
+    <!-- Reject Modal -->
     <transition name="modal">
       <div v-if="showRejectModal" class="modal-overlay" @click.self="closeRejectModal">
         <div class="modal-content" :class="{ 'dark-mode': isDarkMode }">
@@ -132,6 +143,7 @@
       </div>
     </transition>
 
+    <!-- Toast Notification -->
     <transition name="toast">
       <div v-if="toast.show" class="toast-notification" :class="[toast.type, { 'dark-mode': isDarkMode }]">
         <span class="toast-icon">{{ toast.icon }}</span>
@@ -141,7 +153,6 @@
   </div>
 </template>
 
-// frontend/src/views/admin/PendingVendors.vue - Script COMPLET et CORRIGÉ
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -159,10 +170,10 @@ const loading = ref(false)
 const submitting = ref(false)
 const searchQuery = ref('')
 const vendors = ref([])
-const approvedVendorsCount = ref(0)
 const stats = ref({
   pending: 0,
   approved: 0,
+  rejected: 0,
   total: 0
 })
 const showRejectModal = ref(false)
@@ -181,7 +192,10 @@ const filteredVendors = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return vendors.value.filter(v =>
     v.shopName?.toLowerCase().includes(query) ||
+    v.userName?.toLowerCase().includes(query) ||
     v.name?.toLowerCase().includes(query) ||
+    v.vendorEmail?.toLowerCase().includes(query) ||
+    v.userEmail?.toLowerCase().includes(query) ||
     v.email?.toLowerCase().includes(query)
   )
 })
@@ -213,12 +227,9 @@ const getSpecialtyName = (specialty) => {
   return specialties[specialty] || specialty || 'عام'
 }
 
-// Formatage des URLs Cloudinary
 const formatCloudinaryUrl = (url) => {
-  if (!url) return null
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url
-  }
+  if (!url || url === 'null' || url === 'undefined') return null
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
   if (url.startsWith('/uploads/')) {
     return `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${url}`
   }
@@ -226,22 +237,9 @@ const formatCloudinaryUrl = (url) => {
 }
 
 const getVendorAvatar = (vendor) => {
-  // Priorité: userAvatar (de l'utilisateur) > avatar (du vendeur) > avatar par défaut
-  if (vendor.userAvatar && vendor.userAvatar !== 'null' && vendor.userAvatar !== 'undefined') {
-    return formatCloudinaryUrl(vendor.userAvatar)
-  }
-  if (vendor.avatar && vendor.avatar !== 'null' && vendor.avatar !== 'undefined') {
-    return formatCloudinaryUrl(vendor.avatar)
-  }
-  // Avatar par défaut avec UI Avatars
-  return `https://ui-avatars.com/api/?background=08717f&color=fff&name=${encodeURIComponent(vendor.shopName || 'Vendor')}&size=100&length=2&bold=true`
-}
-
-const getCoverImage = (vendor) => {
-  if (vendor.coverImage && vendor.coverImage !== 'null' && vendor.coverImage !== 'undefined') {
-    return formatCloudinaryUrl(vendor.coverImage)
-  }
-  return null
+  const avatar = formatCloudinaryUrl(vendor.userAvatar) || formatCloudinaryUrl(vendor.avatar)
+  if (avatar) return avatar
+  return `https://ui-avatars.com/api/?background=08717f&color=fff&name=${encodeURIComponent(vendor.shopName || 'V')}&size=100&length=2&bold=true`
 }
 
 const handleAvatarError = (event) => {
@@ -254,80 +252,96 @@ const showNotification = (message, type = 'success') => {
   setTimeout(() => (toast.value.show = false), 3000)
 }
 
-const updateStats = () => {
-  stats.value = {
-    pending: vendors.value.length,
-    approved: approvedVendorsCount.value,
-    total: vendors.value.length + approvedVendorsCount.value
-  }
-}
-
 // ===== ACTIONS API =====
+
+/**
+ * Charge les vendeurs en attente ET les stats en parallèle
+ * FIX: response.data.data est { data: [], pagination: {} } → lire .data.data
+ */
 const loadPendingVendors = async () => {
   loading.value = true
-
   try {
-    // Appel API pour récupérer les vendeurs en attente
-    const response = await api.get('/admin/vendors?status=pending')
+    // Charger en parallèle : vendeurs en attente + stats globales
+    const [pendingRes, statsRes] = await Promise.all([
+      api.get('/admin/vendors?status=pending&limit=100'),
+      api.get('/admin/vendors/stats')
+    ])
 
-    if (response.data.success) {
-      let vendorsData = response.data.data || []
-      if (!Array.isArray(vendorsData)) {
-        vendorsData = []
-      }
+    // ── Vendeurs en attente ──────────────────────────────────────────
+    // La réponse backend est : { success, data: { data: [...], pagination: {} } }
+    if (pendingRes.data.success) {
+      const payload = pendingRes.data.data
+      // Gérer les deux formats possibles : tableau direct ou objet paginé
+      const raw = Array.isArray(payload) ? payload : (payload?.data ?? [])
 
-      // Formater les URLs Cloudinary pour chaque vendeur
-      vendors.value = vendorsData.map(v => ({
+      vendors.value = raw.map(v => ({
         ...v,
         userAvatar: formatCloudinaryUrl(v.userAvatar),
         avatar: formatCloudinaryUrl(v.avatar),
         coverImage: formatCloudinaryUrl(v.coverImage)
       }))
-
-      console.log('✅ Vendeurs en attente chargés depuis API:', vendors.value.length)
-    } else {
-      throw new Error('Erreur chargement API')
+      console.log('✅ Vendeurs en attente:', vendors.value.length)
     }
-  } catch (error) {
-    console.error('❌ Erreur chargement vendeurs:', error)
-    // Fallback localStorage
-    const savedPending = localStorage.getItem('pending_vendors')
-    if (savedPending) {
-      try {
-        vendors.value = JSON.parse(savedPending)
-      } catch {
-        vendors.value = []
+
+    // ── Stats ────────────────────────────────────────────────────────
+    if (statsRes.data.success) {
+      const s = statsRes.data.data
+      stats.value = {
+        pending:  s.pending  ?? vendors.value.length,
+        approved: s.approved ?? 0,
+        rejected: s.rejected ?? 0,
+        total:    s.total    ?? 0
       }
     } else {
+      // Fallback si l'endpoint stats échoue
+      stats.value = {
+        pending:  vendors.value.length,
+        approved: 0,
+        rejected: 0,
+        total:    vendors.value.length
+      }
+    }
+
+  } catch (error) {
+    console.error('❌ Erreur chargement vendeurs:', error)
+    showNotification('فشل تحميل البائعين', 'error')
+
+    // Fallback localStorage
+    try {
+      const saved = localStorage.getItem('pending_vendors')
+      vendors.value = saved ? JSON.parse(saved) : []
+    } catch {
       vendors.value = []
     }
+    stats.value = { pending: vendors.value.length, approved: 0, rejected: 0, total: vendors.value.length }
   } finally {
-    updateStats()
     loading.value = false
   }
 }
 
+/**
+ * FIX: utilise PUT (pas POST) pour correspondre au backend
+ * router.put('/vendors/:id/approve', ...)
+ */
 const approveVendor = async (vendor) => {
   if (!confirm(`هل أنت متأكد من قبول البائع "${vendor.shopName}"؟`)) return
 
   submitting.value = vendor.id
-
   try {
-    // Appel API pour approuver le vendeur
-    const response = await api.post(`/admin/vendors/${vendor.id}/approve`)
+    const response = await api.put(`/admin/vendors/${vendor.id}/approve`)
 
     if (response.data.success) {
-      // Retirer de la liste des en attente
       vendors.value = vendors.value.filter(v => v.id !== vendor.id)
-      approvedVendorsCount.value++
-      updateStats()
-      showNotification(`✅ تم قبول البائع ${vendor.shopName} بنجاح`, 'success')
+      stats.value.pending  = Math.max(0, stats.value.pending - 1)
+      stats.value.approved = (stats.value.approved || 0) + 1
+      showNotification(`تم قبول البائع ${vendor.shopName} بنجاح`, 'success')
     } else {
-      throw new Error(response.data.message)
+      throw new Error(response.data.message || 'فشل القبول')
     }
   } catch (error) {
     console.error('❌ Erreur approveVendor:', error)
-    showNotification(`❌ فشل قبول البائع ${vendor.shopName}`, 'error')
+    const msg = error.response?.data?.message || error.message || 'خطأ غير معروف'
+    showNotification(`فشل قبول البائع: ${msg}`, 'error')
   } finally {
     submitting.value = false
   }
@@ -345,6 +359,10 @@ const closeRejectModal = () => {
   rejectReason.value = ''
 }
 
+/**
+ * FIX: utilise PUT (pas POST) pour correspondre au backend
+ * router.put('/vendors/:id/reject', ...)
+ */
 const confirmReject = async () => {
   if (!currentVendor.value) return
   if (!rejectReason.value.trim()) {
@@ -353,43 +371,37 @@ const confirmReject = async () => {
   }
 
   submitting.value = currentVendor.value.id
-
   try {
-    // Appel API pour rejeter le vendeur
-    const response = await api.post(`/admin/vendors/${currentVendor.value.id}/reject`, {
-      reason: rejectReason.value
+    const response = await api.put(`/admin/vendors/${currentVendor.value.id}/reject`, {
+      reason: rejectReason.value.trim()
     })
 
     if (response.data.success) {
       vendors.value = vendors.value.filter(v => v.id !== currentVendor.value.id)
-      updateStats()
-      showNotification(`❌ تم رفض البائع ${currentVendor.value.shopName}`, 'info')
+      stats.value.pending  = Math.max(0, stats.value.pending - 1)
+      stats.value.rejected = (stats.value.rejected || 0) + 1
+      showNotification(`تم رفض البائع ${currentVendor.value.shopName}`, 'info')
       closeRejectModal()
     } else {
-      throw new Error(response.data.message)
+      throw new Error(response.data.message || 'فشل الرفض')
     }
   } catch (error) {
     console.error('❌ Erreur rejectVendor:', error)
-    showNotification(`❌ فشل رفض البائع ${currentVendor.value.shopName}`, 'error')
+    const msg = error.response?.data?.message || error.message || 'خطأ غير معروف'
+    showNotification(`فشل رفض البائع: ${msg}`, 'error')
   } finally {
     submitting.value = false
   }
 }
 
 const viewVendorDetails = (vendorId) => {
-  // Rediriger vers la page admin du vendeur
   router.push(`/admin/vendor/${vendorId}`)
 }
 
 // ===== WATCHERS =====
 watch(isDarkMode, (newValue) => {
-  if (newValue) {
-    document.documentElement.classList.add('dark-mode')
-    document.body.classList.add('dark-mode')
-  } else {
-    document.documentElement.classList.remove('dark-mode')
-    document.body.classList.remove('dark-mode')
-  }
+  document.documentElement.classList.toggle('dark-mode', newValue)
+  document.body.classList.toggle('dark-mode', newValue)
 }, { immediate: true })
 
 // ===== LIFECYCLE =====
@@ -399,12 +411,10 @@ onMounted(() => {
 </script>
 
 <style>
-/* ===== IMPORT POLICE AMIRI ===== */
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@400;500;600;700;800&display=swap');
 </style>
 
 <style scoped>
-/* ===== APPLICATION DE LA POLICE AMIRI ===== */
 .admin-page {
   font-family: 'Amiri', 'Cairo', serif;
   padding: 30px;
@@ -435,7 +445,7 @@ onMounted(() => {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
-/* Stats Cards */
+/* ===== STATS CARDS ===== */
 .stats-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -464,36 +474,6 @@ onMounted(() => {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
-.stat-card.pending .stat-icon {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-.dark-mode .stat-card.pending .stat-icon {
-  background: rgba(254, 243, 199, 0.2);
-  color: #fbbf24;
-}
-
-.stat-card.approved .stat-icon {
-  background: #d4edda;
-  color: #10b981;
-}
-
-.dark-mode .stat-card.approved .stat-icon {
-  background: rgba(212, 237, 218, 0.2);
-  color: #34d399;
-}
-
-.stat-card.total .stat-icon {
-  background: #e0f2f1;
-  color: #08717f;
-}
-
-.dark-mode .stat-card.total .stat-icon {
-  background: rgba(8, 113, 127, 0.2);
-  color: #2dd4bf;
-}
-
 .stat-icon {
   width: 50px;
   height: 50px;
@@ -504,9 +484,16 @@ onMounted(() => {
   font-size: 1.5rem;
 }
 
-.stat-info {
-  flex: 1;
-}
+.stat-card.pending .stat-icon { background: #fef3c7; color: #d97706; }
+.dark-mode .stat-card.pending .stat-icon { background: rgba(254,243,199,0.2); color: #fbbf24; }
+
+.stat-card.approved .stat-icon { background: #d4edda; color: #10b981; }
+.dark-mode .stat-card.approved .stat-icon { background: rgba(212,237,218,0.2); color: #34d399; }
+
+.stat-card.total .stat-icon { background: #e0f2f1; color: #08717f; }
+.dark-mode .stat-card.total .stat-icon { background: rgba(8,113,127,0.2); color: #2dd4bf; }
+
+.stat-info { flex: 1; }
 
 .stat-value {
   display: block;
@@ -515,24 +502,13 @@ onMounted(() => {
   color: #1e293b;
   line-height: 1.2;
 }
+.dark-mode .stat-value { color: #f1f5f9; }
 
-.dark-mode .stat-value {
-  color: #f1f5f9;
-}
+.stat-label { color: #64748b; font-size: 0.9rem; }
+.dark-mode .stat-label { color: #94a3b8; }
 
-.stat-label {
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.dark-mode .stat-label {
-  color: #94a3b8;
-}
-
-/* Search Bar */
-.search-bar {
-  margin-bottom: 25px;
-}
+/* ===== SEARCH ===== */
+.search-bar { margin-bottom: 25px; }
 
 .search-input {
   width: 100%;
@@ -555,23 +531,13 @@ onMounted(() => {
 .search-input:focus {
   outline: none;
   border-color: #08717f;
-  box-shadow: 0 0 0 3px rgba(8, 113, 127, 0.1);
+  box-shadow: 0 0 0 3px rgba(8,113,127,0.1);
 }
 
-/* Loading State */
-.loading-state {
-  text-align: center;
-  padding: 60px 20px;
-}
-
-.loading-state p {
-  font-size: 1.1rem;
-  color: #64748b;
-}
-
-.dark-mode .loading-state p {
-  color: #cbd5e1;
-}
+/* ===== LOADING ===== */
+.loading-state { text-align: center; padding: 60px 20px; }
+.loading-state p { font-size: 1.1rem; color: #64748b; }
+.dark-mode .loading-state p { color: #cbd5e1; }
 
 .spinner {
   width: 50px;
@@ -582,22 +548,12 @@ onMounted(() => {
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
 }
+.dark-mode .spinner { border-color: #334155; border-top-color: #2dd4bf; }
 
-.dark-mode .spinner {
-  border-color: #334155;
-  border-top-color: #2dd4bf;
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Vendors Grid */
-.vendors-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
+/* ===== VENDORS GRID ===== */
+.vendors-grid { display: flex; flex-direction: column; gap: 20px; }
 
 .vendor-card {
   background: white;
@@ -613,12 +569,11 @@ onMounted(() => {
 }
 
 .vendor-card:hover {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   border-color: #08717f;
 }
-
 .dark-mode .vendor-card:hover {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   border-color: #2dd4bf;
 }
 
@@ -631,11 +586,7 @@ onMounted(() => {
   border-bottom: 1px solid #e2e8f0;
   flex-wrap: wrap;
 }
-
-.dark-mode .vendor-header {
-  background: #1e293b;
-  border-bottom-color: #334155;
-}
+.dark-mode .vendor-header { background: #1e293b; border-bottom-color: #334155; }
 
 .vendor-avatar {
   width: 70px;
@@ -643,57 +594,23 @@ onMounted(() => {
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
+.dark-mode .vendor-avatar { border-color: #0f172a; }
 
-.dark-mode .vendor-avatar {
-  border-color: #0f172a;
-}
+.vendor-info { flex: 1; }
 
-.vendor-info {
-  flex: 1;
-}
+.vendor-name { font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 5px; }
+.dark-mode .vendor-name { color: #f1f5f9; }
 
-.vendor-name {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 5px;
-}
+.vendor-owner { color: #64748b; font-size: 0.9rem; margin-bottom: 3px; }
+.dark-mode .vendor-owner { color: #94a3b8; }
 
-.dark-mode .vendor-name {
-  color: #f1f5f9;
-}
+.vendor-email { color: #475569; font-size: 0.85rem; margin-bottom: 2px; }
+.dark-mode .vendor-email { color: #cbd5e1; }
 
-.vendor-owner {
-  color: #64748b;
-  font-size: 0.9rem;
-  margin-bottom: 3px;
-}
-
-.dark-mode .vendor-owner {
-  color: #94a3b8;
-}
-
-.vendor-email {
-  color: #475569;
-  font-size: 0.85rem;
-  margin-bottom: 2px;
-}
-
-.dark-mode .vendor-email {
-  color: #cbd5e1;
-}
-
-.vendor-phone {
-  color: #08717f;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.dark-mode .vendor-phone {
-  color: #2dd4bf;
-}
+.vendor-phone { color: #08717f; font-size: 0.85rem; font-weight: 600; }
+.dark-mode .vendor-phone { color: #2dd4bf; }
 
 .pending-badge {
   padding: 6px 15px;
@@ -703,11 +620,7 @@ onMounted(() => {
   font-size: 0.85rem;
   font-weight: 600;
 }
-
-.dark-mode .pending-badge {
-  background: rgba(255, 243, 205, 0.2);
-  color: #fbbf24;
-}
+.dark-mode .pending-badge { background: rgba(255,243,205,0.2); color: #fbbf24; }
 
 .vendor-details {
   padding: 20px;
@@ -716,37 +629,15 @@ onMounted(() => {
   gap: 15px;
 }
 
-.detail-row {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
+.detail-row { display: flex; flex-direction: column; gap: 5px; }
 
-.detail-label {
-  font-size: 0.8rem;
-  color: #94a3b8;
-  font-weight: 600;
-  text-transform: uppercase;
-}
+.detail-label { font-size: 0.8rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
+.dark-mode .detail-label { color: #64748b; }
 
-.dark-mode .detail-label {
-  color: #64748b;
-}
+.detail-value { font-size: 0.95rem; color: #1e293b; font-weight: 500; }
+.dark-mode .detail-value { color: #cbd5e1; }
 
-.detail-value {
-  font-size: 0.95rem;
-  color: #1e293b;
-  font-weight: 500;
-}
-
-.dark-mode .detail-value {
-  color: #cbd5e1;
-}
-
-.detail-value.description {
-  line-height: 1.6;
-  max-width: 300px;
-}
+.detail-value.description { line-height: 1.6; max-width: 300px; }
 
 .vendor-actions {
   display: flex;
@@ -755,11 +646,7 @@ onMounted(() => {
   border-top: 1px solid #e2e8f0;
   background: #f8fafc;
 }
-
-.dark-mode .vendor-actions {
-  border-top-color: #334155;
-  background: #1e293b;
-}
+.dark-mode .vendor-actions { border-top-color: #334155; background: #1e293b; }
 
 .action-btn {
   flex: 1;
@@ -774,96 +661,38 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-family: 'Amiri', 'Cairo', serif;
 }
 
-.action-btn.approve {
-  background: #d4edda;
-  color: #155724;
-}
+.action-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
 
-.dark-mode .action-btn.approve {
-  background: rgba(212, 237, 218, 0.2);
-  color: #34d399;
-}
+.action-btn.approve { background: #d4edda; color: #155724; }
+.dark-mode .action-btn.approve { background: rgba(212,237,218,0.2); color: #34d399; }
+.action-btn.approve:hover:not(:disabled) { background: #c3e6cb; transform: translateY(-2px); }
 
-.action-btn.approve:hover {
-  background: #c3e6cb;
-  transform: translateY(-2px);
-}
+.action-btn.reject { background: #f8d7da; color: #721c24; }
+.dark-mode .action-btn.reject { background: rgba(248,215,218,0.2); color: #f87171; }
+.action-btn.reject:hover:not(:disabled) { background: #f5c6cb; transform: translateY(-2px); }
 
-.action-btn.reject {
-  background: #f8d7da;
-  color: #721c24;
-}
+.action-btn.view { background: #e2e8f0; color: #475569; }
+.dark-mode .action-btn.view { background: #334155; color: #cbd5e1; }
+.action-btn.view:hover { background: #cbd5e1; transform: translateY(-2px); }
 
-.dark-mode .action-btn.reject {
-  background: rgba(248, 215, 218, 0.2);
-  color: #f87171;
-}
+.btn-icon { font-size: 1.1rem; }
 
-.action-btn.reject:hover {
-  background: #f5c6cb;
-  transform: translateY(-2px);
-}
+/* ===== EMPTY STATE ===== */
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-icon { font-size: 4rem; margin-bottom: 15px; opacity: 0.3; }
+.empty-state h3 { font-size: 1.3rem; color: #1e293b; margin-bottom: 8px; }
+.dark-mode .empty-state h3 { color: #f1f5f9; }
+.empty-state p { color: #64748b; font-size: 1rem; }
+.dark-mode .empty-state p { color: #94a3b8; }
 
-.action-btn.view {
-  background: #e2e8f0;
-  color: #475569;
-}
-
-.dark-mode .action-btn.view {
-  background: #334155;
-  color: #cbd5e1;
-}
-
-.action-btn.view:hover {
-  background: #cbd5e1;
-  transform: translateY(-2px);
-}
-
-.btn-icon {
-  font-size: 1.1rem;
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-}
-
-.empty-icon {
-  font-size: 4rem;
-  margin-bottom: 15px;
-  opacity: 0.3;
-}
-
-.empty-state h3 {
-  font-size: 1.3rem;
-  color: #1e293b;
-  margin-bottom: 8px;
-}
-
-.dark-mode .empty-state h3 {
-  color: #f1f5f9;
-}
-
-.empty-state p {
-  color: #64748b;
-  font-size: 1rem;
-}
-
-.dark-mode .empty-state p {
-  color: #94a3b8;
-}
-
-/* Modal */
+/* ===== MODAL ===== */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0,0,0,0.5);
   backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
@@ -878,20 +707,11 @@ onMounted(() => {
   max-width: 450px;
   animation: slideUp 0.3s ease;
 }
-
-.modal-content.dark-mode {
-  background: #1e293b;
-}
+.modal-content.dark-mode { background: #1e293b; }
 
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .modal-header {
@@ -901,53 +721,23 @@ onMounted(() => {
   padding: 20px;
   border-bottom: 1px solid #e2e8f0;
 }
-
-.dark-mode .modal-header {
-  border-bottom-color: #334155;
-}
-
-.modal-header h3 {
-  font-size: 1.3rem;
-  color: #1e293b;
-}
-
-.dark-mode .modal-header h3 {
-  color: #f1f5f9;
-}
+.dark-mode .modal-header { border-bottom-color: #334155; }
+.modal-header h3 { font-size: 1.3rem; color: #1e293b; }
+.dark-mode .modal-header h3 { color: #f1f5f9; }
 
 .close-btn {
-  width: 35px;
-  height: 35px;
+  width: 35px; height: 35px;
   background: #f1f5f9;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.2rem;
-  cursor: pointer;
+  border: none; border-radius: 8px;
+  font-size: 1.2rem; cursor: pointer;
   transition: all 0.3s ease;
 }
+.dark-mode .close-btn { background: #334155; color: #f1f5f9; }
+.close-btn:hover { background: #d40025; color: white; }
 
-.dark-mode .close-btn {
-  background: #334155;
-  color: #f1f5f9;
-}
-
-.close-btn:hover {
-  background: #d40025;
-  color: white;
-}
-
-.modal-body {
-  padding: 25px;
-}
-
-.modal-body p {
-  color: #1e293b;
-  font-size: 1rem;
-}
-
-.dark-mode .modal-body p {
-  color: #f1f5f9;
-}
+.modal-body { padding: 25px; }
+.modal-body p { color: #1e293b; font-size: 1rem; }
+.dark-mode .modal-body p { color: #f1f5f9; }
 
 .reject-textarea {
   width: 100%;
@@ -956,32 +746,17 @@ onMounted(() => {
   border-radius: 10px;
   font-size: 1rem;
   resize: vertical;
-  font-family: inherit;
+  font-family: 'Amiri', 'Cairo', serif;
   margin-top: 10px;
   background: white;
   color: #1e293b;
+  box-sizing: border-box;
 }
+.dark-mode .reject-textarea { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+.reject-textarea:focus { outline: none; border-color: #d40025; }
 
-.dark-mode .reject-textarea {
-  background: #0f172a;
-  border-color: #334155;
-  color: #f1f5f9;
-}
-
-.reject-textarea:focus {
-  outline: none;
-  border-color: #d40025;
-}
-
-.hint {
-  font-size: 0.8rem;
-  color: #64748b;
-  margin-top: 8px;
-}
-
-.dark-mode .hint {
-  color: #94a3b8;
-}
+.hint { font-size: 0.8rem; color: #64748b; margin-top: 8px; }
+.dark-mode .hint { color: #94a3b8; }
 
 .modal-footer {
   display: flex;
@@ -989,13 +764,9 @@ onMounted(() => {
   padding: 20px;
   border-top: 1px solid #e2e8f0;
 }
+.dark-mode .modal-footer { border-top-color: #334155; }
 
-.dark-mode .modal-footer {
-  border-top-color: #334155;
-}
-
-.btn-cancel,
-.btn-reject {
+.btn-cancel, .btn-reject {
   flex: 1;
   padding: 12px;
   border: none;
@@ -1003,38 +774,18 @@ onMounted(() => {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
+  font-family: 'Amiri', 'Cairo', serif;
 }
 
-.btn-cancel {
-  background: #f1f5f9;
-  color: #64748b;
-}
+.btn-cancel { background: #f1f5f9; color: #64748b; }
+.dark-mode .btn-cancel { background: #334155; color: #cbd5e1; }
+.btn-cancel:hover { background: #e2e8f0; }
 
-.dark-mode .btn-cancel {
-  background: #334155;
-  color: #cbd5e1;
-}
+.btn-reject { background: #d40025; color: white; transition: all 0.3s ease; }
+.btn-reject:hover:not(:disabled) { background: #b0001f; transform: translateY(-2px); }
+.btn-reject:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.btn-cancel:hover {
-  background: #e2e8f0;
-}
-
-.btn-reject {
-  background: #d40025;
-  color: white;
-}
-
-.btn-reject:hover:not(:disabled) {
-  background: #b0001f;
-  transform: translateY(-2px);
-}
-
-.btn-reject:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Toast */
+/* ===== TOAST ===== */
 .toast-notification {
   position: fixed;
   bottom: 30px;
@@ -1045,64 +796,34 @@ onMounted(() => {
   padding: 14px 24px;
   background: white;
   border-radius: 50px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   z-index: 9999;
   border-right: 4px solid;
   animation: slideInRight 0.3s ease;
 }
-
-.toast-notification.dark-mode {
-  background: #1e293b;
-}
+.toast-notification.dark-mode { background: #1e293b; }
 
 .toast-notification.success { border-right-color: #10b981; }
-.toast-notification.error { border-right-color: #ef4444; }
-.toast-notification.info { border-right-color: #08717f; }
+.toast-notification.error   { border-right-color: #ef4444; }
+.toast-notification.info    { border-right-color: #08717f; }
 .toast-notification.warning { border-right-color: #f59e0b; }
 
 @keyframes slideInRight {
   from { opacity: 0; transform: translateX(30px); }
-  to { opacity: 1; transform: translateX(0); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 .toast-icon { font-size: 1.3rem; }
+.toast-message { color: #1e293b; font-size: 1rem; font-weight: 500; }
+.dark-mode .toast-message { color: #f1f5f9; }
 
-.toast-message {
-  color: #1e293b;
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-.dark-mode .toast-message {
-  color: #f1f5f9;
-}
-
-/* Responsive */
+/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-  .admin-page {
-    padding: 20px;
-  }
-
-  .stats-cards {
-    grid-template-columns: 1fr;
-  }
-
-  .vendor-header {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .vendor-details {
-    grid-template-columns: 1fr;
-  }
-
-  .vendor-actions {
-    flex-direction: column;
-  }
-
-  .toast-notification {
-    right: 20px;
-    left: 20px;
-  }
+  .admin-page { padding: 15px; }
+  .stats-cards { grid-template-columns: 1fr; }
+  .vendor-header { flex-direction: column; text-align: center; }
+  .vendor-details { grid-template-columns: 1fr; }
+  .vendor-actions { flex-direction: column; }
+  .toast-notification { right: 15px; left: 15px; bottom: 15px; }
 }
 </style>

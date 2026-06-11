@@ -1490,4 +1490,234 @@ onMounted(() => {
     width: auto;
   }
 }
+/* ===== DARK MODE UNIFORMISÉ POUR ADMIN/PROMO CODES ===== */
+/* Ajoutez à la fin du <style scoped> */
+
+.admin-promo-page.dark-mode {
+  background: #161627 !important;
+}
+
+/* Header */
+.dark-mode .page-title {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .page-subtitle {
+  color: #94a3b8 !important;
+}
+
+/* Sections */
+.dark-mode .add-section,
+.dark-mode .list-section {
+  background: #1e1e30 !important;
+  border: 1px solid #2a2a40 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .section-title {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .toggle-form-btn {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .toggle-form-btn:hover {
+  background: #2dd4bf !important;
+  color: #161627 !important;
+}
+
+/* Formulaire */
+.dark-mode .form-group label {
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .form-group input,
+.dark-mode .form-group select {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .form-group input:focus,
+.dark-mode .form-group select:focus {
+  border-color: #2dd4bf !important;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15) !important;
+}
+
+.dark-mode .form-group input::placeholder {
+  color: #64748b !important;
+}
+
+/* Selected Product */
+.dark-mode .selected-product-preview {
+  background: rgba(16, 185, 129, 0.06) !important;
+  border-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+.dark-mode .selected-product-preview .product-name {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .selected-product-preview .product-price {
+  color: #ef4444 !important;
+}
+
+.dark-mode .selected-product-preview .product-vendor {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .clear-product {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+/* Boutons */
+.dark-mode .btn-secondary {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .btn-secondary:hover {
+  background: #3a3a55 !important;
+}
+
+.dark-mode .btn-outline {
+  border-color: #2dd4bf !important;
+  color: #2dd4bf !important;
+}
+
+.dark-mode .btn-outline:hover {
+  background: #2dd4bf !important;
+  color: #161627 !important;
+}
+
+/* Refresh */
+.dark-mode .refresh-btn {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .refresh-btn:hover:not(:disabled) {
+  background: #3a3a55 !important;
+}
+
+/* Table */
+.dark-mode .promo-table th,
+.dark-mode .promo-table td {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .promo-table th {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .promo-table td {
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .promo-table tr.highlighted {
+  background: rgba(245, 158, 11, 0.08) !important;
+}
+
+/* Code */
+.dark-mode .code {
+  background: #2a2a40 !important;
+  color: #fbbf24 !important;
+}
+
+/* Status */
+.dark-mode .status-badge {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .status-badge.active {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+
+/* Action Buttons */
+.dark-mode .icon-btn {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+/* Loading */
+.dark-mode .loading-state p {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .spinner {
+  border-color: #2a2a40 !important;
+  border-top-color: #2dd4bf !important;
+}
+
+/* Empty */
+.dark-mode .empty-state {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .empty-state p {
+  color: #94a3b8 !important;
+}
+
+/* Modal */
+.dark-mode .modal-container {
+  background: #1e1e30 !important;
+}
+
+.dark-mode .modal-header {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .modal-header h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .modal-close {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .modal-close:hover {
+  background: #ef4444 !important;
+}
+
+/* Modal form */
+.dark-mode .modal-body .form-group input,
+.dark-mode .modal-body .form-group select {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .btn-cancel {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .btn-cancel:hover {
+  background: #3a3a55 !important;
+}
+
+/* Delete Modal */
+.dark-mode .delete-code {
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+.dark-mode .warning-text {
+  color: #94a3b8 !important;
+}
+
+/* Toast */
+.dark-mode .toast-notification {
+  background: #1e1e30 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9 !important;
+}
 </style>

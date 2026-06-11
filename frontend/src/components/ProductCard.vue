@@ -824,4 +824,408 @@ onUnmounted(() => {
   .vendor-info { padding: 6px 10px; }
   .vendor-avatar { width: 28px; height: 28px; }
 }
+/* ============================================
+   📱 PRODUCT CARD - DESIGN MOBILE COMPLET
+   Ultra Moderne • Animations Fluides • WAAW
+============================================ */
+
+/* ----- MOBILE (max-width: 768px) ----- */
+@media (max-width: 768px) {
+
+  /* ===== CARTE PRINCIPALE ===== */
+  .product-card {
+    border-radius: 14px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .product-card:active {
+    transform: scale(0.98) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+  }
+
+  /* Désactiver le hover sur mobile */
+  .product-card:hover {
+    transform: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  }
+
+  /* ===== CONTENEUR D'IMAGE ===== */
+  .product-image-container {
+    border-radius: 14px 14px 0 0 !important;
+  }
+
+  .product-image {
+    transition: none !important;
+  }
+
+  .product-card:active .product-image {
+    transform: scale(1.02) !important;
+  }
+
+  /* ===== BADGES ===== */
+  .top-badges {
+    top: 6px !important;
+    right: 6px !important;
+    gap: 4px !important;
+  }
+
+  .badge {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .badge-icon {
+    font-size: 12px !important;
+  }
+
+  /* ===== ACTIONS RAPIDES ===== */
+  .quick-actions {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+    top: 6px !important;
+    left: 6px !important;
+    gap: 6px !important;
+  }
+
+  .action-btn {
+    width: 32px !important;
+    height: 32px !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+    border-radius: 8px !important;
+  }
+
+  .product-card.dark-mode .action-btn {
+    background: rgba(30, 41, 59, 0.9) !important;
+  }
+
+  .action-btn:active {
+    transform: scale(0.9) !important;
+    background: #ffffff !important;
+  }
+
+  .heart-icon {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .quick-view-icon {
+    font-size: 14px !important;
+  }
+
+  /* ===== BADGE RÉDUCTION ===== */
+  .discount-badge {
+    bottom: 6px !important;
+    right: 6px !important;
+    padding: 4px 10px !important;
+    font-size: 11px !important;
+    border-radius: 16px !important;
+  }
+
+  /* ===== INDICATEUR FAVORI ===== */
+  .liked-indicator {
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    border-radius: 24px !important;
+    gap: 6px !important;
+  }
+
+  .liked-icon {
+    font-size: 14px !important;
+  }
+
+  .liked-text {
+    font-size: 12px !important;
+  }
+
+  /* ===== INFORMATIONS PRODUIT ===== */
+  .product-info {
+    padding: 12px !important;
+    gap: 8px !important;
+  }
+
+  /* ===== VENDEUR ===== */
+  .vendor-info {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+    min-height: 44px !important;
+    cursor: pointer !important;
+  }
+
+  .vendor-info:active {
+    background: #e0f2f1 !important;
+    transform: scale(0.98) !important;
+  }
+
+  .product-card.dark-mode .vendor-info:active {
+    background: rgba(8, 113, 127, 0.15) !important;
+  }
+
+  .vendor-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    border-width: 2px !important;
+  }
+
+  .vendor-name {
+    font-size: 13px !important;
+  }
+
+  .verified-badge {
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 10px !important;
+  }
+
+  .vendor-arrow {
+    font-size: 14px !important;
+  }
+
+  /* ===== NOM DU PRODUIT ===== */
+  .product-name {
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  /* ===== NOTATION ===== */
+  .rating-section {
+    gap: 4px !important;
+  }
+
+  .star {
+    font-size: 13px !important;
+  }
+
+  .rating-value {
+    font-size: 12px !important;
+  }
+
+  /* ===== FOOTER (PRIX + ACTIONS) ===== */
+  .footer-section {
+    padding-top: 8px !important;
+    margin-top: auto !important;
+  }
+
+  .price-section {
+    gap: 6px !important;
+    margin-bottom: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .current-price {
+    font-size: 18px !important;
+    font-weight: 800 !important;
+  }
+
+  .currency {
+    font-size: 11px !important;
+  }
+
+  .original-price {
+    font-size: 12px !important;
+  }
+
+  /* ===== ACTIONS ===== */
+  .actions-section {
+    gap: 8px !important;
+  }
+
+  .likes-counter {
+    padding: 6px 12px !important;
+    border-radius: 24px !important;
+    gap: 4px !important;
+    min-height: 36px !important;
+    cursor: pointer !important;
+  }
+
+  .likes-counter:active {
+    background: #ffe8ed !important;
+    transform: scale(0.96) !important;
+  }
+
+  .likes-icon {
+    font-size: 14px !important;
+  }
+
+  .likes-count {
+    font-size: 13px !important;
+  }
+
+  .add-to-cart-btn {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+  }
+
+  .add-to-cart-btn:active {
+    transform: scale(0.92) !important;
+    opacity: 0.9 !important;
+  }
+
+  .cart-icon {
+    font-size: 16px !important;
+  }
+
+  .loading-spinner {
+    width: 14px !important;
+    height: 14px !important;
+  }
+}
+
+/* ===== TRÈS PETIT MOBILE (max-width: 400px) ----- */
+@media (max-width: 400px) {
+  .product-card {
+    border-radius: 12px !important;
+  }
+
+  .product-info {
+    padding: 10px !important;
+    gap: 6px !important;
+  }
+
+  .vendor-info {
+    padding: 6px 8px !important;
+    gap: 6px !important;
+    border-radius: 8px !important;
+  }
+
+  .vendor-avatar {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .vendor-name {
+    font-size: 12px !important;
+  }
+
+  .product-name {
+    font-size: 13px !important;
+  }
+
+  .current-price {
+    font-size: 16px !important;
+  }
+
+  .action-btn {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 7px !important;
+  }
+
+  .add-to-cart-btn {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 8px !important;
+  }
+
+  .discount-badge {
+    padding: 3px 8px !important;
+    font-size: 10px !important;
+    bottom: 4px !important;
+    right: 4px !important;
+  }
+}
+
+/* ===== FIX iOS SAFARI ===== */
+@supports (-webkit-touch-callout: none) {
+  .product-card {
+    /* Empêcher le zoom sur double-tap */
+    touch-action: manipulation !important;
+  }
+}
+
+/* ===== OPTIMISATION TACTILE ===== */
+@media (hover: none) and (pointer: coarse) {
+  .product-card {
+    -webkit-tap-highlight-color: transparent !important;
+    user-select: none !important;
+  }
+
+  /* Zones tactiles minimales */
+  .vendor-info,
+  .likes-counter,
+  .add-to-cart-btn,
+  .action-btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+
+  /* Supprimer les transitions lourdes */
+  .product-card,
+  .product-image,
+  .vendor-info,
+  .likes-counter,
+  .add-to-cart-btn {
+    transition-duration: 0.1s !important;
+  }
+
+  /* Feedback tactile */
+  .product-card:active {
+    transform: scale(0.98) !important;
+  }
+
+  .vendor-info:active {
+    background: #e0f2f1 !important;
+  }
+
+  .add-to-cart-btn:active {
+    transform: scale(0.92) !important;
+  }
+
+  .likes-counter:active {
+    transform: scale(0.95) !important;
+  }
+}
+
+/* ===== DARK MODE MOBILE ===== */
+@media (max-width: 768px) {
+  .product-card.dark-mode {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .product-card.dark-mode:active {
+    background: #252540 !important;
+  }
+
+  .product-card.dark-mode .vendor-info:active {
+    background: rgba(8, 113, 127, 0.2) !important;
+  }
+
+  .product-card.dark-mode .likes-counter:active {
+    background: rgba(212, 0, 37, 0.2) !important;
+  }
+
+  .product-card.dark-mode .action-btn {
+    background: rgba(30, 41, 59, 0.95) !important;
+  }
+
+  .product-card.dark-mode .action-btn:active {
+    background: #334155 !important;
+  }
+}
+
+/* ===== ANIMATIONS RÉDUITES ===== */
+@media (prefers-reduced-motion: reduce) {
+  .product-card,
+  .product-card * {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .product-card:hover .product-image {
+    transform: none !important;
+  }
+}
+
+/* ===== SCROLLBAR (si nécessaire) ===== */
+.product-card::-webkit-scrollbar {
+  display: none !important;
+}
 </style>

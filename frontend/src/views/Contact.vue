@@ -1,6 +1,7 @@
 <!-- frontend/src/views/Contact.vue - Version COMPLÈTE ET CORRIGÉE -->
 <template>
-  <div class="contact-page" :class="{ 'dark-theme': isDarkMode }">
+  <div class="contact-page" :class="{ 'dark-mode': isDarkMode }">
+
 
     <!-- ===== MAIN CONTENT ===== -->
     <main class="contact-main">
@@ -1582,5 +1583,48 @@ select {
     width: 90%;
     padding: 10px 16px;
   }
+}
+/* Support pour la classe dark-mode standard */
+.contact-page.dark-mode {
+  --white: #1e293b;
+  --gray-50: #0f172a;
+  --gray-100: #1e293b;
+  --gray-200: #334155;
+  --gray-300: #475569;
+  --gray-400: #64748b;
+  --gray-500: #94a3b8;
+  --gray-600: #cbd5e1;
+  --gray-700: #e2e8f0;
+  --gray-800: #f1f5f9;
+  --teal: #2dd4bf;
+  --teal-soft: rgba(45, 212, 191, 0.1);
+  --red: #f87171;
+  --red-soft: rgba(248, 113, 113, 0.1);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.contact-page.dark-mode .contact-main {
+  background: #161627;
+}
+
+.contact-page.dark-mode .info-card,
+.contact-page.dark-mode .social-section,
+.contact-page.dark-mode .form-container,
+.contact-page.dark-mode .map-container {
+  background: #1e1e30;
+  border-color: #2a2a40;
+}
+
+.contact-page.dark-mode input,
+.contact-page.dark-mode select,
+.contact-page.dark-mode textarea {
+  background: #121220;
+  border-color: #2a2a40;
+  color: #f1f5f9;
+}
+
+.contact-page.dark-mode .map-overlay {
+  background: rgba(30, 30, 48, 0.95);
 }
 </style>

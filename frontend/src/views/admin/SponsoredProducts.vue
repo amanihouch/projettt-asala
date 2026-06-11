@@ -1,12 +1,9 @@
 <!-- src/views/admin/SponsoredProducts.vue -->
 <template>
-  <div class="admin-sponsored" :class="{ 'dark-mode': isDarkMode }" dir="rtl">
+  <div class="admin-sponsored" dir="rtl">
     <div class="admin-header">
       <h2 class="page-title">✨ إدارة المنتجات المميزة</h2>
       <p class="page-subtitle">اختر المنتجات من منشورات البائعين لتظهر في الصفحة الرئيسية</p>
-      <button class="theme-toggle" @click="toggleDarkMode">
-        <span class="theme-icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
-      </button>
     </div>
 
     <!-- Stats Cards -->
@@ -114,7 +111,7 @@
               <span class="amount">{{ formatPrice(getSafePrice(product)) }}</span>
             </div>
 
-            <!-- VENDOR SECTION -->
+            <!-- VENDOR SECTION - CORRIGÉ -->
             <div class="vendor-section" @click.stop="goToVendorProfile(product.vendorId)">
               <div class="vendor-avatar">
                 <img
@@ -172,7 +169,7 @@
 
     <!-- Toast Notification -->
     <transition name="toast">
-      <div v-if="toast.show" class="toast-notification" :class="[toast.type, { 'dark-mode': isDarkMode }]">
+      <div v-if="toast.show" class="toast-notification" :class="toast.type">
         <span class="toast-icon">{{ toast.icon }}</span>
         <span class="toast-message">{{ toast.message }}</span>
       </div>
@@ -181,27 +178,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../../stores/auth'
-import { useThemeStore } from '../../stores/theme'
+import { ref, computed, onMounted } from 'vue'
 import { usePostStore } from '../../stores/postStore'
 import { useProductStore } from '../../stores/productStore'
 import { useVendorStore } from '../../stores/vendorStore'
 
-const router = useRouter()
-const authStore = useAuthStore()
-const themeStore = useThemeStore()
 const postStore = usePostStore()
 const productStore = useProductStore()
 const vendorStore = useVendorStore()
-
-// ===== DARK MODE - Synchronized with global theme store =====
-const isDarkMode = computed(() => themeStore.isDarkMode)
-
-const toggleDarkMode = () => {
-  themeStore.toggleTheme()
-}
 
 // ===== STATE =====
 const activeTab = ref('all')
@@ -221,7 +205,9 @@ const toast = ref({
 // ===== FONCTIONS DE SÉCURITÉ =====
 const getSafeName = (product) => {
   if (!product) return 'منتج'
-  return product.productName || product.name || 'منتج حرفي'
+  return product.productName ||
+         product.name ||
+         'منتج حرفي'
 }
 
 const getSafePrice = (product) => {
@@ -232,31 +218,42 @@ const getSafePrice = (product) => {
 
 const getSafeImage = (product) => {
   if (!product) return 'https://via.placeholder.com/300?text=لا+توجد+صورة'
-  return product.images?.[0] || product.image || 'https://via.placeholder.com/300?text=منتج'
+  return product.images?.[0] ||
+         product.image ||
+         'https://via.placeholder.com/300?text=منتج'
 }
 
 const getSafeVendorName = (product) => {
   if (!product) return 'بائع'
 
+  // Essayer de récupérer depuis les données du vendeur
   if (product.vendorId && vendorsData.value[product.vendorId]) {
     return vendorsData.value[product.vendorId].shopName ||
            vendorsData.value[product.vendorId].name ||
            'بائع'
   }
 
-  return product.vendorName || product.vendor?.name || product.vendor?.shopName || 'بائع'
+  // Fallback aux données du produit
+  return product.vendorName ||
+         product.vendor?.name ||
+         product.vendor?.shopName ||
+         'بائع'
 }
 
 const getSafeVendorAvatar = (product) => {
   if (!product) return 'https://i.pravatar.cc/150'
 
+  // Essayer de récupérer depuis les données du vendeur
   if (product.vendorId && vendorsData.value[product.vendorId]) {
     return vendorsData.value[product.vendorId].avatar ||
            vendorsData.value[product.vendorId].userAvatar ||
            `https://i.pravatar.cc/150?u=${product.vendorId}`
   }
 
-  return product.vendorAvatar || product.vendor?.avatar || `https://i.pravatar.cc/150?u=${product.vendorId || Date.now()}`
+  // Fallback aux données du produit
+  return product.vendorAvatar ||
+         product.vendor?.avatar ||
+         `https://i.pravatar.cc/150?u=${product.vendorId || Date.now()}`
 }
 
 const getSafeDescription = (product) => {
@@ -279,6 +276,7 @@ const sponsoredCount = computed(() => sponsoredProducts.value.length)
 const displayedProducts = computed(() => {
   let products = activeTab.value === 'all' ? allProducts.value : sponsoredProducts.value
 
+  // Filtre par recherche
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     products = products.filter(p =>
@@ -287,6 +285,7 @@ const displayedProducts = computed(() => {
     )
   }
 
+  // Filtre par vendeur
   if (vendorFilter.value) {
     products = products.filter(p => p.vendorId === parseInt(vendorFilter.value))
   }
@@ -345,9 +344,23 @@ const resetFilters = () => {
 }
 
 const showNotification = (message, type = 'success') => {
-  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' }
-  toast.value = { show: true, message, type, icon: icons[type] }
-  setTimeout(() => (toast.value.show = false), 3000)
+  const icons = {
+    success: '✅',
+    error: '❌',
+    info: 'ℹ️',
+    warning: '⚠️',
+  }
+
+  toast.value = {
+    show: true,
+    message,
+    type,
+    icon: icons[type],
+  }
+
+  setTimeout(() => {
+    toast.value.show = false
+  }, 3000)
 }
 
 // ===== CHARGEMENT DES DONNÉES DES VENDEURS =====
@@ -368,22 +381,27 @@ const extractVendors = async () => {
   const vendorsMap = new Map()
   const vendorIds = new Set()
 
+  // Collecter tous les IDs de vendeurs uniques
   allProducts.value.forEach(product => {
     if (product.vendorId) {
       vendorIds.add(product.vendorId)
     }
   })
 
+  // Charger les données de chaque vendeur
   for (const vendorId of vendorIds) {
     await loadVendorData(vendorId)
   }
 
+  // Construire la liste des vendeurs pour le filtre
   allProducts.value.forEach(product => {
     if (product.vendorId && !vendorsMap.has(product.vendorId)) {
       const vendorData = vendorsData.value[product.vendorId]
       vendorsMap.set(product.vendorId, {
         id: product.vendorId,
-        name: vendorData?.shopName || vendorData?.name || getSafeVendorName(product)
+        name: vendorData?.shopName ||
+              vendorData?.name ||
+              getSafeVendorName(product)
       })
     }
   })
@@ -395,8 +413,10 @@ const extractVendors = async () => {
 const loadProducts = async () => {
   loading.value = true
   try {
+    // Charger les posts
     await postStore.fetchFeed()
 
+    // Extraire les produits des posts avec validation
     allProducts.value = (postStore.posts || [])
       .filter(post => post && post.id)
       .map(post => ({
@@ -418,7 +438,10 @@ const loadProducts = async () => {
 
     console.log('📦 Produits chargés:', allProducts.value.length)
 
+    // Extraire et charger les données des vendeurs
     await extractVendors()
+
+    // Charger les produits sponsorisés
     await productStore.fetchSponsoredProducts()
 
     console.log('✅ Vendeurs trouvés:', vendors.value.length)
@@ -431,23 +454,8 @@ const loadProducts = async () => {
   }
 }
 
-// ===== WATCHERS =====
-watch(isDarkMode, (newValue) => {
-  if (newValue) {
-    document.documentElement.classList.add('dark-mode')
-    document.body.classList.add('dark-mode')
-  } else {
-    document.documentElement.classList.remove('dark-mode')
-    document.body.classList.remove('dark-mode')
-  }
-}, { immediate: true })
-
 // ===== LIFECYCLE =====
 onMounted(() => {
-  if (!authStore.isAuthenticated || authStore.userRole !== 'admin') {
-    router.push('/login')
-    return
-  }
   loadProducts()
 })
 </script>
@@ -460,65 +468,6 @@ onMounted(() => {
   font-family: 'Cairo', sans-serif;
   background: #f8fafc;
   min-height: 100vh;
-  transition: all 0.3s ease;
-}
-
-/* Dark mode styles */
-.admin-sponsored.dark-mode {
-  background: #0f172a;
-}
-
-.admin-header {
-  margin-bottom: 30px;
-  position: relative;
-}
-
-.theme-toggle {
-  position: absolute;
-  top: 0;
-  left: 0;
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1.2rem;
-  z-index: 10;
-}
-
-.dark-mode .theme-toggle {
-  background: #1e293b;
-  border-color: #334155;
-  color: #f1f5f9;
-}
-
-.theme-toggle:hover {
-  transform: rotate(15deg);
-  border-color: #08717f;
-}
-
-.page-title {
-  font-size: 2rem;
-  color: #1e293b;
-  margin-bottom: 5px;
-}
-
-.dark-mode .page-title {
-  color: #f1f5f9;
-}
-
-.page-subtitle {
-  color: #64748b;
-  font-size: 1rem;
-}
-
-.dark-mode .page-subtitle {
-  color: #94a3b8;
 }
 
 /* Stats Grid */
@@ -541,19 +490,9 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
-.dark-mode .stat-card {
-  background: #1e293b;
-  border-color: #334155;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-
 .stat-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
-}
-
-.dark-mode .stat-card:hover {
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
 }
 
 .stat-icon {
@@ -579,18 +518,10 @@ onMounted(() => {
   margin-bottom: 4px;
 }
 
-.dark-mode .stat-value {
-  color: #f1f5f9;
-}
-
 .stat-label {
   color: #64748b;
   font-size: 0.9rem;
   font-weight: 500;
-}
-
-.dark-mode .stat-label {
-  color: #94a3b8;
 }
 
 /* Tabs */
@@ -602,11 +533,6 @@ onMounted(() => {
   padding: 6px;
   border-radius: 14px;
   border: 1px solid #e2e8f0;
-}
-
-.dark-mode .tabs-container {
-  background: #1e293b;
-  border-color: #334155;
 }
 
 .tab-btn {
@@ -626,18 +552,10 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
-.dark-mode .tab-btn {
-  color: #94a3b8;
-}
-
 .tab-btn.active {
   background: linear-gradient(135deg, #08717f, #065a69);
   color: white;
   box-shadow: 0 4px 12px rgba(8, 113, 127, 0.2);
-}
-
-.dark-mode .tab-btn.active {
-  background: linear-gradient(135deg, #0a94a6, #08717f);
 }
 
 .tab-count {
@@ -667,23 +585,9 @@ onMounted(() => {
   animation: spin 1s linear infinite;
 }
 
-.dark-mode .modern-spinner {
-  border-color: #334155;
-  border-top-color: #0a94a6;
-  border-right-color: #ff1744;
-}
-
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}
-
-.loading-container p {
-  color: #64748b;
-}
-
-.dark-mode .loading-container p {
-  color: #94a3b8;
 }
 
 /* Filters Bar */
@@ -706,19 +610,9 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
-.dark-mode .search-wrapper {
-  background: #1e293b;
-  border-color: #334155;
-}
-
 .search-wrapper:focus-within {
   border-color: #08717f;
   box-shadow: 0 0 0 3px rgba(8, 113, 127, 0.1);
-}
-
-.dark-mode .search-wrapper:focus-within {
-  border-color: #0a94a6;
-  box-shadow: 0 0 0 3px rgba(10, 148, 166, 0.2);
 }
 
 .search-icon {
@@ -734,14 +628,6 @@ onMounted(() => {
   background: transparent;
   font-size: 0.95rem;
   color: #1e293b;
-}
-
-.dark-mode .search-input {
-  color: #f1f5f9;
-}
-
-.dark-mode .search-input::placeholder {
-  color: #64748b;
 }
 
 .search-input:focus {
@@ -762,10 +648,6 @@ onMounted(() => {
   color: #d40025;
 }
 
-.dark-mode .clear-search:hover {
-  color: #ff1744;
-}
-
 .filter-wrapper {
   flex: 1;
   min-width: 200px;
@@ -783,26 +665,10 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
-.dark-mode .filter-select {
-  background: #1e293b;
-  border-color: #334155;
-  color: #f1f5f9;
-}
-
 .filter-select:focus {
   outline: none;
   border-color: #08717f;
   box-shadow: 0 0 0 3px rgba(8, 113, 127, 0.1);
-}
-
-.dark-mode .filter-select:focus {
-  border-color: #0a94a6;
-  box-shadow: 0 0 0 3px rgba(10, 148, 166, 0.2);
-}
-
-.dark-mode .filter-select option {
-  background: #1e293b;
-  color: #f1f5f9;
 }
 
 /* Products Grid */
@@ -824,29 +690,14 @@ onMounted(() => {
   position: relative;
 }
 
-.dark-mode .product-card {
-  background: #1e293b;
-  border-color: #334155;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-
 .product-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
 }
 
-.dark-mode .product-card:hover {
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
 .product-card.sponsored {
   border: 2px solid #fbbf24;
   box-shadow: 0 8px 30px rgba(251, 191, 36, 0.15);
-}
-
-.dark-mode .product-card.sponsored {
-  border-color: #fbbf24;
-  box-shadow: 0 8px 30px rgba(251, 191, 36, 0.2);
 }
 
 /* Card Image */
@@ -895,10 +746,6 @@ onMounted(() => {
   line-height: 1.4;
 }
 
-.dark-mode .product-title {
-  color: #f1f5f9;
-}
-
 .price-tag {
   display: inline-flex;
   align-items: baseline;
@@ -909,18 +756,10 @@ onMounted(() => {
   gap: 4px;
 }
 
-.dark-mode .price-tag {
-  background: #0f172a;
-}
-
 .currency {
   font-size: 0.9rem;
   color: #64748b;
   font-weight: 600;
-}
-
-.dark-mode .currency {
-  color: #94a3b8;
 }
 
 .amount {
@@ -929,11 +768,7 @@ onMounted(() => {
   color: #d40025;
 }
 
-.dark-mode .amount {
-  color: #ff1744;
-}
-
-/* Vendor Section */
+/* Vendor Section - CORRIGÉ */
 .vendor-section {
   display: flex;
   align-items: center;
@@ -948,19 +783,9 @@ onMounted(() => {
   border-radius: 8px;
 }
 
-.dark-mode .vendor-section {
-  background: #0f172a;
-  border-top-color: #334155;
-  border-bottom-color: #334155;
-}
-
 .vendor-section:hover {
   background: #f0f0f0;
   transform: translateX(-4px);
-}
-
-.dark-mode .vendor-section:hover {
-  background: #334155;
 }
 
 .vendor-avatar {
@@ -971,10 +796,6 @@ onMounted(() => {
   border: 2px solid white;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-right: 8px;
-}
-
-.dark-mode .vendor-avatar {
-  border-color: #1e293b;
 }
 
 .vendor-avatar img {
@@ -996,10 +817,6 @@ onMounted(() => {
   font-weight: 700;
 }
 
-.dark-mode .vendor-name {
-  color: #f1f5f9;
-}
-
 .verified-badge {
   width: 22px;
   height: 22px;
@@ -1013,10 +830,6 @@ onMounted(() => {
   font-weight: 700;
 }
 
-.dark-mode .verified-badge {
-  background: #0a94a6;
-}
-
 .view-profile {
   color: #08717f;
   font-size: 0.85rem;
@@ -1025,10 +838,6 @@ onMounted(() => {
   transition: opacity 0.3s ease;
   margin-left: 8px;
   white-space: nowrap;
-}
-
-.dark-mode .view-profile {
-  color: #0a94a6;
 }
 
 .vendor-section:hover .view-profile {
@@ -1043,20 +852,11 @@ onMounted(() => {
   margin: 0;
 }
 
-.dark-mode .product-description {
-  color: #94a3b8;
-}
-
 /* Card Actions */
 .card-actions {
   padding: 20px;
   border-top: 1px solid #f1f5f9;
   background: #fafafa;
-}
-
-.dark-mode .card-actions {
-  background: #0f172a;
-  border-top-color: #334155;
 }
 
 .action-btn {
@@ -1080,10 +880,6 @@ onMounted(() => {
   box-shadow: 0 4px 15px rgba(8, 113, 127, 0.2);
 }
 
-.dark-mode .action-btn.sponsor {
-  background: linear-gradient(135deg, #0a94a6, #08717f);
-}
-
 .action-btn.sponsor:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(8, 113, 127, 0.3);
@@ -1094,20 +890,10 @@ onMounted(() => {
   color: #64748b;
 }
 
-.dark-mode .action-btn.unsponsor {
-  background: #334155;
-  color: #94a3b8;
-}
-
 .action-btn.unsponsor:hover {
   background: #fee2e2;
   color: #d40025;
   transform: translateY(-2px);
-}
-
-.dark-mode .action-btn.unsponsor:hover {
-  background: rgba(255, 23, 68, 0.2);
-  color: #ff1744;
 }
 
 .btn-icon {
@@ -1123,11 +909,6 @@ onMounted(() => {
   border: 2px dashed #e2e8f0;
 }
 
-.dark-mode .empty-state {
-  background: #1e293b;
-  border-color: #334155;
-}
-
 .empty-icon {
   font-size: 5rem;
   opacity: 0.3;
@@ -1141,17 +922,9 @@ onMounted(() => {
   margin-bottom: 10px;
 }
 
-.dark-mode .empty-state h3 {
-  color: #f1f5f9;
-}
-
 .empty-state p {
   color: #64748b;
   margin-bottom: 20px;
-}
-
-.dark-mode .empty-state p {
-  color: #94a3b8;
 }
 
 .reset-btn {
@@ -1166,19 +939,10 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
-.dark-mode .reset-btn {
-  background: #0a94a6;
-}
-
 .reset-btn:hover {
   background: #065a69;
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(8, 113, 127, 0.3);
-}
-
-.dark-mode .reset-btn:hover {
-  background: #08717f;
-  box-shadow: 0 5px 15px rgba(10, 148, 166, 0.4);
 }
 
 /* Toast */
@@ -1199,11 +963,6 @@ onMounted(() => {
   animation: slideInRight 0.3s ease;
 }
 
-.toast-notification.dark-mode {
-  background: #1e293b;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-}
-
 .toast-notification.success {
   border-right-color: #10b981;
 }
@@ -1214,10 +973,6 @@ onMounted(() => {
 
 .toast-notification.info {
   border-right-color: #08717f;
-}
-
-.dark-mode .toast-message {
-  color: #f1f5f9;
 }
 
 @keyframes slideInRight {
@@ -1254,14 +1009,6 @@ onMounted(() => {
     padding: 20px;
   }
 
-  .page-header {
-    margin-top: 50px;
-  }
-
-  .theme-toggle {
-    top: -40px;
-  }
-
   .stats-grid {
     grid-template-columns: 1fr;
   }
@@ -1292,22 +1039,5 @@ onMounted(() => {
     width: calc(100% - 40px);
     right: 20px;
   }
-}
-</style>
-
-<style>
-/* Global dark mode styles */
-html.dark-mode {
-  background-color: #0f172a;
-}
-
-html.dark-mode body {
-  background-color: #0f172a;
-  color: #f1f5f9;
-}
-
-/* Smooth transitions for dark mode */
-* {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 </style>

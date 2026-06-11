@@ -748,4 +748,133 @@ html.dark-mode body {
 * {
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
+/* ===== DARK MODE UNIFORMISÉ POUR ADMIN/POST EDIT ===== */
+/* Ajoutez à la fin du <style scoped> */
+
+.admin-page.dark-mode {
+  background: #161627 !important;
+}
+
+/* Header */
+.dark-mode .page-title {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .back-btn {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .back-btn:hover {
+  border-color: #2dd4bf !important;
+  color: #2dd4bf !important;
+}
+
+/* Form */
+.dark-mode .edit-form {
+  background: #1e1e30 !important;
+  border: 1px solid #2a2a40 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .form-label {
+  color: #cbd5e1 !important;
+}
+
+/* Inputs */
+.dark-mode .form-input,
+.dark-mode .form-select,
+.dark-mode .form-textarea {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .form-input:focus,
+.dark-mode .form-select:focus,
+.dark-mode .form-textarea:focus {
+  border-color: #2dd4bf !important;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15) !important;
+}
+
+.dark-mode .form-input::placeholder,
+.dark-mode .form-textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Validation Error */
+.dark-mode .validation-error {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #f87171 !important;
+}
+
+/* Colors Grid */
+.dark-mode .color-option {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .color-option:hover {
+  border-color: #2dd4bf !important;
+}
+
+.dark-mode .color-option.selected {
+  background: #2dd4bf !important;
+  border-color: #2dd4bf !important;
+  color: #161627 !important;
+}
+
+.dark-mode .color-dot {
+  border-color: #1e1e30 !important;
+}
+
+/* Checkbox */
+.dark-mode .form-checkbox label {
+  color: #cbd5e1 !important;
+}
+
+/* Actions */
+.dark-mode .form-actions {
+  border-top-color: #2a2a40 !important;
+}
+
+.dark-mode .btn-cancel {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .btn-cancel:hover {
+  background: #3a3a55 !important;
+}
+
+/* Loading */
+.dark-mode .loading-state p {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .spinner {
+  border-color: #2a2a40 !important;
+  border-top-color: #2dd4bf !important;
+}
+
+/* Not Found */
+.dark-mode .not-found {
+  background: #1e1e30 !important;
+}
+
+.dark-mode .not-found h2 {
+  color: #f1f5f9 !important;
+}
+
+/* Toast */
+.dark-mode .toast-notification {
+  background: #1e1e30 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9 !important;
+}
 </style>

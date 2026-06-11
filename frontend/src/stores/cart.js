@@ -1,4 +1,4 @@
-// frontend/src/stores/cart.js - VERSION FINALE COMPLÈTE
+// frontend/src/stores/cart.js - VERSION COMPLÈTE AVEC EXPOSITION DES GETTERS
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { useAuthStore } from './auth';
@@ -10,7 +10,54 @@ export const useCartStore = defineStore('cart', () => {
   const authStore = useAuthStore();
   const syncing = ref(false);
 
-  // ===== ✅ TOUJOURS RETOURNER UN NOMBRE =====
+  // ===== GESTION VENDEUR UNIQUE =====
+  const currentVendorId = ref(null);
+  const currentVendorName = ref(null);
+
+  // ✅ Méthode GETTER pour récupérer le vendeur
+  const getCartVendor = () => {
+    if (items.value.length === 0) return null;
+    const firstItem = items.value[0];
+    return {
+      vendorId: firstItem.vendorId || firstItem.vendor_id,
+      vendorName: firstItem.vendorName || firstItem.vendor_name
+    };
+  };
+
+  const updateCartVendorInfo = () => {
+    if (items.value.length === 0) {
+      currentVendorId.value = null;
+      currentVendorName.value = null;
+    } else {
+      const vendor = getCartVendor();
+      currentVendorId.value = vendor.vendorId;
+      currentVendorName.value = vendor.vendorName;
+    }
+    if (currentVendorId.value) {
+      localStorage.setItem('cartVendorId', currentVendorId.value);
+      localStorage.setItem('cartVendorName', currentVendorName.value);
+    } else {
+      localStorage.removeItem('cartVendorId');
+      localStorage.removeItem('cartVendorName');
+    }
+  };
+
+  const canAddItem = (product) => {
+    const newVendorId = product.vendorId || product.vendor_id;
+    if (!newVendorId) return { allowed: true, reason: null };
+
+    if (items.value.length === 0) return { allowed: true, reason: null };
+
+    const currentId = currentVendorId.value;
+    if (currentId && parseInt(currentId) !== parseInt(newVendorId)) {
+      return {
+        allowed: false,
+        reason: `⚠️ لا يمكنك إضافة منتجات من "${currentVendorName.value}" و "${product.vendorName || 'بائع آخر'}" معاً. الرجاء إفراغ السلة أولاً.`
+      };
+    }
+    return { allowed: true, reason: null };
+  };
+
   const getItemId = (item) => {
     if (!item) return null;
     let id = item.id || item.productId || item.product_id;
@@ -18,14 +65,18 @@ export const useCartStore = defineStore('cart', () => {
     return parseInt(id, 10);
   };
 
-  // ===== NOTIFICATION CHANGEMENT QUANTITÉ =====
   const notifyQuantityChange = (productId, change) => {
     window.dispatchEvent(new CustomEvent('cartQuantityChanged', {
       detail: { productId: parseInt(productId), change }
     }));
   };
 
-  // ===== STORAGE =====
+  const notifyVendorConflict = (reason) => {
+    window.dispatchEvent(new CustomEvent('cartVendorConflict', {
+      detail: { reason }
+    }));
+  };
+
   const cleanupStorage = () => {
     try {
       const orders = JSON.parse(localStorage.getItem('orders') || '[]');
@@ -57,7 +108,15 @@ export const useCartStore = defineStore('cart', () => {
           items.value = parsed.filter(item => getItemId(item) !== null);
         }
       }
-      console.log('✅ Panier chargé:', items.value.length);
+      const savedVendorId = localStorage.getItem('cartVendorId');
+      const savedVendorName = localStorage.getItem('cartVendorName');
+      if (savedVendorId && items.value.length > 0) {
+        currentVendorId.value = savedVendorId;
+        currentVendorName.value = savedVendorName;
+      } else {
+        updateCartVendorInfo();
+      }
+      console.log('✅ Panier chargé:', items.value.length, 'Vendeur:', currentVendorName.value);
     } catch (e) {
       items.value = [];
     }
@@ -68,12 +127,12 @@ export const useCartStore = defineStore('cart', () => {
       const valid = items.value.filter(item => getItemId(item) !== null);
       items.value = valid;
       localStorage.setItem('cart', JSON.stringify(valid.slice(0, 50)));
+      updateCartVendorInfo();
     } catch (e) {
       console.error('❌ Sauvegarde échouée');
     }
   };
 
-  // ===== SYNC BACKEND =====
   const syncWithBackend = async () => {
     if (!authStore.isAuthenticated || syncing.value) return;
     syncing.value = true;
@@ -82,7 +141,8 @@ export const useCartStore = defineStore('cart', () => {
         items: items.value.map(item => ({
           productId: getItemId(item),
           quantity: item.quantity || 1,
-          price: item.price || 0
+          price: item.price || 0,
+          vendorId: item.vendorId || item.vendor_id
         }))
       });
     } catch (e) {} finally {
@@ -102,19 +162,23 @@ export const useCartStore = defineStore('cart', () => {
           price: item.price || 0,
           name: item.name || 'منتج',
           image: item.image || null,
-          vendorName: item.vendorName || 'بائع'
+          vendorName: item.vendorName || 'بائع',
+          vendorId: item.vendorId || item.vendor_id
         }));
         saveToStorage();
       }
     } catch (e) {}
   };
 
-  // ===== GETTERS =====
+  // ===== GETTERS COMPUTED (EXPOSÉS) =====
   const itemCount = computed(() => items.value.reduce((t, i) => t + (i.quantity || 1), 0));
   const totalPrice = computed(() => items.value.reduce((t, i) => t + ((i.price || 0) * (i.quantity || 1)), 0));
   const isEmpty = computed(() => items.value.length === 0);
 
-  // ===== IMAGE =====
+  // ✅ EXPOSER currentVendorId et currentVendorName comme computed
+  const cartVendorId = computed(() => currentVendorId.value);
+  const cartVendorName = computed(() => currentVendorName.value);
+
   const isValidImageUrl = (url) => {
     if (!url || typeof url !== 'string') return false;
     return url.startsWith('http') || url.startsWith('data:image') || url.includes('cloudinary.com');
@@ -128,13 +192,21 @@ export const useCartStore = defineStore('cart', () => {
     return 'https://placehold.co/400x400/08717f/white?text=Produit';
   };
 
-  // ===== ✅ ADD ITEM =====
   const addItem = async (product) => {
     const productId = getItemId(product);
+    const newVendorId = product.vendorId || product.vendor_id;
+    const newVendorName = product.vendorName || product.vendor_name || 'بائع';
 
     if (!productId) {
       console.error('❌ ID manquant');
-      return;
+      return false;
+    }
+
+    const { allowed, reason } = canAddItem(product);
+    if (!allowed) {
+      console.warn('⚠️ Conflit vendeur:', reason);
+      notifyVendorConflict(reason);
+      return false;
     }
 
     const qty = Math.min(product.quantity || 1, 99);
@@ -144,91 +216,87 @@ export const useCartStore = defineStore('cart', () => {
       const oldQty = items.value[existingIndex].quantity || 1;
       items.value[existingIndex].quantity = Math.min(oldQty + qty, 99);
       const addedQty = items.value[existingIndex].quantity - oldQty;
-      console.log('✅ Qté mise à jour:', items.value[existingIndex].quantity);
-      // ✅ Notifier le changement de quantité (ajout au panier = diminution du stock)
       notifyQuantityChange(productId, -addedQty);
     } else {
       items.value.push({
-        id: productId, productId: productId,
+        id: productId,
+        productId: productId,
         name: product.name || product.productName || product.title || 'منتج',
-        price: product.price || 0,
+        price: parseFloat(product.price) || 0,
         image: getProductImage(product),
         quantity: qty,
-        vendorName: product.vendorName || 'بائع',
-        vendorId: product.vendorId || null,
+        vendorName: newVendorName,
+        vendorId: newVendorId,
         unit: product.unit || 'piece',
         color: product.color || null,
         size: product.size || null
       });
-      console.log('✅ Nouvel article:', productId);
-      // ✅ Notifier le changement de quantité
       notifyQuantityChange(productId, -qty);
     }
 
     saveToStorage();
     if (authStore.isAuthenticated) await syncWithBackend();
     isOpen.value = true;
+
+    window.dispatchEvent(new CustomEvent('cart:updated'));
+    return true;
   };
 
-  // ===== ✅ REMOVE ITEM (restaure le stock) =====
   const removeItem = async (productId) => {
     const id = parseInt(productId, 10);
-    console.log('🗑️ Suppression ID:', id);
-
-    if (isNaN(id)) return;
+    if (isNaN(id)) return false;
 
     const index = items.value.findIndex(item => getItemId(item) === id);
-
     if (index !== -1) {
       const removedQty = items.value[index].quantity || 0;
       items.value.splice(index, 1);
       saveToStorage();
       if (authStore.isAuthenticated) await syncWithBackend();
-      console.log('✅ Supprimé');
-      // ✅ Notifier : restauration du stock (quantité positive)
       notifyQuantityChange(id, removedQty);
-    } else {
-      console.warn('⚠️ Non trouvé:', id);
+      window.dispatchEvent(new CustomEvent('cart:updated'));
+      return true;
     }
+    return false;
   };
 
-  // ===== ✅ UPDATE QUANTITY =====
   const updateQuantity = async (productId, newQuantity) => {
     const id = parseInt(productId, 10);
-    if (isNaN(id)) return;
+    if (isNaN(id)) return false;
 
     const index = items.value.findIndex(item => getItemId(item) === id);
-
     if (index !== -1) {
       const oldQty = items.value[index].quantity || 1;
-      const qtyDiff = oldQty - newQuantity; // positif si diminution, négatif si augmentation
+      const qtyDiff = oldQty - newQuantity;
 
       if (newQuantity <= 0) {
         await removeItem(id);
+        return true;
       } else {
         items.value[index].quantity = Math.min(newQuantity, 99);
         saveToStorage();
         if (authStore.isAuthenticated) await syncWithBackend();
-        console.log('✅ Qté:', oldQty, '→', items.value[index].quantity);
-        // ✅ Notifier le changement (qtyDiff positif = rendu au stock, négatif = pris du stock)
         notifyQuantityChange(id, qtyDiff);
+        window.dispatchEvent(new CustomEvent('cart:updated'));
+        return true;
       }
     }
+    return false;
   };
 
-  // ===== AUTRES =====
   const clearCart = async () => {
-    // Restaurer le stock pour tous les articles avant de vider
     for (const item of items.value) {
       const id = getItemId(item);
       if (id !== null) {
-        notifyQuantityChange(id, item.quantity || 0); // Restaure tout
+        notifyQuantityChange(id, item.quantity || 0);
       }
     }
     items.value = [];
+    currentVendorId.value = null;
+    currentVendorName.value = null;
     saveToStorage();
     if (authStore.isAuthenticated) await syncWithBackend();
-    console.log('🗑️ Panier vidé (stock restauré)');
+    window.dispatchEvent(new CustomEvent('cart:updated'));
+    console.log('🗑️ Panier vidé');
   };
 
   const toggleCart = () => { isOpen.value = !isOpen.value; };
@@ -246,17 +314,36 @@ export const useCartStore = defineStore('cart', () => {
     }
   };
 
-  // ===== INIT =====
   cleanupStorage();
   loadFromStorage();
   if (authStore.isAuthenticated) loadFromBackend();
 
+  // ✅ EXPORTER TOUT
   return {
-    items, isOpen, syncing: computed(() => syncing.value),
-    itemCount, totalPrice, isEmpty,
-    addItem, removeItem, updateQuantity, clearCart,
-    toggleCart, closeCart, openCart,
-    syncWithBackend, loadFromBackend, loadFromStorage, saveToStorage,
-    getItemId, saveOrder
+    items,
+    isOpen,
+    syncing: computed(() => syncing.value),
+    itemCount,
+    totalPrice,
+    isEmpty,
+    // ✅ IMPORTANT: Exposer currentVendorId et currentVendorName
+    currentVendorId: cartVendorId,
+    currentVendorName: cartVendorName,
+    // ✅ Exposer la méthode getCartVendor
+    getCartVendor,
+    addItem,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    toggleCart,
+    closeCart,
+    openCart,
+    syncWithBackend,
+    loadFromBackend,
+    loadFromStorage,
+    saveToStorage,
+    getItemId,
+    saveOrder,
+    canAddItem
   };
 });

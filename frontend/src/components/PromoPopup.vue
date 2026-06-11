@@ -529,4 +529,413 @@ const remindLater = () => {
     width: 100%;
   }
 }
+/* ============================================
+   📱 PROMO POPUP - DESIGN MOBILE COMPLET
+   Traditionnel Tunisien • Élégant • WAAW
+============================================ */
+
+/* ----- MOBILE (max-width: 768px) ----- */
+@media (max-width: 768px) {
+
+  /* ===== OVERLAY ===== */
+  .promo-popup-overlay {
+    padding: 12px !important;
+    align-items: center !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+  }
+
+  /* ===== CONTAINER ===== */
+  .promo-popup-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-radius: 24px !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
+    animation: popupMobileIn 0.4s cubic-bezier(0.34, 1.2, 0.64, 1) !important;
+  }
+
+  @keyframes popupMobileIn {
+    from {
+      opacity: 0;
+      transform: scale(0.92) translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  /* ===== TRADITIONAL BACKGROUND ===== */
+  .traditional-bg {
+    min-height: 480px !important;
+    border-radius: 24px !important;
+    overflow: hidden !important;
+  }
+
+  .bg-image {
+    transform: scale(1.05) !important;
+    transition: transform 6s ease !important;
+  }
+
+  .promo-popup-container:active .bg-image {
+    transform: scale(1.1) !important;
+  }
+
+  /* ===== IMAGE OVERLAY ===== */
+  .image-overlay {
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.25) 0%,
+      rgba(0, 0, 0, 0.1) 25%,
+      rgba(0, 0, 0, 0.15) 50%,
+      rgba(0, 0, 0, 0.5) 100%
+    ) !important;
+  }
+
+  /* ===== CONTENT OVERLAY ===== */
+  .content-overlay {
+    min-height: 480px !important;
+    padding: 20px 16px 24px !important;
+  }
+
+  /* ===== CLOSE BUTTON ===== */
+  .close-btn {
+    top: 12px !important;
+    left: 12px !important;
+    width: 36px !important;
+    height: 36px !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(210, 180, 140, 0.4) !important;
+  }
+
+  .close-btn svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .close-btn:active {
+    background: rgba(200, 160, 120, 0.4) !important;
+    transform: rotate(90deg) scale(0.9) !important;
+  }
+
+  /* ===== ARTISAN BADGE ===== */
+  .artisan-badge {
+    margin: 32px auto 16px !important;
+    padding: 7px 18px !important;
+    font-size: 13px !important;
+    gap: 8px !important;
+    border-radius: 40px !important;
+    background: rgba(139, 94, 60, 0.3) !important;
+  }
+
+  .badge-icon {
+    font-size: 14px !important;
+  }
+
+  /* ===== MAIN TITLE ===== */
+  .main-title {
+    font-size: 2rem !important;
+    margin: 0 0 10px !important;
+    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.4) !important;
+    line-height: 1.2 !important;
+  }
+
+  /* ===== SUBTITLE ===== */
+  .subtitle {
+    font-size: 15px !important;
+    margin: 0 0 20px !important;
+    color: #f0d5b5 !important;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+    padding: 0 8px !important;
+  }
+
+  /* ===== OFFERS MINI LIST ===== */
+  .offers-mini-list {
+    gap: 8px !important;
+    margin-bottom: 24px !important;
+  }
+
+  .offer-chip {
+    padding: 12px 14px !important;
+    border-radius: 40px !important;
+    gap: 10px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(210, 180, 140, 0.25) !important;
+    min-height: 48px !important;
+    cursor: pointer !important;
+  }
+
+  .offer-chip:active {
+    background: rgba(210, 180, 140, 0.25) !important;
+    border-color: #d2b48c !important;
+    transform: scale(0.97) !important;
+  }
+
+  .chip-icon {
+    font-size: 18px !important;
+  }
+
+  .chip-text {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+  }
+
+  .chip-arrow {
+    font-size: 16px !important;
+  }
+
+  /* ===== ACTION BUTTONS ===== */
+  .action-buttons {
+    flex-direction: column !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100% !important;
+    padding: 14px 20px !important;
+    font-size: 16px !important;
+    border-radius: 40px !important;
+    min-height: 50px !important;
+    font-weight: 700 !important;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #8b5e3c, #6b4226) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+    gap: 10px !important;
+  }
+
+  .btn-primary:active {
+    transform: scale(0.96) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    background: linear-gradient(135deg, #7a5030, #5a3520) !important;
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(210, 180, 140, 0.3) !important;
+    color: #f5e6d3 !important;
+    gap: 8px !important;
+  }
+
+  .btn-secondary:active {
+    background: rgba(210, 180, 140, 0.2) !important;
+    border-color: #d2b48c !important;
+    transform: scale(0.96) !important;
+  }
+
+  .btn-primary svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  /* ===== FOOTER TEXT ===== */
+  .footer-text {
+    font-size: 12px !important;
+    color: #d4c4b0 !important;
+    opacity: 0.8 !important;
+    letter-spacing: 1px !important;
+  }
+
+  /* ===== TOAST ===== */
+  .traditional-toast {
+    bottom: 20px !important;
+    left: 16px !important;
+    right: 16px !important;
+    transform: none !important;
+    padding: 12px 20px !important;
+    font-size: 14px !important;
+    text-align: center !important;
+    border-radius: 30px !important;
+    white-space: normal !important;
+  }
+}
+
+/* ===== TRÈS PETIT MOBILE (max-width: 380px) ----- */
+@media (max-width: 380px) {
+  .promo-popup-overlay {
+    padding: 8px !important;
+  }
+
+  .promo-popup-container {
+    border-radius: 20px !important;
+  }
+
+  .traditional-bg,
+  .content-overlay {
+    min-height: 420px !important;
+  }
+
+  .main-title {
+    font-size: 1.7rem !important;
+  }
+
+  .subtitle {
+    font-size: 13px !important;
+  }
+
+  .artisan-badge {
+    margin-top: 24px !important;
+    padding: 6px 14px !important;
+    font-size: 12px !important;
+  }
+
+  .offer-chip {
+    padding: 10px 12px !important;
+  }
+
+  .chip-text {
+    font-size: 13px !important;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 12px 16px !important;
+    font-size: 15px !important;
+    min-height: 46px !important;
+    border-radius: 36px !important;
+  }
+
+  .close-btn {
+    top: 8px !important;
+    left: 8px !important;
+    width: 32px !important;
+    height: 32px !important;
+  }
+}
+
+/* ===== GRAND MOBILE (481px - 768px) ----- */
+@media (min-width: 481px) and (max-width: 768px) {
+  .promo-popup-container {
+    max-width: 420px !important;
+    margin: 0 auto !important;
+  }
+}
+
+/* ===== PAYSAGE MOBILE ===== */
+@media (max-width: 768px) and (orientation: landscape) {
+  .promo-popup-overlay {
+    align-items: flex-start !important;
+    padding: 8px !important;
+    overflow-y: auto !important;
+  }
+
+  .promo-popup-container {
+    max-width: 380px !important;
+    margin: 8px auto !important;
+  }
+
+  .traditional-bg,
+  .content-overlay {
+    min-height: 380px !important;
+  }
+
+  .artisan-badge {
+    margin-top: 20px !important;
+  }
+
+  .main-title {
+    font-size: 1.6rem !important;
+  }
+
+  .offers-mini-list {
+    margin-bottom: 16px !important;
+  }
+
+  .action-buttons {
+    gap: 8px !important;
+  }
+}
+
+/* ===== FIX iOS SAFARI ===== */
+@supports (-webkit-touch-callout: none) {
+  .promo-popup-overlay {
+    -webkit-backdrop-filter: blur(10px) !important;
+  }
+
+  .traditional-toast {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* ===== OPTIMISATION TACTILE ===== */
+@media (hover: none) and (pointer: coarse) {
+  .offer-chip,
+  .btn-primary,
+  .btn-secondary,
+  .close-btn {
+    -webkit-tap-highlight-color: transparent !important;
+    user-select: none !important;
+    cursor: pointer !important;
+  }
+
+  /* Désactiver les animations hover sur tactile */
+  .promo-popup-container:hover .bg-image {
+    transform: scale(1.05) !important;
+  }
+
+  .offer-chip:hover {
+    transform: none !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .btn-primary:hover,
+  .btn-secondary:hover {
+    transform: none !important;
+  }
+
+  .close-btn:hover {
+    transform: none !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+  }
+}
+
+/* ===== ANIMATIONS RÉDUITES ===== */
+@media (prefers-reduced-motion: reduce) {
+  .promo-popup-container {
+    animation: none !important;
+  }
+
+  .bg-image {
+    transition: none !important;
+  }
+
+  .close-btn:hover {
+    transition: none !important;
+  }
+
+  .popup-fade-enter-active,
+  .popup-fade-leave-active {
+    transition: opacity 0.2s ease !important;
+  }
+}
+
+/* ===== DARK MODE SUPPORT (si activé globalement) ===== */
+@media (max-width: 768px) {
+  .dark-mode .promo-popup-overlay {
+    background: rgba(0, 0, 0, 0.8) !important;
+  }
+
+  .dark-mode .traditional-bg {
+    background: #1a0f0a !important;
+  }
+
+  .dark-mode .artisan-badge {
+    background: rgba(139, 94, 60, 0.35) !important;
+  }
+
+  .dark-mode .btn-primary {
+    background: linear-gradient(135deg, #6b4226, #4a2a18) !important;
+  }
+}
+
+/* ===== SCROLLBAR (si contenu défilable) ===== */
+.promo-popup-container::-webkit-scrollbar {
+  width: 0 !important;
+  display: none !important;
+}
 </style>

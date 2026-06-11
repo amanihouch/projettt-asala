@@ -272,9 +272,39 @@ const loadVendors = async () => {
   loading.value = true
   try {
     const response = await api.get('/admin/vendors')
+    console.log('📦 Réponse API vendors:', response.data)
+
     if (response.data.success) {
-      vendors.value = response.data.data.data || response.data.data || []
-      console.log('✅ Vendeurs chargés depuis API:', vendors.value.length)
+      // Essayer plusieurs formats possibles
+      let vendorsData = response.data.data?.data ||
+                        response.data.data?.vendors ||
+                        response.data.data ||
+                        response.data.vendors ||
+                        []
+
+      // Si c'est un objet avec des clés numériques, le convertir en tableau
+      if (vendorsData && typeof vendorsData === 'object' && !Array.isArray(vendorsData)) {
+        vendorsData = Object.values(vendorsData)
+      }
+
+      // Formater les données
+      vendors.value = vendorsData.map(vendor => ({
+        ...vendor,
+        id: vendor.id || vendor.vendorId,
+        shopName: vendor.shopName || vendor.shop_name || vendor.name || '—',
+        name: vendor.name || vendor.userName || vendor.user_name || '—',
+        email: vendor.email || vendor.userEmail || vendor.user_email || '—',
+        phone: vendor.phone || vendor.userPhone || vendor.user_phone || null,
+        specialty: vendor.specialty || vendor.speciality || 'other',
+        productsCount: vendor.productsCount || vendor.products_count || 0,
+        followersCount: vendor.followersCount || vendor.followers_count || 0,
+        approved: vendor.approved ?? vendor.status ?? 0,
+        isActive: vendor.isActive !== undefined ? vendor.isActive : true,
+        createdAt: vendor.createdAt || vendor.created_at,
+        avatar: vendor.avatar || vendor.userAvatar || vendor.user_avatar || null
+      }))
+
+      console.log('✅ Vendeurs chargés:', vendors.value.length)
     } else {
       showNotification(response.data.message || 'Erreur chargement', 'error')
     }
@@ -286,40 +316,6 @@ const loadVendors = async () => {
     loading.value = false
   }
 }
-
-const approveVendor = async (vendor) => {
-  try {
-    const response = await api.patch(`/admin/vendors/${vendor.id}/approve`)
-    if (response.data.success) {
-      vendor.approved = 1
-      showNotification(`✅ تم توثيق المتجر "${vendor.shopName}" بنجاح`, 'success')
-      await loadVendors()
-    } else {
-      showNotification(response.data.message || 'Erreur', 'error')
-    }
-  } catch (error) {
-    console.error('❌ Erreur approbation:', error)
-    showNotification(error.response?.data?.message || 'Erreur lors de l\'approbation', 'error')
-  }
-}
-
-const rejectVendor = async (vendor) => {
-  const reason = prompt('الرجاء إدخال سبب الرفض (اختياري):')
-  try {
-    const response = await api.patch(`/admin/vendors/${vendor.id}/reject`, { reason })
-    if (response.data.success) {
-      vendor.approved = 2
-      showNotification(`❌ تم رفض المتجر "${vendor.shopName}"`, 'info')
-      await loadVendors()
-    } else {
-      showNotification(response.data.message || 'Erreur', 'error')
-    }
-  } catch (error) {
-    console.error('❌ Erreur rejet:', error)
-    showNotification(error.response?.data?.message || 'Erreur lors du rejet', 'error')
-  }
-}
-
 const toggleVendorStatus = async (vendor) => {
   try {
     const response = await api.patch(`/admin/vendors/${vendor.id}/toggle-status`)
@@ -980,5 +976,115 @@ onMounted(() => {
     height: 30px;
     font-size: 0.8rem;
   }
+}
+/* ===== DARK MODE UNIFORMISÉ POUR ADMIN/VENDORS.VUE ===== */
+/* Ajoutez à la fin du <style scoped> */
+
+.admin-page.dark-mode {
+  background: #161627 !important;
+}
+
+.dark-mode .page-content {
+  background: #1e1e30 !important;
+  border: 1px solid #2a2a40 !important;
+}
+
+.dark-mode .stat-card {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .stat-value {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .stat-label {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .search-input,
+.dark-mode .filter-select {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .data-table th {
+  background: #121220 !important;
+  color: #e5e7eb !important;
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .data-table td {
+  border-bottom-color: #2a2a40 !important;
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .vendor-shop {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .vendor-email,
+.dark-mode .vendor-phone,
+.dark-mode .vendor-products,
+.dark-mode .vendor-followers,
+.dark-mode .vendor-date {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .specialty-badge {
+  background: #2a2a40 !important;
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .status-badge.verified {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+
+.dark-mode .status-badge.pending {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+}
+
+.dark-mode .status-badge.rejected {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+.dark-mode .action-btn {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .loading-state p {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .spinner {
+  border-color: #2a2a40 !important;
+  border-top-color: #2dd4bf !important;
+  border-right-color: #ef4444 !important;
+}
+
+.dark-mode .empty-state {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .empty-state h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .empty-state p {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .toast-notification {
+  background: #1e1e30 !important;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9 !important;
 }
 </style>

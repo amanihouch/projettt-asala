@@ -1,12 +1,18 @@
 // frontend/src/utils/image.js
+
+// ✅ Importer les images locales en premier
+import defaultAvatarImage from '../assets/default-profil.jpg'
+import defaultCoverImage from '../assets/default-cover.jpg'
+
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '')
 const CLOUDINARY_CLOUD_NAME =
   import.meta.env.VITE_CLOUDINARY_CLOUD_NAME ||
   import.meta.env.CLOUDINARY_CLOUD_NAME ||
   'djfj85bwe'
 
-export const DEFAULT_AVATAR = 'https://i.pravatar.cc/300'
-export const DEFAULT_COVER = 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1200'
+// ✅ Utiliser les images importées
+export const DEFAULT_AVATAR = defaultAvatarImage
+export const DEFAULT_COVER = defaultCoverImage
 export const DEFAULT_PRODUCT_IMAGE = 'https://placehold.co/600x600/08717f/white?text=Produit'
 
 /**

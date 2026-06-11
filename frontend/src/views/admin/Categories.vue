@@ -1665,4 +1665,192 @@ onMounted(() => {
   .form-row-grid { grid-template-columns: 1fr; }
   .category-item { flex-wrap: wrap; }
 }
+/* ===== DARK MODE UNIFORMISÉ POUR ADMIN/CATEGORIES ===== */
+/* Ajoutez à la fin du <style scoped> */
+
+.admin-page.dark-mode {
+  background: #161627 !important;
+}
+
+.dark-mode .page-content {
+  background: #1e1e30 !important;
+  border: 1px solid #2a2a40 !important;
+}
+
+/* Loading */
+.dark-mode .loading-state p {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .spinner {
+  border-color: #2a2a40 !important;
+  border-top-color: #2dd4bf !important;
+}
+
+/* Formulaire */
+.dark-mode .add-category-form {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .form-title {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .form-label {
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .form-input {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .form-input:focus {
+  border-color: #2dd4bf !important;
+}
+
+/* Image Upload */
+.dark-mode .image-upload-area {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .image-upload-area:hover {
+  border-color: #2dd4bf !important;
+  background: #1a1a2e !important;
+}
+
+.dark-mode .upload-placeholder {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .upload-icon svg {
+  stroke: #2dd4bf !important;
+}
+
+/* Upload Progress */
+.dark-mode .upload-progress {
+  background: #2a2a40 !important;
+}
+
+.dark-mode .upload-progress span {
+  color: #2dd4bf !important;
+}
+
+/* Categories Container */
+.dark-mode .category-group {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .category-item {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .category-item:hover {
+  background: #252538 !important;
+  border-color: #2dd4bf !important;
+}
+
+.dark-mode .parent-category {
+  border-bottom-color: #2a2a40 !important;
+}
+
+/* Subcategories */
+.dark-mode .subcategories-list {
+  border-top-color: #2a2a40 !important;
+}
+
+.dark-mode .subcategory-item {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .subcategory-indent {
+  color: #64748b !important;
+}
+
+.dark-mode .subcategory-indent svg {
+  stroke: #64748b !important;
+}
+
+/* Category Info */
+.dark-mode .category-name {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .category-name-fr {
+  color: #94a3b8 !important;
+}
+
+/* Category Stats */
+.dark-mode .category-count {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .subcategory-count {
+  color: #2dd4bf !important;
+}
+
+/* Action Buttons */
+.dark-mode .icon-btn {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+/* Orphan Section */
+.dark-mode .section-title {
+  color: #fbbf24 !important;
+  border-bottom-color: #fbbf24 !important;
+}
+
+/* Empty State */
+.dark-mode .empty-state h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .empty-state p {
+  color: #94a3b8 !important;
+}
+
+/* Modal */
+.dark-mode .modal-container {
+  background: #1e1e30 !important;
+  border: 1px solid #2a2a40 !important;
+}
+
+.dark-mode .modal-header {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .modal-header h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .modal-close {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .btn-cancel {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .btn-cancel:hover {
+  background: #3a3a55 !important;
+}
+
+/* Toast */
+.dark-mode .toast-notification {
+  background: #1e1e30 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9 !important;
+}
 </style>

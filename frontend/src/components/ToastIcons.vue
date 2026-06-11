@@ -747,4 +747,65 @@ defineExpose({
 .notification-toast:hover .toast-progress-bar {
   animation-play-state: paused;
 }
+/* ===== DARK MODE COMPLÉTÉ POUR TOAST NOTIFICATION ===== */
+/* Ajoutez à la fin du <style scoped> */
+
+/* Fond toast */
+.notification-toast.dark-mode {
+  background: rgba(30, 30, 48, 0.95) !important;
+  border-color: #2a2a40 !important;
+  box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(42, 42, 64, 0.5) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* Titre */
+.notification-toast.dark-mode .toast-title {
+  color: #f1f5f9 !important;
+}
+
+/* Message */
+.notification-toast.dark-mode .toast-message {
+  color: #cbd5e1 !important;
+}
+
+/* Close button */
+.notification-toast.dark-mode .toast-close-btn {
+  color: #94a3b8 !important;
+}
+
+.notification-toast.dark-mode .toast-close-btn:hover {
+  color: #f1f5f9 !important;
+  background: #2a2a40 !important;
+}
+
+/* Action button */
+.notification-toast.dark-mode .toast-action-btn {
+  background: #2a2a40 !important;
+  border-color: #2a2a40 !important;
+  color: #cbd5e1 !important;
+}
+
+.notification-toast.dark-mode .toast-action-btn:hover {
+  background: #3a3a55 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Progress bar background */
+.notification-toast.dark-mode .toast-progress {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Bordure accent */
+.notification-toast.dark-mode.toast-success { border-right-color: #34d399 !important; }
+.notification-toast.dark-mode.toast-error { border-right-color: #f87171 !important; }
+.notification-toast.dark-mode.toast-warning { border-right-color: #fbbf24 !important; }
+.notification-toast.dark-mode.toast-info { border-right-color: #60a5fa !important; }
+.notification-toast.dark-mode.toast-cart { border-right-color: #22d3ee !important; }
+.notification-toast.dark-mode.toast-wishlist { border-right-color: #f472b6 !important; }
+.notification-toast.dark-mode.toast-order { border-right-color: #3b82f6 !important; }
+
+/* Hover */
+.notification-toast.dark-mode:hover {
+  box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.6) !important;
+}
 </style>

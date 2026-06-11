@@ -349,4 +349,171 @@ onMounted(() => { loadMessages() })
 .toast-message { color: #1e293b; font-size: 1rem; font-weight: 500; }
 .dark-mode .toast-message { color: #f1f5f9; }
 @media (max-width: 768px) { .contact-messages-page { padding: 20px; } .stats-cards { grid-template-columns: 1fr; } .filters-bar { flex-direction: column; } .message-header { flex-direction: column; align-items: flex-start; } .message-meta { text-align: right; } .modal-footer { flex-direction: column; } }
+/* ===== DARK MODE UNIFORMISÉ POUR ADMIN/CONTACT MESSAGES ===== */
+/* Ajoutez à la fin du <style scoped> */
+
+.contact-messages-page.dark-mode {
+  background: #161627 !important;
+}
+
+.dark-mode .page-content {
+  background: #1e1e30 !important;
+  border: 1px solid #2a2a40 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Stats Cards */
+.dark-mode .stat-card {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .stat-value {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .stat-label {
+  color: #94a3b8 !important;
+}
+
+/* Filters */
+.dark-mode .search-input,
+.dark-mode .status-filter {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .search-input::placeholder {
+  color: #64748b !important;
+}
+
+.dark-mode .search-input:focus,
+.dark-mode .status-filter:focus {
+  border-color: #2dd4bf !important;
+}
+
+/* Messages Cards */
+.dark-mode .message-card {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .message-card.unread {
+  background: rgba(45, 212, 191, 0.05) !important;
+  border-right-color: #2dd4bf !important;
+}
+
+.dark-mode .message-card:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Sender */
+.dark-mode .sender-avatar {
+  background: linear-gradient(135deg, #08717f, #2dd4bf) !important;
+}
+
+.dark-mode .sender-details h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .sender-email {
+  color: #94a3b8 !important;
+}
+
+/* Message */
+.dark-mode .message-subject {
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .message-preview {
+  color: #94a3b8 !important;
+}
+
+/* Loading */
+.dark-mode .loading-state p {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .spinner {
+  border-color: #2a2a40 !important;
+  border-top-color: #2dd4bf !important;
+}
+
+/* Empty */
+.dark-mode .empty-state h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .empty-state p {
+  color: #94a3b8 !important;
+}
+
+/* Modal */
+.dark-mode .modal-content {
+  background: #1e1e30 !important;
+}
+
+.dark-mode .modal-header {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .modal-header h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .close-btn {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .detail-section label {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .detail-section p {
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .message-content {
+  background: #121220 !important;
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .reply-input,
+.dark-mode .reply-textarea {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .reply-input:focus,
+.dark-mode .reply-textarea:focus {
+  border-color: #2dd4bf !important;
+}
+
+.dark-mode .modal-footer {
+  border-top-color: #2a2a40 !important;
+}
+
+.dark-mode .btn-close,
+.dark-mode .btn-cancel {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .btn-close:hover,
+.dark-mode .btn-cancel:hover {
+  background: #3a3a55 !important;
+}
+
+/* Toast */
+.dark-mode .toast-notification {
+  background: #1e1e30 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9 !important;
+}
 </style>

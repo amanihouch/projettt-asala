@@ -725,4 +725,116 @@ onUnmounted(() => {
     font-size: 0.9rem;
   }
 }
+/* ===== DARK MODE COMPLET POUR ORDER CONFIRMATION ===== */
+/* Remplacez tous les styles .dark-mode existants par ceci : */
+
+/* Fond général */
+.order-confirmation-page.dark-mode {
+  background: #161627 !important;
+}
+
+/* Carte de confirmation */
+.order-confirmation-page.dark-mode .confirmation-card {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Titre */
+.order-confirmation-page.dark-mode .confirmation-title {
+  color: #f1f5f9 !important;
+}
+
+/* Message */
+.order-confirmation-page.dark-mode .confirmation-message {
+  color: #94a3b8 !important;
+}
+
+/* Détails commande */
+.order-confirmation-page.dark-mode .order-details {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+}
+
+.order-confirmation-page.dark-mode .detail-row {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.order-confirmation-page.dark-mode .detail-label {
+  color: #94a3b8 !important;
+}
+
+.order-confirmation-page.dark-mode .detail-value {
+  color: #f1f5f9 !important;
+}
+
+/* Livraison */
+.order-confirmation-page.dark-mode .delivery-info {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+}
+
+.order-confirmation-page.dark-mode .delivery-text strong {
+  color: #f1f5f9 !important;
+}
+
+.order-confirmation-page.dark-mode .delivery-text span {
+  color: #94a3b8 !important;
+}
+
+/* Étapes */
+.order-confirmation-page.dark-mode .steps-title {
+  color: #f1f5f9 !important;
+}
+
+.order-confirmation-page.dark-mode .step-item {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.order-confirmation-page.dark-mode .step-number {
+  background: #2a2a40 !important;
+  color: #2dd4bf !important;
+}
+
+.order-confirmation-page.dark-mode .step-text {
+  color: #cbd5e1 !important;
+}
+
+/* Support */
+.order-confirmation-page.dark-mode .support-section {
+  border-top-color: #2a2a40 !important;
+}
+
+.order-confirmation-page.dark-mode .support-text {
+  color: #94a3b8 !important;
+}
+
+.order-confirmation-page.dark-mode .support-link {
+  color: #2dd4bf !important;
+}
+
+.order-confirmation-page.dark-mode .support-link:hover {
+  color: #5eeadb !important;
+}
+
+/* Bouton secondaire */
+.order-confirmation-page.dark-mode .btn-secondary {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.order-confirmation-page.dark-mode .btn-secondary:hover {
+  background: #3a3a55 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Toast */
+.order-confirmation-page.dark-mode .toast-notification {
+  background: #1e1e30 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.order-confirmation-page.dark-mode .toast-message {
+  color: #f1f5f9 !important;
+}
 </style>

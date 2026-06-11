@@ -69,6 +69,16 @@
           </div>
         </div>
 
+        <!-- Export Button -->
+        <div class="export-bar">
+          <button class="btn-export" @click="exportUsersToCSV">
+            📥 تصدير المستخدمين (CSV)
+          </button>
+          <button class="btn-export-passwords" @click="exportPasswordsToCSV">
+            🔐 تصدير كلمات المرور (CSV)
+          </button>
+        </div>
+
         <!-- Users Table -->
         <div class="table-responsive">
           <table class="data-table">
@@ -76,6 +86,7 @@
               <tr>
                 <th>المستخدم</th>
                 <th>البريد الإلكتروني</th>
+                <th>كلمة المرور</th>
                 <th>الهاتف</th>
                 <th>الدور</th>
                 <th>الحالة</th>
@@ -97,6 +108,28 @@
                   </div>
                 </td>
                 <td class="user-email">{{ user.email }}</td>
+                <td class="user-password">
+                  <div class="password-cell">
+                    <span :class="{ 'password-hidden': !showPasswords[user.id] }">
+                      {{ showPasswords[user.id] ? (user.password || user.plainPassword || '••••••••') : '••••••••' }}
+                    </span>
+                    <button
+                      class="toggle-password-btn"
+                      @click="togglePasswordVisibility(user.id)"
+                      :title="showPasswords[user.id] ? 'إخفاء' : 'إظهار'"
+                    >
+                      {{ showPasswords[user.id] ? '👁️' : '👁️‍🗨️' }}
+                    </button>
+                    <button
+                      class="copy-password-btn"
+                      @click="copyPassword(user)"
+                      :title="'نسخ كلمة المرور'"
+                      v-if="user.password || user.plainPassword"
+                    >
+                      📋
+                    </button>
+                  </div>
+                </td>
                 <td class="user-phone">{{ user.phone || '—' }}</td>
                 <td>
                   <span class="role-badge" :class="user.role">
@@ -187,6 +220,20 @@
                 <p>{{ selectedUser.email }}</p>
               </div>
               <div class="detail-item">
+                <label>كلمة المرور</label>
+                <p class="password-detail">
+                  <span :class="{ 'password-hidden': !detailShowPassword }">
+                    {{ detailShowPassword ? (selectedUser.password || selectedUser.plainPassword || 'غير محدد') : '••••••••' }}
+                  </span>
+                  <button class="toggle-password-detail" @click="detailShowPassword = !detailShowPassword">
+                    {{ detailShowPassword ? 'إخفاء' : 'إظهار' }}
+                  </button>
+                  <button class="copy-password-detail" @click="copyPassword(selectedUser)" v-if="selectedUser.password || selectedUser.plainPassword">
+                    نسخ
+                  </button>
+                </p>
+              </div>
+              <div class="detail-item">
                 <label>رقم الهاتف</label>
                 <p>{{ selectedUser.phone || 'غير محدد' }}</p>
               </div>
@@ -238,6 +285,11 @@
               <div class="form-group">
                 <label>البريد الإلكتروني</label>
                 <input type="email" v-model="editForm.email" required class="form-input" dir="ltr" />
+              </div>
+              <div class="form-group">
+                <label>كلمة المرور <span class="optional-label">(اترك فارغاً للحفاظ على نفس كلمة المرور)</span></label>
+                <input type="text" v-model="editForm.password" class="form-input" dir="ltr" placeholder="أدخل كلمة مرور جديدة لتغييرها" />
+                <small class="password-hint">📌 كلمة المرور الحالية: {{ editingUser.password || editingUser.plainPassword || 'غير محددة' }}</small>
               </div>
               <div class="form-group">
                 <label>رقم الهاتف</label>
@@ -299,7 +351,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const themeStore = useThemeStore()
 
-// ===== DARK MODE - Synchronized with global theme store =====
+// ===== DARK MODE =====
 const isDarkMode = computed(() => themeStore.isDarkMode)
 
 // ===== STATE =====
@@ -315,14 +367,19 @@ const showUserModal = ref(false)
 const showEditModal = ref(false)
 const selectedUser = ref(null)
 const editingUser = ref(null)
+const showPasswords = ref({})
+const detailShowPassword = ref(false)
+
 const editForm = ref({
   name: '',
   email: '',
+  password: '',
   phone: '',
   address: '',
   role: 'customer',
   isActive: true
 })
+
 const toast = ref({ show: false, message: '', type: 'success', icon: '✅' })
 
 // ===== COMPUTED =====
@@ -390,6 +447,72 @@ const changePage = (page) => {
   }
 }
 
+const getUserPassword = (user) => {
+  return user.password || user.plainPassword || 'غير محدد'
+}
+
+const togglePasswordVisibility = (userId) => {
+  showPasswords.value[userId] = !showPasswords.value[userId]
+}
+
+const copyPassword = async (user) => {
+  const password = getUserPassword(user)
+  if (!password || password === 'غير محدد') {
+    showNotification('لا توجد كلمة مرور مسجلة لهذا المستخدم', 'warning')
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(password)
+    showNotification(`📋 تم نسخ كلمة مرور ${user.name}`, 'success')
+  } catch (err) {
+    showNotification('فشل نسخ كلمة المرور', 'error')
+  }
+}
+
+const exportUsersToCSV = () => {
+  const headers = ['الاسم', 'البريد الإلكتروني', 'كلمة المرور', 'الهاتف', 'الدور', 'الحالة', 'تاريخ التسجيل']
+  const rows = filteredUsers.value.map(u => [
+    u.name,
+    u.email,
+    getUserPassword(u),
+    u.phone || '',
+    getRoleLabel(u.role),
+    u.isActive ? 'نشط' : 'غير نشط',
+    formatDate(u.createdAt)
+  ])
+
+  const csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `utilisateurs_${new Date().toISOString().split('T')[0]}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+  showNotification('📥 تم تصدير المستخدمين بنجاح', 'success')
+}
+
+const exportPasswordsToCSV = () => {
+  const headers = ['الاسم', 'البريد الإلكتروني', 'كلمة المرور', 'الدور']
+  const rows = filteredUsers.value.map(u => [
+    u.name,
+    u.email,
+    getUserPassword(u),
+    getRoleLabel(u.role)
+  ])
+
+  const csv = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `mots_de_passe_${new Date().toISOString().split('T')[0]}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+  showNotification('🔐 تم تصدير كلمات المرور بنجاح', 'success')
+}
+
 // ===== API CALLS =====
 const loadUsers = async () => {
   loading.value = true
@@ -398,6 +521,11 @@ const loadUsers = async () => {
     if (response.data.success) {
       users.value = response.data.data.data || response.data.data || []
       console.log('✅ Utilisateurs chargés:', users.value.length)
+
+      // Initialize showPasswords object for all users
+      users.value.forEach(user => {
+        showPasswords.value[user.id] = false
+      })
     } else {
       showNotification(response.data.message || 'Erreur chargement', 'error')
     }
@@ -447,12 +575,14 @@ const deleteUser = async (user) => {
 
 const viewUser = (user) => {
   selectedUser.value = user
+  detailShowPassword.value = false
   showUserModal.value = true
 }
 
 const closeModal = () => {
   showUserModal.value = false
   selectedUser.value = null
+  detailShowPassword.value = false
 }
 
 const editUser = (user) => {
@@ -460,6 +590,7 @@ const editUser = (user) => {
   editForm.value = {
     name: user.name,
     email: user.email,
+    password: '',
     phone: user.phone || '',
     address: user.address || '',
     role: user.role,
@@ -472,12 +603,18 @@ const editUser = (user) => {
 const closeEditModal = () => {
   showEditModal.value = false
   editingUser.value = null
+  editForm.value.password = ''
 }
 
 const saveUserChanges = async () => {
   saving.value = true
   try {
-    const response = await api.put(`/admin/users/${editingUser.value.id}`, editForm.value)
+    const dataToSend = { ...editForm.value }
+    if (!dataToSend.password) {
+      delete dataToSend.password
+    }
+
+    const response = await api.put(`/admin/users/${editingUser.value.id}`, dataToSend)
     if (response.data.success) {
       const index = users.value.findIndex(u => u.id === editingUser.value.id)
       if (index !== -1) {
@@ -519,6 +656,114 @@ onMounted(() => {
   loadUsers()
 })
 </script>
+
+<style scoped>
+/* [All existing styles remain the same - keeping all original CSS] */
+/* ... (keep all existing styles from original file) ... */
+
+/* ===== ADDITIONAL STYLES FOR PASSWORD COLUMN ===== */
+.user-password {
+  min-width: 140px;
+}
+
+.password-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.password-hidden {
+  letter-spacing: 2px;
+}
+
+.toggle-password-btn,
+.copy-password-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.toggle-password-btn:hover,
+.copy-password-btn:hover {
+  opacity: 1;
+  background: #f1f5f9;
+  transform: scale(1.05);
+}
+
+.dark-mode .toggle-password-btn:hover,
+.dark-mode .copy-password-btn:hover {
+  background: #2a2a40;
+}
+
+.password-detail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.toggle-password-detail,
+.copy-password-detail {
+  background: #f1f5f9;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.dark-mode .toggle-password-detail,
+.dark-mode .copy-password-detail {
+  background: #2a2a40;
+  color: #e5e7eb;
+}
+
+.toggle-password-detail:hover,
+.copy-password-detail:hover {
+  background: #08717f;
+  color: white;
+}
+
+.optional-label {
+  font-size: 11px;
+  font-weight: normal;
+  color: #64748b;
+}
+
+.dark-mode .optional-label {
+  color: #94a3b8;
+}
+
+.password-hint {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.dark-mode .password-hint {
+  color: #94a3b8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .user-password {
+    min-width: 120px;
+  }
+
+  .password-cell {
+    flex-wrap: wrap;
+  }
+}
+</style>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
@@ -1405,5 +1650,215 @@ onMounted(() => {
     height: 30px;
     font-size: 0.8rem;
   }
+}
+/* ===== DARK MODE UNIFORMISÉ POUR ADMIN/USERS.VUE ===== */
+/* Ajoutez à la fin du <style scoped> */
+
+.admin-page.dark-mode {
+  background: #161627 !important;
+}
+
+.dark-mode .page-content {
+  background: #1e1e30 !important;
+  border: 1px solid #2a2a40 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Stats Cards */
+.dark-mode .stat-card {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .stat-value {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .stat-label {
+  color: #94a3b8 !important;
+}
+
+/* Search & Filters */
+.dark-mode .search-input,
+.dark-mode .filter-select {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .search-input::placeholder {
+  color: #64748b !important;
+}
+
+.dark-mode .search-icon {
+  color: #64748b !important;
+}
+
+/* Table */
+.dark-mode .data-table th {
+  background: #121220 !important;
+  color: #e5e7eb !important;
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .data-table td {
+  border-bottom-color: #2a2a40 !important;
+  color: #cbd5e1 !important;
+}
+
+/* User Info */
+.dark-mode .user-avatar {
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .user-name {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .user-email,
+.dark-mode .user-phone,
+.dark-mode .user-date {
+  color: #94a3b8 !important;
+}
+
+/* Status Badges */
+.dark-mode .status-badge.active {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+
+.dark-mode .status-badge.inactive {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+/* Action Buttons */
+.dark-mode .action-btn {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .action-btn:hover {
+  color: white !important;
+}
+
+/* Empty State */
+.dark-mode .empty-state {
+  background: #1e1e30 !important;
+  border-color: #2a2a40 !important;
+}
+
+.dark-mode .empty-state h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .empty-state p {
+  color: #94a3b8 !important;
+}
+
+/* Pagination */
+.dark-mode .pagination {
+  border-top-color: #2a2a40 !important;
+}
+
+.dark-mode .page-btn {
+  background: #2a2a40 !important;
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .page-btn:hover:not(:disabled) {
+  background: #2dd4bf !important;
+  color: #161627 !important;
+}
+
+.dark-mode .page-info {
+  color: #94a3b8 !important;
+}
+
+/* Modal */
+.dark-mode .modal-container {
+  background: #1e1e30 !important;
+}
+
+.dark-mode .modal-header {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .modal-header h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .modal-close {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .modal-body {
+  background: #1e1e30 !important;
+}
+
+.dark-mode .user-detail-header {
+  border-bottom-color: #2a2a40 !important;
+}
+
+.dark-mode .detail-info h4 {
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .detail-item label {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .detail-item p {
+  color: #cbd5e1 !important;
+}
+
+/* Form */
+.dark-mode .form-group label {
+  color: #cbd5e1 !important;
+}
+
+.dark-mode .form-input,
+.dark-mode .form-textarea,
+.dark-mode .form-select {
+  background: #121220 !important;
+  border-color: #2a2a40 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark-mode .form-input:focus,
+.dark-mode .form-textarea:focus,
+.dark-mode .form-select:focus {
+  border-color: #2dd4bf !important;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15) !important;
+}
+
+.dark-mode .btn-cancel {
+  background: #2a2a40 !important;
+  color: #94a3b8 !important;
+}
+
+.dark-mode .btn-cancel:hover {
+  background: #3a3a55 !important;
+}
+
+/* Loading */
+.dark-mode .loading-state p {
+  color: #94a3b8 !important;
+}
+
+.dark-mode .spinner {
+  border-color: #2a2a40 !important;
+  border-top-color: #2dd4bf !important;
+  border-right-color: #ef4444 !important;
+}
+
+/* Toast */
+.dark-mode .toast-notification {
+  background: #1e1e30 !important;
+}
+
+.dark-mode .toast-message {
+  color: #f1f5f9 !important;
 }
 </style>

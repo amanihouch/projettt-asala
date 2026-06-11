@@ -1,4 +1,4 @@
-// backend/src/routes/api.js
+// backend/src/routes/api.js  ✅ CORRIGÉ
 const express = require('express');
 const router = express.Router();
 
@@ -14,50 +14,43 @@ const cartController = require('../controllers/cartController');
 const messageController = require('../controllers/messageController');
 const newsletterController = require('../controllers/newsletterController');
 
+
+
 // Import des routes séparées
 const visitsRouter = require('./visits');
 const adminRouter = require('./admin');
 const authRouter = require('./auth');
 const contactRouter = require('./contact');
 
-// Import Cloudinary uploaders (UNE SEULE FOIS)
+// Import Cloudinary uploaders
 const { uploadAvatar, uploadCover, uploadMultiple } = require('../config/cloudinary');
 
 // Middleware d'authentification
 const { protect, adminOnly, vendorOnly } = require('../middleware/auth');
 
-// ===== ROUTE DE TEST (Ajoutée une seule fois) =====
-router.post('/test-upload', protect, vendorOnly, uploadMultiple.array('images', 5), (req, res) => {
-  console.log('🧪 TEST UPLOAD - Fichiers reçus:', req.files?.length);
-  if (req.files && req.files.length > 0) {
-    const urls = req.files.map(f => ({ path: f.path, filename: f.filename, size: f.size }));
-    console.log('📸 URLs Cloudinary:', urls);
-    res.json({ success: true, files: urls });
-  } else {
-    console.log('❌ Aucun fichier reçu');
-    res.json({ success: false, message: 'Aucun fichier reçu' });
-  }
-});
+// ===================================================
+// ===== ROUTES PUBLIQUES (AVANT router.use(protect)) =====
+// ===================================================
 
-// ===== ROUTES D'AUTHENTIFICATION =====
+// Auth (délégué au router auth.js qui contient google-token, facebook-token, login, register…)
 router.use('/auth', authRouter);
 
-// ===== ROUTES PUBLIQUES =====
+// Auth shortcuts (optionnel — déjà dans authRouter mais conservés pour compatibilité)
 router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);
 router.post('/auth/forgot-password', authController.forgotPassword);
 router.post('/auth/verify-code', authController.verifyCode);
 router.post('/auth/reset-password', authController.resetPassword);
 
-// ===== ROUTES CONTACT =====
+// Contact
 router.use('/contact', contactRouter);
 
-// ===== ROUTES CATÉGORIES =====
+// Catégories
 router.get('/categories', categoryController.getAllCategories);
 router.get('/categories/hierarchy', categoryController.getCategoriesHierarchy);
 router.get('/categories/:slug', categoryController.getCategoryBySlug);
 
-// ===== ROUTES PRODUITS =====
+// Produits publics
 router.get('/products', productController.getAllProducts);
 router.get('/products/sponsored', productController.getSponsoredProducts);
 router.get('/products/featured', productController.getFeaturedProducts);
@@ -66,30 +59,65 @@ router.get('/products/category/:category', productController.getProductsByCatego
 router.get('/products/search', productController.searchProducts);
 router.get('/products/:id', productController.getProductById);
 
-// ===== ROUTES VENDEURS =====
+// ✅ SPONSORED PRODUCTS — public, AVANT protect
+router.get('/sponsored-products', productController.getSponsoredProducts);
+
+// ✅ REELS — public, AVANT protect
+// ✅ REELS — public, AVANT protect
+router.get('/reels', async (req, res) => {
+  try {
+    const db = require('../models/db');
+    const limit = parseInt(req.query.limit) || 12;
+    const reels = await db.query('SELECT * FROM reels ORDER BY createdAt DESC LIMIT ?', [limit]);
+    res.json({ success: true, data: reels });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+// Vendeurs publics
 router.get('/vendors', vendorController.getAllVendors);
 router.get('/vendors/top', vendorController.getTopVendors);
 router.get('/vendors/:id', vendorController.getVendorById);
 
-// ===== ROUTES POSTS (publiques) =====
+// Posts publics
 router.get('/posts/feed', postController.getFeed);
 router.get('/posts/vendor/:vendorId', postController.getVendorPosts);
 router.get('/posts/:id', postController.getPostById);
 router.get('/posts/:id/comments', postController.getComments);
 
-// ===== ROUTES PROTÉGÉES =====
+// ✅ VISITES — public, AVANT protect
+router.use('/visits', visitsRouter);
+
+// Newsletter (subscribe public)
+router.post('/newsletter/subscribe', newsletterController.subscribe);
+router.get('/newsletter/unsubscribe/:email', newsletterController.unsubscribe);
+
+// ===================================================
+// ===== ROUTES PROTÉGÉES (APRÈS router.use(protect)) =====
+// ===================================================
 router.use(protect);
+
+// Test upload
+router.post('/test-upload', vendorOnly, uploadMultiple.array('images', 5), (req, res) => {
+  console.log('🧪 TEST UPLOAD - Fichiers reçus:', req.files?.length);
+  if (req.files && req.files.length > 0) {
+    const urls = req.files.map(f => ({ path: f.path, filename: f.filename, size: f.size }));
+    res.json({ success: true, files: urls });
+  } else {
+    res.json({ success: false, message: 'Aucun fichier reçu' });
+  }
+});
 
 // Utilisateur
 router.get('/user/profile', userController.getProfile);
 router.put('/user/profile', userController.updateProfile);
 router.post('/user/change-password', userController.changePassword);
-router.patch('/user/avatar', protect, uploadAvatar.single('avatar'), userController.updateAvatar);
+router.patch('/user/avatar', uploadAvatar.single('avatar'), userController.updateAvatar);
 
 // Téléphone
-router.post('/user/send-code', authController.sendVerificationCode);
+router.post('/user/send-code', authController.sendPhoneVerificationCode);
 router.post('/user/verify-phone', authController.verifyPhoneCode);
-router.post('/user/resend-code', authController.resendVerificationCode);
 
 // Wishlist
 router.get('/user/wishlist', userController.getWishlist);
@@ -107,7 +135,7 @@ router.post('/user/like-post/:postId', userController.togglePostLike);
 router.post('/vendors', vendorController.createVendor);
 router.put('/vendors/:id', vendorController.updateVendor);
 router.post('/vendors/:id/follow', vendorController.toggleFollow);
-router.post('/vendors/:id/cover', protect, uploadCover.single('cover'), vendorController.uploadCoverImage);
+router.post('/vendors/:id/cover', uploadCover.single('cover'), vendorController.uploadCoverImage);
 router.get('/vendors/pending', vendorController.getPendingVendors);
 router.get('/vendors/user/:userId', vendorController.getVendorByUserId);
 
@@ -122,13 +150,13 @@ router.get('/orders/my-orders', orderController.getMyOrders);
 router.get('/orders/:id', orderController.getOrderById);
 router.patch('/orders/:id/cancel', orderController.cancelOrder);
 
-// Posts (protégés) avec upload multiple
-router.post('/posts', protect, vendorOnly, uploadMultiple.array('images', 10), postController.createPost);
-router.put('/posts/:id', protect, vendorOnly, postController.updatePost);
-router.delete('/posts/:id', protect, vendorOnly, postController.deletePost);
-router.post('/posts/:id/like', protect, postController.toggleLike);
-router.post('/posts/:id/comment', protect, postController.addComment);
-router.put('/posts/:id/pin', protect, vendorOnly, postController.togglePinPost);
+// Posts (protégés)
+router.post('/posts', vendorOnly, uploadMultiple.array('images', 10), postController.createPost);
+router.put('/posts/:id', vendorOnly, postController.updatePost);
+router.delete('/posts/:id', vendorOnly, postController.deletePost);
+router.post('/posts/:id/like', postController.toggleLike);
+router.post('/posts/:id/comment', postController.addComment);
+router.put('/posts/:id/pin', vendorOnly, postController.togglePinPost);
 
 // Panier
 router.get('/cart', cartController.getCart);
@@ -143,15 +171,6 @@ router.post('/messages/send', messageController.sendMessage);
 router.delete('/messages/:id', messageController.deleteMessage);
 router.delete('/messages/conversation/:id', messageController.deleteConversation);
 router.get('/messages/unread', messageController.getUnreadCount);
-// backend/src/routes/api.js
-// Cette ligne doit être présente
-router.post('/posts/:id/comment', protect, postController.addComment);
-// Newsletter
-router.post('/newsletter/subscribe', newsletterController.subscribe);
-router.get('/newsletter/unsubscribe/:email', newsletterController.unsubscribe);
-
-// Visites
-router.use('/visits', visitsRouter);
 
 // Routes admin
 router.use('/admin', adminRouter);
