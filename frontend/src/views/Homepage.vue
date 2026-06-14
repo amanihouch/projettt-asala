@@ -47,32 +47,10 @@
           <div class="hero-overlay-gradient"></div>
         </div>
 
-        <div class="hero-content">
-          <div class="hero-badge" v-if="slide.badge">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-            </svg>
-            {{ slide.badge }}
-          </div>
-
-          <h1 class="hero-title">{{ slide.title }}</h1>
-          <p class="hero-subtitle">{{ slide.subtitle }}</p>
-
-          <div class="hero-features" v-if="slide.features">
-            <div class="hero-feature" v-for="feat in slide.features" :key="feat.text">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-              <span>{{ feat.text }}</span>
-            </div>
-          </div>
-
-          <div class="hero-price-block" v-if="slide.price">
-            <span class="hero-price-label">إبتداءا من</span>
-            <span class="hero-price">{{ slide.price }}</span>
-          </div>
-
+        <!-- ===== PHRASE CENTRALE ===== -->
+        <div class="hero-center-tagline">
+          <p>من قلب التراث العربي الأصيل، ننسج حكاياتٍ تحمل عبق التاريخ وجمال الهوية،</p>
+          <p>لأن الأصالة ليست ماضيًا نرويه، بل قيمة نعيشها كل يوم</p>
         </div>
 
         <div class="hero-vendor-card" v-if="slide.vendor">
@@ -758,24 +736,14 @@ let pendingProduct = null
 
 // ─── Hero Slides ───
 const heroSlides = ref([
-  {
-    video: '/src/assets/videos/slide3.mp4',
-
-  },
-  {
-    video: '/src/assets/videos/slide2.mp4',
-
-  },
-  {
-    video: '/src/assets/videos/slide1.mp4',
-
-  }
+  { video: '/src/assets/videos/slide3.mp4' },
+  { video: '/src/assets/videos/slide2.mp4' },
+  { video: '/src/assets/videos/slide1.mp4' }
 ])
 
 // ─── Feed Filters ───
 const feedFilters = [
   { value: 'products', label: 'منتجات' },
-
 ]
 
 // ─── Computed ───
@@ -816,7 +784,6 @@ const truncate = (text, len) => text ? (text.length > len ? text.substring(0, le
 const formatPrice = (price) => new Intl.NumberFormat('ar-TN').format(price || 0)
 const handleAvatarError = (e) => { e.target.src = 'https://i.pravatar.cc/32?u=' + Date.now() }
 
-// Vérifier si un produit du feed est aussi sponsorisé
 const isFeedProductSponsored = (postId) => {
   return sponsoredProducts.value.some(sp => sp.id === postId || sp.postId === postId)
 }
@@ -824,26 +791,14 @@ const isFeedProductSponsored = (postId) => {
 // ⭐⭐ FONCTIONS POUR LES IMAGES SPONSORISÉES ⭐⭐
 const getProductImageSafe = (product) => {
   if (!product) return 'https://placehold.co/400x400/f5f0eb/1a1a2e?text=منتج'
-
-  if (product.imageUrl && isValidImageUrl(product.imageUrl)) {
-    return product.imageUrl
-  }
+  if (product.imageUrl && isValidImageUrl(product.imageUrl)) return product.imageUrl
   if (product.images && Array.isArray(product.images) && product.images.length > 0) {
     const firstImage = product.images[0]
-    if (firstImage && isValidImageUrl(firstImage)) {
-      return firstImage
-    }
+    if (firstImage && isValidImageUrl(firstImage)) return firstImage
   }
-  if (product.image && isValidImageUrl(product.image)) {
-    return product.image
-  }
-  if (product.productImage && isValidImageUrl(product.productImage)) {
-    return product.productImage
-  }
-  if (product.thumbnail && isValidImageUrl(product.thumbnail)) {
-    return product.thumbnail
-  }
-
+  if (product.image && isValidImageUrl(product.image)) return product.image
+  if (product.productImage && isValidImageUrl(product.productImage)) return product.productImage
+  if (product.thumbnail && isValidImageUrl(product.thumbnail)) return product.thumbnail
   const productName = product.name || product.productName || 'produit'
   return `https://placehold.co/400x400/f5f0eb/1a1a2e?text=${encodeURIComponent(productName.substring(0, 20))}`
 }
@@ -855,28 +810,17 @@ const isValidImageUrl = (url) => {
 
 const handleSponsoredImageError = (event, product) => {
   const img = event.target
-  if (img.dataset.retryCount === undefined) {
-    img.dataset.retryCount = '0'
-  }
-
+  if (img.dataset.retryCount === undefined) img.dataset.retryCount = '0'
   const retryCount = parseInt(img.dataset.retryCount)
-
   if (retryCount === 0 && product.imageUrl && product.imageUrl !== img.src) {
-    setTimeout(() => {
-      img.src = product.imageUrl
-      img.dataset.retryCount = '1'
-    }, 100)
+    setTimeout(() => { img.src = product.imageUrl; img.dataset.retryCount = '1' }, 100)
   } else if (retryCount === 1 && product.images && product.images.length > 0) {
-    setTimeout(() => {
-      img.src = product.images[0]
-      img.dataset.retryCount = '2'
-    }, 100)
+    setTimeout(() => { img.src = product.images[0]; img.dataset.retryCount = '2' }, 100)
   } else {
     const productName = product.name || product.productName || 'produit'
     img.src = `https://placehold.co/400x400/f5f0eb/1a1a2e?text=${encodeURIComponent(productName.substring(0, 20))}`
   }
 }
-// ⭐⭐ FIN DES FONCTIONS POUR LES IMAGES ⭐⭐
 
 // ─── Toast ───
 const showToast = (message, type = 'success') => {
@@ -885,14 +829,8 @@ const showToast = (message, type = 'success') => {
 }
 
 // ─── Hero ───
-const nextSlide = () => {
-  currentSlide.value = (currentSlide.value + 1) % heroSlides.value.length
-  resetSlideInterval()
-}
-const prevSlide = () => {
-  currentSlide.value = (currentSlide.value - 1 + heroSlides.value.length) % heroSlides.value.length
-  resetSlideInterval()
-}
+const nextSlide = () => { currentSlide.value = (currentSlide.value + 1) % heroSlides.value.length; resetSlideInterval() }
+const prevSlide = () => { currentSlide.value = (currentSlide.value - 1 + heroSlides.value.length) % heroSlides.value.length; resetSlideInterval() }
 const goToSlide = (i) => { currentSlide.value = i; resetSlideInterval() }
 const startSlideInterval = () => {
   slideInterval.value = setInterval(() => {
@@ -916,37 +854,25 @@ const SP_SCROLL_AMOUNT = 167 * 3
 const spScrollNext = () => spCarouselRef.value?.scrollBy({ left: SP_SCROLL_AMOUNT, behavior: 'smooth' })
 const spScrollPrev = () => spCarouselRef.value?.scrollBy({ left: -SP_SCROLL_AMOUNT, behavior: 'smooth' })
 const spGoToDot = (dotIndex) => {
-  if (spCarouselRef.value) {
-    spCarouselRef.value.scrollTo({ left: dotIndex * 167 * 4, behavior: 'smooth' })
-  }
+  if (spCarouselRef.value) spCarouselRef.value.scrollTo({ left: dotIndex * 167 * 4, behavior: 'smooth' })
 }
 
 // ─── Wishlist / Likes ───
 const isWishlisted = (id) => likesStore.isLiked(id)
 const toggleWishlist = (product) => {
   if (!authStore.isAuthenticated) { router.push('/login'); return }
-  if (isWishlisted(product.id)) {
-    likesStore.removeLike(product.id)
-    showToast('تمت إزالة المنتج من المفضلة', 'info')
-  } else {
-    likesStore.addLike({ id: product.id, ...product })
-    showToast('تمت إضافة المنتج إلى المفضلة', 'success')
-  }
+  if (isWishlisted(product.id)) { likesStore.removeLike(product.id); showToast('تمت إزالة المنتج من المفضلة', 'info') }
+  else { likesStore.addLike({ id: product.id, ...product }); showToast('تمت إضافة المنتج إلى المفضلة', 'success') }
 }
 
 const isPostLiked = (id) => likesStore.isLiked(id)
 const togglePostLike = (post) => {
   if (!authStore.isAuthenticated) { router.push('/login'); return }
-  if (isPostLiked(post.id)) {
-    likesStore.removeLike(post.id)
-    showToast('تمت إزالة الإعجاب', 'info')
-  } else {
-    likesStore.addLike({ id: post.id, ...post })
-    showToast('تم الإعجاب بالمنتج', 'success')
-  }
+  if (isPostLiked(post.id)) { likesStore.removeLike(post.id); showToast('تمت إزالة الإعجاب', 'info') }
+  else { likesStore.addLike({ id: post.id, ...post }); showToast('تم الإعجاب بالمنتج', 'success') }
 }
 
-// ─── ALERTE VENDEUR UNIQUE - FONCTIONS CORRIGÉES ───
+// ─── ALERTE VENDEUR UNIQUE ───
 const closeVendorAlert = () => {
   vendorAlertVisible.value = false
   pendingProduct = null
@@ -955,13 +881,10 @@ const closeVendorAlert = () => {
 
 const clearCartAndAddProduct = async () => {
   if (!pendingProduct) return
-
   vendorAlertVisible.value = false
   await cartStore.clearCart()
-
   const productVendorId = pendingProduct?.vendorId || pendingProduct?.vendor?.id || pendingProduct?.userId
   const productVendorName = getVendorName(pendingProduct)
-
   const result = await cartStore.addItem({
     id: pendingProduct.id,
     name: pendingProduct.name || pendingProduct.productName || getProductName(pendingProduct),
@@ -971,54 +894,29 @@ const clearCartAndAddProduct = async () => {
     vendorName: productVendorName,
     vendorId: productVendorId
   })
-
   if (result) {
     showToast(`✅ تمت إضافة "${truncate(pendingProduct.name || getProductName(pendingProduct), 30)}" إلى السلة`, 'success')
     cartStore.openCart()
   }
-
   pendingProduct = null
   pendingVendorChange.value = null
 }
 
-// ─── AJOUT AU PANIER AVEC VÉRIFICATION VENDEUR (CORRIGÉ) ───
+// ─── AJOUT AU PANIER ───
 const handleAddToCart = async (product) => {
   if (!product) return
-
   if (!authStore.isAuthenticated) {
     showToast('⚠️ يرجى تسجيل الدخول أولاً', 'warning')
     router.push('/login')
     return
   }
-
-  // Récupérer l'ID du vendeur du produit
   const productVendorId = product?.vendorId || product?.vendor?.id || product?.userId
   const productVendorName = getVendorName(product)
-
-  // ✅ CORRECTION: Récupérer correctement currentVendorId du store
-  // Si currentVendorId est un ref, utiliser .value, sinon utiliser directement
   const currentCartVendorId = cartStore.currentVendorId?.value ?? cartStore.currentVendorId
   const currentCartVendorName = cartStore.currentVendorName?.value ?? cartStore.currentVendorName
 
-  console.log('🔍 Vérification vendeur:', {
-    productVendorId,
-    productVendorName,
-    currentCartVendorId,
-    currentCartVendorName,
-    cartStoreCurrentVendorId: cartStore.currentVendorId,
-    cartStoreCurrentVendorName: cartStore.currentVendorName,
-    itemsInCart: cartStore.items.length
-  })
-
-  // ✅ Vérifier si le panier contient déjà des produits d'un autre vendeur
-  // Convertir les deux en string pour une comparaison fiable
   if (currentCartVendorId && currentCartVendorId !== 0 && currentCartVendorId !== '0') {
-
-    // Comparer les IDs (convertir en string pour éviter les problèmes de type)
     if (String(currentCartVendorId) !== String(productVendorId)) {
-      // Vendeurs différents → Afficher l'alerte
-      console.log('⚠️ Vendeurs différents!', currentCartVendorId, '≠', productVendorId)
-
       pendingProduct = product
       pendingVendorChange.value = {
         currentVendorName: currentCartVendorName,
@@ -1028,15 +926,9 @@ const handleAddToCart = async (product) => {
       }
       vendorAlertVisible.value = true
       return
-    } else {
-      // ✅ Même vendeur → Ajouter directement
-      console.log('✅ Même vendeur, ajout direct')
     }
-  } else {
-    console.log('📦 Panier vide, ajout direct')
   }
 
-  // Ajout normal (même vendeur ou panier vide)
   const result = await cartStore.addItem({
     id: product.id,
     name: product.name || product.productName || getProductName(product),
@@ -1050,24 +942,17 @@ const handleAddToCart = async (product) => {
   if (result) {
     showToast(`✅ تمت إضافة "${truncate(product.name || getProductName(product), 30)}" إلى السلة`, 'success')
     cartStore.openCart()
-  } else {
-    console.error('❌ Erreur ajout au panier')
   }
 }
 
 // ─── Modals ───
-const openSpQuickView = (product) => {
-  spQuickViewProduct.value = product
-  document.body.style.overflow = 'hidden'
-}
+const openSpQuickView = (product) => { spQuickViewProduct.value = product; document.body.style.overflow = 'hidden' }
 const openQuickView = (p) => { selectedPost.value = p; showQuickView.value = true; document.body.style.overflow = 'hidden' }
 const closeQuickView = () => { showQuickView.value = false; selectedPost.value = null; document.body.style.overflow = '' }
 const openReelModal = (r) => { selectedReel.value = r; showReelModal.value = true; document.body.style.overflow = 'hidden' }
 const closeReelModal = () => { showReelModal.value = false; selectedReel.value = null; document.body.style.overflow = '' }
 
-watch(() => spQuickViewProduct.value, (val) => {
-  if (!val) document.body.style.overflow = ''
-})
+watch(() => spQuickViewProduct.value, (val) => { if (!val) document.body.style.overflow = '' })
 
 // ─── Navigation ───
 const navigateTo = (path) => { if (path) router.push(path) }
@@ -1123,7 +1008,6 @@ const loadSponsored = async () => {
   isLoadingSponsored.value = true
   try {
     await productStore.fetchSponsoredProducts()
-    console.log('✅ Sponsored products loaded:', productStore.sponsoredProducts?.length || 0)
   } catch (error) {
     console.error('Error loading sponsored:', error)
   } finally {
@@ -1135,12 +1019,8 @@ const loadSponsored = async () => {
 const loadReels = async () => {
   try {
     const res = await api.get('/reels?limit=12')
-    if (res.data.success) {
-      reelsList.value = res.data.data?.reels || res.data.reels || []
-    }
-  } catch (e) {
-    reelsList.value = []
-  }
+    if (res.data.success) reelsList.value = res.data.data?.reels || res.data.reels || []
+  } catch (e) { reelsList.value = [] }
 }
 
 // ─── Scroll handler ───
@@ -1150,36 +1030,23 @@ const handleScroll = () => { showScrollTop.value = window.scrollY > 500 }
 const handleKeydown = (e) => {
   if (e.key === 'ArrowLeft') nextSlide()
   if (e.key === 'ArrowRight') prevSlide()
-  if (e.key === 'Escape') {
-    closeQuickView()
-    closeReelModal()
-    spQuickViewProduct.value = null
-    closeVendorAlert()
-  }
+  if (e.key === 'Escape') { closeQuickView(); closeReelModal(); spQuickViewProduct.value = null; closeVendorAlert() }
 }
 
 // ─── Lifecycle ───
 onMounted(async () => {
   setTimeout(() => { showPreloader.value = false }, 1800)
-
   likesStore.loadFromStorage?.()
   cartStore.loadFromStorage?.()
   offersStore.loadOffers?.()
-
   await loadCategories()
   await loadSponsored()
   await loadReels()
   await nextTick()
-
   isLoadingPosts.value = true
   try { await postStore.fetchFeed() } catch (e) { console.error(e) } finally { isLoadingPosts.value = false }
-
   startSlideInterval()
-
-  setTimeout(() => {
-    if (activeOffers.value?.length > 0) showPromoPopup.value = true
-  }, 800)
-
+  setTimeout(() => { if (activeOffers.value?.length > 0) showPromoPopup.value = true }, 800)
   window.addEventListener('scroll', handleScroll, { passive: true })
   window.addEventListener('keydown', handleKeydown)
 })
@@ -1191,269 +1058,6 @@ onUnmounted(() => {
   document.body.style.overflow = ''
 })
 </script>
-
-<style scoped>
-/* ===== TOUS VOS STYLES EXISTANTS RESTENT ICI ===== */
-/* (Les styles sont trop longs pour être répétés mais vous devez les conserver) */
-
-/* ===== STYLES DE L'ALERTE VENDEUR UNIQUE ===== */
-.alert-fade-enter-active, .alert-fade-leave-active { transition: opacity 0.3s ease; }
-.alert-fade-enter-from, .alert-fade-leave-to { opacity: 0; }
-
-.vendor-alert-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100000;
-  padding: 20px;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.vendor-alert-card {
-  max-width: 450px;
-  width: 100%;
-  background: #fff;
-  border-radius: 28px;
-  overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.vendor-alert-card.dark-mode {
-  background: #1e293b;
-}
-
-.alert-icon-wrapper {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  padding: 24px 0 16px;
-  text-align: center;
-}
-
-.dark-mode .alert-icon-wrapper {
-  background: linear-gradient(135deg, #3b2e00, #2a2500);
-}
-
-.alert-icon {
-  font-size: 56px;
-  animation: pulseWarning 0.6s ease-in-out;
-}
-
-@keyframes pulseWarning {
-  0% { transform: scale(0.8); opacity: 0; }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
-}
-
-.alert-content {
-  padding: 20px 24px 28px;
-  position: relative;
-}
-
-.alert-title {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: #1e293b;
-  text-align: center;
-  margin-bottom: 12px;
-}
-
-.dark-mode .alert-title {
-  color: #f1f5f9;
-}
-
-.alert-message {
-  font-size: 0.9rem;
-  color: #475569;
-  text-align: center;
-  line-height: 1.6;
-  margin-bottom: 20px;
-}
-
-.dark-mode .alert-message {
-  color: #94a3b8;
-}
-
-.alert-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
-  margin: 16px 0;
-}
-
-.dark-mode .alert-divider {
-  background: linear-gradient(90deg, transparent, #334155, transparent);
-}
-
-.alert-info {
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 12px 16px;
-  margin-bottom: 24px;
-}
-
-.dark-mode .alert-info {
-  background: #0f172a;
-}
-
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 0;
-  font-size: 0.85rem;
-}
-
-.info-label {
-  color: #64748b;
-  font-weight: 500;
-}
-
-.dark-mode .info-label {
-  color: #94a3b8;
-}
-
-.info-value {
-  color: #1e293b;
-  font-weight: 600;
-}
-
-.dark-mode .info-value {
-  color: #f1f5f9;
-}
-
-.info-value.highlight {
-  color: #d40025;
-}
-
-.dark-mode .info-value.highlight {
-  color: #ff6b6b;
-}
-
-.info-value.highlight-warning {
-  color: #f59e0b;
-}
-
-.dark-mode .info-value.highlight-warning {
-  color: #fbbf24;
-}
-
-.alert-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.alert-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 20px;
-  border: none;
-  border-radius: 40px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
-}
-
-.alert-btn.primary {
-  background: linear-gradient(135deg, #d40025, #b00020);
-  color: white;
-}
-
-.alert-btn.primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(212, 0, 37, 0.3);
-}
-
-.alert-btn.secondary {
-  background: #f1f5f9;
-  color: #64748b;
-}
-
-.dark-mode .alert-btn.secondary {
-  background: #334155;
-  color: #94a3b8;
-}
-
-.alert-btn.secondary:hover {
-  background: #e2e8f0;
-}
-
-.dark-mode .alert-btn.secondary:hover {
-  background: #475569;
-  color: #f1f5f9;
-}
-
-.alert-close {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  width: 32px;
-  height: 32px;
-  background: rgba(241, 245, 249, 0.9);
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.dark-mode .alert-close {
-  background: rgba(51, 65, 85, 0.9);
-  color: #94a3b8;
-}
-
-.alert-close:hover {
-  background: #d40025;
-  color: white;
-  transform: rotate(90deg);
-}
-
-@media (max-width: 480px) {
-  .vendor-alert-card {
-    max-width: calc(100% - 20px);
-  }
-  .alert-actions {
-    flex-direction: column;
-  }
-  .alert-content {
-    padding: 16px 20px 22px;
-  }
-  .alert-title {
-    font-size: 1.1rem;
-  }
-  .info-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-}
-</style>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@300;400;600;700;800&display=swap');
@@ -1581,99 +1185,55 @@ onUnmounted(() => {
 
 .hero-overlay-dark {
   position: absolute; inset: 0;
-  background: linear-gradient(
-    100deg,
-    rgba(15,5,5,0.82) 0%,
-    rgba(15,5,5,0.60) 35%,
-    rgba(15,5,5,0.20) 65%,
-    rgba(15,5,5,0.04) 100%
-  );
+  background: rgba(10, 5, 5, 0.52);
 }
 .hero-overlay-gradient {
   position: absolute; bottom: 0; left: 0; right: 0; height: 200px;
   background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);
 }
 
-.hero-content {
+/* ───────────────────────────────────────── */
+/* HERO CENTER TAGLINE */
+/* ───────────────────────────────────────── */
+.hero-center-tagline {
   position: absolute;
-  top: 50%; right: 6%;
-  transform: translateY(-50%);
-  color: white; z-index: 5;
-  max-width: 580px;
-  animation: heroReveal 0.9s ease 0.2s both;
-}
-@keyframes heroReveal {
-  from { opacity: 0; transform: translate(30px,-50%); }
-  to   { opacity: 1; transform: translate(0,-50%); }
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 6;
+  text-align: center;
+  width: 92%;
+  max-width: 1000px;
+  pointer-events: none;
+  animation: taglineReveal 1.2s ease 0.4s both;
 }
 
-.hero-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: linear-gradient(135deg, var(--color-red), #ff4d6d);
-  color: white;
-  font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px;
-  padding: 5px 14px; border-radius: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 14px rgba(212,0,37,0.4);
-  animation: badgeFloat 2s ease-in-out infinite;
+@keyframes taglineReveal {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 20px)); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
 }
-@keyframes badgeFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 
-.hero-title {
+.hero-center-tagline p {
   font-family: 'Amiri', serif;
-  font-size: 4rem; font-weight: 700;
-  line-height: 1.1; margin: 0 0 14px;
-  text-shadow: 0 3px 20px rgba(0,0,0,0.35);
-}
-.hero-subtitle {
-  font-size: 1.1rem; font-weight: 300;
-  line-height: 1.6; opacity: 0.92;
-  margin: 0 0 20px; max-width: 460px;
-}
-
-.hero-features { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 24px; }
-.hero-feature {
-  display: flex; align-items: center; gap: 7px;
-  font-size: 0.82rem; opacity: 0.9;
+  font-size: 2.6rem;
+  font-weight: 700;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.97);
+  line-height: 1.9;
+  margin: 0;
+  text-shadow:
+    0 2px 24px rgba(0, 0, 0, 0.7),
+    0 0 80px rgba(0, 0, 0, 0.4);
+  letter-spacing: 0.4px;
 }
 
-.hero-price-block {
-  display: flex; align-items: baseline; gap: 10px;
-  margin-bottom: 28px;
-}
-.hero-price-label { font-size: 0.85rem; opacity: 0.8; }
-.hero-price {
-  font-size: 2.2rem; font-weight: 800;
+.hero-center-tagline p:last-child {
   color: var(--color-gold);
-  text-shadow: 0 2px 10px rgba(201,160,74,0.4);
+  font-size: 2.3rem;
+  text-shadow:
+    0 2px 24px rgba(0, 0, 0, 0.7),
+    0 0 40px rgba(201, 160, 74, 0.3);
 }
-
-.hero-buttons { display: flex; gap: 14px; flex-wrap: wrap; }
-
-.hero-btn-primary {
-  display: inline-flex; align-items: center; gap: 10px;
-  padding: 13px 32px;
-  background: var(--color-red); color: white;
-  border: none; border-radius: 50px;
-  font-size: 0.95rem; font-weight: 700;
-  cursor: pointer; font-family: inherit;
-  transition: all var(--transition);
-  box-shadow: 0 6px 20px rgba(212,0,37,0.35);
-}
-.hero-btn-primary:hover { background: #b8001f; transform: translateY(-3px); box-shadow: 0 10px 28px rgba(212,0,37,0.45); }
-
-.hero-btn-secondary {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 13px 28px;
-  background: rgba(255,255,255,0.12);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255,255,255,0.28);
-  color: white; border-radius: 50px;
-  font-size: 0.9rem; font-weight: 600;
-  cursor: pointer; font-family: inherit;
-  transition: all var(--transition);
-}
-.hero-btn-secondary:hover { background: rgba(255,255,255,0.22); transform: translateY(-3px); }
 
 /* Vendor card */
 .hero-vendor-card {
@@ -1748,7 +1308,6 @@ onUnmounted(() => {
 }
 .dark-mode .sponsored-section { background: #12121e; }
 
-/* Shimmer bar replaces ::before (avoids scoped issue) */
 .sp-shimmer-bar {
   position: absolute; top: 0; left: 0; right: 0; height: 2px;
   background: linear-gradient(90deg, var(--color-red), var(--color-gold), var(--color-teal), var(--color-gold), var(--color-red));
@@ -1763,7 +1322,6 @@ onUnmounted(() => {
   padding: 0 40px;
 }
 
-/* Header */
 .sp-header {
   display: flex; justify-content: space-between;
   align-items: flex-end; margin-bottom: 14px;
@@ -1820,7 +1378,6 @@ onUnmounted(() => {
 }
 .sp-view-all:hover { color: var(--color-red); border-bottom-color: var(--color-red); }
 
-/* Carousel */
 .sp-carousel-wrap { position: relative; }
 
 .sp-carousel {
@@ -1832,7 +1389,6 @@ onUnmounted(() => {
 }
 .sp-carousel::-webkit-scrollbar { display: none; }
 
-/* Progress dots */
 .sp-progress-dots {
   display: flex; justify-content: center; gap: 8px;
   margin-top: 8px;
@@ -1928,9 +1484,7 @@ onUnmounted(() => {
   padding: 1px 5px; border-radius: 8px;
 }
 
-.sp-card-vendor {
-  display: flex; align-items: center; gap: 5px;
-}
+.sp-card-vendor { display: flex; align-items: center; gap: 5px; }
 .sp-card-vendor img { width: 16px; height: 16px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(8,113,127,0.2); }
 .sp-card-vendor span { font-size: 0.65rem; color: var(--color-mid); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dark-mode .sp-card-vendor span { color: #8a8a9a; }
@@ -2074,7 +1628,6 @@ onUnmounted(() => {
   border-radius: 50%; animation: spinR 0.8s linear infinite;
 }
 
-/* Products grid */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -2105,7 +1658,6 @@ onUnmounted(() => {
   box-shadow: 0 3px 10px rgba(0,0,0,0.08);
 }
 
-/* Badge for sponsored products appearing in feed */
 .feed-sponsored-badge {
   position: absolute; top: 8px; left: 8px;
   display: flex; align-items: center; gap: 3px;
@@ -2147,7 +1699,6 @@ onUnmounted(() => {
 }
 .dark-mode .product-name { color: #e0ddd6; }
 
-/* Reels grid */
 .reels-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; }
 
 .reel-card {
@@ -2349,7 +1900,6 @@ onUnmounted(() => {
 .dark-mode .modal-btn-secondary { background: #2a2a40; color: #f0efe8; border-color: #3a3a55; }
 .modal-btn-secondary:hover { background: #f0ede8; transform: translateY(-2px); }
 
-/* Reel modal */
 .reel-modal {
   background: #000; border-radius: var(--radius-lg);
   width: 100%; max-width: 420px;
@@ -2397,14 +1947,125 @@ onUnmounted(() => {
 @keyframes toastBar { from { width: 0; } to { width: 100%; } }
 
 /* ───────────────────────────────────────── */
+/* ALERTE VENDEUR UNIQUE */
+/* ───────────────────────────────────────── */
+.alert-fade-enter-active, .alert-fade-leave-active { transition: opacity 0.3s ease; }
+.alert-fade-enter-from, .alert-fade-leave-to { opacity: 0; }
+
+.vendor-alert-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100000; padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.vendor-alert-card {
+  max-width: 450px; width: 100%;
+  background: #fff; border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.vendor-alert-card.dark-mode { background: #1e293b; }
+
+.alert-icon-wrapper {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  padding: 24px 0 16px; text-align: center;
+}
+.dark-mode .alert-icon-wrapper { background: linear-gradient(135deg, #3b2e00, #2a2500); }
+
+.alert-icon {
+  font-size: 56px;
+  animation: pulseWarning 0.6s ease-in-out;
+}
+@keyframes pulseWarning {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.alert-content { padding: 20px 24px 28px; position: relative; }
+
+.alert-title {
+  font-size: 1.3rem; font-weight: 800;
+  color: #1e293b; text-align: center; margin-bottom: 12px;
+}
+.dark-mode .alert-title { color: #f1f5f9; }
+
+.alert-message {
+  font-size: 0.9rem; color: #475569;
+  text-align: center; line-height: 1.6; margin-bottom: 20px;
+}
+.dark-mode .alert-message { color: #94a3b8; }
+
+.alert-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+  margin: 16px 0;
+}
+.dark-mode .alert-divider { background: linear-gradient(90deg, transparent, #334155, transparent); }
+
+.alert-info {
+  background: #f8fafc; border-radius: 16px;
+  padding: 12px 16px; margin-bottom: 24px;
+}
+.dark-mode .alert-info { background: #0f172a; }
+
+.info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; font-size: 0.85rem;
+}
+.info-label { color: #64748b; font-weight: 500; }
+.dark-mode .info-label { color: #94a3b8; }
+.info-value { color: #1e293b; font-weight: 600; }
+.dark-mode .info-value { color: #f1f5f9; }
+.info-value.highlight { color: #d40025; }
+.dark-mode .info-value.highlight { color: #ff6b6b; }
+.info-value.highlight-warning { color: #f59e0b; }
+.dark-mode .info-value.highlight-warning { color: #fbbf24; }
+
+.alert-actions { display: flex; gap: 12px; margin-top: 8px; }
+
+.alert-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 20px; border: none; border-radius: 40px;
+  font-size: 0.85rem; font-weight: 700; cursor: pointer;
+  transition: all 0.2s ease; font-family: inherit;
+}
+.alert-btn.primary { background: linear-gradient(135deg, #d40025, #b00020); color: white; }
+.alert-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(212, 0, 37, 0.3); }
+.alert-btn.secondary { background: #f1f5f9; color: #64748b; }
+.dark-mode .alert-btn.secondary { background: #334155; color: #94a3b8; }
+.alert-btn.secondary:hover { background: #e2e8f0; }
+.dark-mode .alert-btn.secondary:hover { background: #475569; color: #f1f5f9; }
+
+.alert-close {
+  position: absolute; top: 16px; left: 16px;
+  width: 32px; height: 32px;
+  background: rgba(241, 245, 249, 0.9); border: none; border-radius: 50%;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease;
+}
+.dark-mode .alert-close { background: rgba(51, 65, 85, 0.9); color: #94a3b8; }
+.alert-close:hover { background: #d40025; color: white; transform: rotate(90deg); }
+
+/* ───────────────────────────────────────── */
 /* TRANSITIONS */
 /* ───────────────────────────────────────── */
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
-
 .modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.28s ease; }
 .modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
-
 .toast-anim-enter-active, .toast-anim-leave-active { transition: all 0.3s ease; }
 .toast-anim-enter-from, .toast-anim-leave-to { opacity: 0; transform: translateX(24px); }
 
@@ -2423,27 +2084,25 @@ onUnmounted(() => {
 /* ───────────────────────────────────────── */
 @media (max-width: 1280px) {
   .products-grid, .reels-grid { grid-template-columns: repeat(4, 1fr); }
-  .hero-title { font-size: 3.4rem; }
 }
 
 @media (max-width: 1024px) {
   .products-grid, .reels-grid { grid-template-columns: repeat(3, 1fr); }
   .features-grid { grid-template-columns: repeat(2, 1fr); }
-  .hero-title { font-size: 2.9rem; }
   .quick-modal-grid { grid-template-columns: 1fr; }
   .quick-modal-img { max-height: 300px; }
+  .hero-center-tagline p { font-size: 2rem; }
+  .hero-center-tagline p:last-child { font-size: 1.8rem; }
 }
 
 @media (max-width: 768px) {
   .container, .sp-container { padding: 0 20px; }
   .hero-section { height: 85vh; min-height: 480px; }
-  .hero-title { font-size: 2.2rem; }
-  .hero-subtitle { font-size: 0.95rem; }
-  .hero-content { right: 4%; left: 4%; max-width: 100%; top: 44%; }
   .hero-nav { display: none; }
   .hero-vendor-card { display: none; }
-  .hero-price { font-size: 1.8rem; }
-  .hero-btn-primary, .hero-btn-secondary { padding: 11px 22px; font-size: 0.85rem; }
+  .hero-center-tagline { width: 94%; }
+  .hero-center-tagline p { font-size: 1.5rem; line-height: 1.7; }
+  .hero-center-tagline p:last-child { font-size: 1.35rem; }
 
   .sp-header { flex-direction: column; align-items: flex-start; }
   .sp-header-right { width: 100%; justify-content: space-between; }
@@ -2473,10 +2132,9 @@ onUnmounted(() => {
 
 @media (max-width: 480px) {
   .hero-section { height: 80vh; min-height: 380px; }
-  .hero-title { font-size: 1.75rem; }
-  .hero-subtitle { font-size: 0.82rem; }
-  .hero-buttons { gap: 10px; }
-  .hero-btn-primary, .hero-btn-secondary { padding: 10px 18px; font-size: 0.8rem; }
+  .hero-center-tagline p { font-size: 1.15rem; line-height: 1.65; }
+  .hero-center-tagline p:last-child { font-size: 1.05rem; }
+
   .sp-card { flex: 0 0 138px; }
   .sp-card-body { padding: 8px 9px; }
   .cat-card { flex: 0 0 112px; }
@@ -2485,6 +2143,12 @@ onUnmounted(() => {
   .features-grid { grid-template-columns: 1fr; gap: 14px; }
   .section-title { font-size: 1.6rem; }
   .feed-filter-btn { padding: 7px 14px; font-size: 0.8rem; }
+
+  .vendor-alert-card { max-width: calc(100% - 20px); }
+  .alert-actions { flex-direction: column; }
+  .alert-content { padding: 16px 20px 22px; }
+  .alert-title { font-size: 1.1rem; }
+  .info-row { flex-direction: column; align-items: flex-start; gap: 4px; }
 }
 
 /* iOS safe area */
