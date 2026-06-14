@@ -73,22 +73,6 @@
             <span class="hero-price">{{ slide.price }}</span>
           </div>
 
-          <div class="hero-buttons">
-            <button class="hero-btn-primary" @click="navigateTo(slide.link)">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M5 12L19 12"/>
-                <path d="M12 5L19 12L12 19" stroke-linecap="round"/>
-              </svg>
-              <span>{{ slide.buttonText || 'اكتشف المجموعة' }}</span>
-            </button>
-            <button class="hero-btn-secondary" @click="navigateTo(slide.link)">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-              عرض التفاصيل
-            </button>
-          </div>
         </div>
 
         <div class="hero-vendor-card" v-if="slide.vendor">
@@ -776,57 +760,22 @@ let pendingProduct = null
 const heroSlides = ref([
   {
     video: '/src/assets/videos/slide3.mp4',
-    title: 'مجوهرات تقليدية فاخرة',
-    subtitle: 'صناعة يدوية تونسية بتفاصيل فريدة ومواد طبيعية نادرة',
-    badge: 'منتج مميز',
-    price: '250 د.ت',
-    features: [
-      { text: 'جودة عالية' },
-      { text: 'تصاميم أصيلة' },
-      { text: 'صناعة يدوية' }
-    ],
-    buttonText: 'اكتشف المجموعة',
-    link: '/products?category=jewelry',
-    vendor: { name: 'دار الأصالة', role: 'بائع موثوق', avatar: 'https://i.pravatar.cc/48?img=10' }
+
   },
   {
     video: '/src/assets/videos/slide2.mp4',
-    title: 'ملابس تقليدية عصرية',
-    subtitle: 'أناقة تونسية أصيلة تجمع بين التراث والحداثة',
-    badge: 'تشكيلة جديدة',
-    price: '89 د.ت',
-    features: [
-      { text: 'قماش طبيعي' },
-      { text: 'خياطة يدوية' },
-      { text: 'مقاسات متعددة' }
-    ],
-    buttonText: 'اكتشف الآن',
-    link: '/products?category=clothing',
-    vendor: { name: 'بيت الخياطة', role: 'بائع موثوق', avatar: 'https://i.pravatar.cc/48?img=20' }
+
   },
   {
     video: '/src/assets/videos/slide1.mp4',
-    title: 'اكتشف العطور الفاخرة',
-    subtitle: 'أجود العطور التونسية المستخلصة من الطبيعة البكر',
-    badge: 'خصم ٣٠٪',
-    price: '120 د.ت',
-    features: [
-      { text: 'عطور طبيعية' },
-      { text: 'مكونات نادرة' },
-      { text: 'رائحة تدوم' }
-    ],
-    buttonText: 'تسوق الآن',
-    link: '/products?category=perfumes',
-    vendor: { name: 'دار العطور', role: 'بائع موثوق', avatar: 'https://i.pravatar.cc/48?img=30' }
+
   }
 ])
 
 // ─── Feed Filters ───
 const feedFilters = [
-  { value: 'all', label: 'الكل' },
   { value: 'products', label: 'منتجات' },
-  { value: 'videos', label: 'فيديوهات' },
-  { value: 'popular', label: 'الأكثر شهرة' }
+
 ]
 
 // ─── Computed ───
