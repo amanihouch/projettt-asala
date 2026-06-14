@@ -183,19 +183,19 @@
         </div>
 
         <div class="team-grid">
-          <!-- Ikbel Damdoum -->
-          <div class="team-card" data-aos="fade-up" data-aos-delay="0">
+          <div class="team-card" data-aos="fade-up" data-aos-delay="200">
             <div class="team-icon">
               <div class="icon-circle">
-                <span class="icon-emoji">I</span>
+                <span class="icon-emoji">A</span>
               </div>
             </div>
             <div class="team-info">
-              <h3 class="team-name">ikbel damdoum</h3>
+              <h3 class="team-name">Amani houch</h3>
               <p class="team-role">développeur full stack</p>
               <div class="team-divider"></div>
             </div>
           </div>
+
 
           <!-- Fakher Sakli -->
           <div class="team-card featured-card" data-aos="fade-up" data-aos-delay="100">
@@ -212,14 +212,14 @@
           </div>
 
           <!-- Ameni Houche -->
-          <div class="team-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="team-card" data-aos="fade-up" data-aos-delay="0">
             <div class="team-icon">
               <div class="icon-circle">
-                <span class="icon-emoji">A</span>
+                <span class="icon-emoji">I</span>
               </div>
             </div>
             <div class="team-info">
-              <h3 class="team-name">Amani houch</h3>
+              <h3 class="team-name">ikbel damdoum</h3>
               <p class="team-role">développeur full stack</p>
               <div class="team-divider"></div>
             </div>
