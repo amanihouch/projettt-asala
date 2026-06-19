@@ -1074,7 +1074,7 @@ onUnmounted(() => {
 
 .thumbnail-large img {
   width: 100%;
-  height: 100%;
+  height: 70%;
   object-fit: cover;
 }
 
