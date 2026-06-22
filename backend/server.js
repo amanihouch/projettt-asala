@@ -83,19 +83,62 @@ uploadDirs.forEach(dir => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Configuration CORS corrigée
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.CLIENT_URL || 'https://votre-domaine.com'
-    : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+// ============================================
+// ===== CORS — CORRIGÉ =====
+// ============================================
+// ⚠️ AVANT : en production, "origin" ne pouvait valoir QU'UNE seule valeur
+// (process.env.CLIENT_URL OU le placeholder 'https://votre-domaine.com').
+// Si CLIENT_URL n'était pas défini exactement comme l'origine appelante,
+// Express renvoyait une réponse SANS header Access-Control-Allow-Origin,
+// et le navigateur bloquait toutes les requêtes venant de asala.tn.
+//
+// ✅ MAINTENANT : on utilise une liste blanche d'origines, vérifiée dans
+// une fonction. Toute origine présente dans la liste reçoit le header
+// CORS correct, qu'on soit en dev ou en prod.
+
+const allowedOrigins = [
+  // Domaine de production
+  'http://asala.tn',
+  'https://asala.tn',
+  'http://www.asala.tn',
+  'https://www.asala.tn',
+  // Accès direct par IP (utile pour tes tests sur le VPS)
+  'http://213.32.65.154',
+  'http://213.32.65.154:5000',
+  // Environnements de développement local
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173'
+];
+
+// Permet d'ajouter facilement d'autres origines via le .env, sans
+// retoucher le code (ex: CLIENT_URL=https://staging.asala.tn)
+if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) {
+  allowedOrigins.push(process.env.CLIENT_URL);
+}
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // "origin" est undefined pour les requêtes sans navigateur
+    // (Postman, curl, requêtes serveur-à-serveur) → on les autorise
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️ CORS bloqué pour l'origine: ${origin}`);
+      callback(new Error(`Origine non autorisée par CORS: ${origin}`));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   exposedHeaders: ['Content-Length', 'X-Requested-With']
-}));
+};
+
+app.use(cors(corsOptions));
 
 // ✅ Middleware pour les requêtes OPTIONS (preflight)
-app.options('*', cors());
+app.options('*', cors(corsOptions));
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
@@ -217,7 +260,15 @@ app.use('*', (req, res) => {
 // ===== ERROR HANDLER =====
 app.use((err, req, res, next) => {
   console.error('❌ Erreur:', err.message);
-  
+
+  // ✅ Erreur CORS interceptée proprement au lieu de planter en 500
+  if (err.message && err.message.startsWith('Origine non autorisée par CORS')) {
+    return res.status(403).json({
+      success: false,
+      message: err.message
+    });
+  }
+
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({
       success: false,
@@ -283,6 +334,7 @@ const startServer = async () => {
       console.log('\n');
       console.log('🚀 ==========================================');
       console.log(`🚀 ✅ Serveur démarré sur http://localhost:${PORT}`);
+      console.log(`🚀 ✅ Origines CORS autorisées: ${allowedOrigins.join(', ')}`);
       console.log('🚀 ==========================================\n');
     });
   } catch (error) {
