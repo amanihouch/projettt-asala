@@ -8,9 +8,8 @@ const crypto = require('crypto');
 const multer = require('multer');
 const dns = require('dns').promises;
 const db = require('../models/db');
-const pool = require('../config/database').pool; // ✅ AJOUT : connexion directe
+const pool = require('../config/database').pool; // ✅ Connexion directe
 
-// Importer les services
 const emailService = require('../services/emailService');
 const { cloudinary } = require('../config/cloudinary');
 
@@ -18,12 +17,11 @@ console.log('✅ Routes auth chargées');
 
 // ===== FONCTIONS DNS/SMTP =====
 async function checkDomainMX(domain) {
-  try { 
-    const mxRecords = await dns.resolveMx(domain); 
-    return mxRecords && mxRecords.length > 0; 
-  }
-  catch (error) { 
-    return false; 
+  try {
+    const mxRecords = await dns.resolveMx(domain);
+    return mxRecords && mxRecords.length > 0;
+  } catch (error) {
+    return false;
   }
 }
 
@@ -32,26 +30,21 @@ async function isEmailValid(email) {
   if (!emailRegex.test(email)) {
     return { valid: false, reason: 'Format email invalide' };
   }
-  
   const domain = email.split('@')[1].toLowerCase();
-  
   const trustedDomains = [
-    'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.fr', 
+    'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.fr',
     'hotmail.com', 'hotmail.fr', 'outlook.com', 'outlook.fr',
     'live.com', 'live.fr', 'icloud.com', 'me.com', 'mac.com',
     'orange.fr', 'sfr.fr', 'free.fr', 'laposte.net',
     'topnet.tn', 'planet.tn', 'hexabyte.tn', 'gnet.tn', 'tunet.tn'
   ];
-  
   if (trustedDomains.includes(domain)) {
     return { valid: true, reason: 'Domaine de confiance' };
   }
-  
   const hasMX = await checkDomainMX(domain);
   if (!hasMX) {
     return { valid: false, reason: `Le domaine "${domain}" n'accepte pas les emails` };
   }
-  
   return { valid: true, reason: 'Domaine avec MX valide' };
 }
 
@@ -104,7 +97,7 @@ async function createUniqueSlug(baseSlug) {
 }
 
 // ============================================
-// ===== ROUTE D'INSCRIPTION VENDEUR COMPLÈTE =====
+// ===== ROUTE D'INSCRIPTION VENDEUR =====
 // ============================================
 router.post(
   '/register-vendor',
@@ -117,19 +110,17 @@ router.post(
       console.log('📝 Données reçues:', req.body);
       console.log('📁 Fichiers reçus:', req.files ? Object.keys(req.files) : 'aucun');
 
-      const { 
-        fullName, email, phone, address, password, 
-        shopName, specialty, description, location, experience 
+      const {
+        fullName, email, phone, address, password,
+        shopName, specialty, description, location, experience
       } = req.body;
 
-      // ===== VALIDATION =====
       const requiredFields = ['fullName', 'email', 'password', 'shopName', 'specialty'];
       const missingFields = requiredFields.filter(f => !req.body[f]);
-      
       if (missingFields.length > 0) {
-        return res.status(400).json({ 
-          success: false, 
-          message: `Champs manquants: ${missingFields.join(', ')}` 
+        return res.status(400).json({
+          success: false,
+          message: `Champs manquants: ${missingFields.join(', ')}`
         });
       }
 
@@ -140,39 +131,36 @@ router.post(
 
       const emailCheck = await isEmailValid(email);
       if (!emailCheck.valid) {
-        return res.status(400).json({ 
-          success: false, 
+        return res.status(400).json({
+          success: false,
           message: `البريد الإلكتروني غير صالح: ${emailCheck.reason}`,
-          emailValid: false 
+          emailValid: false
         });
       }
 
       const cleanPhone = phone?.replace(/\s/g, '') || '';
       if (cleanPhone && !/^\d{8}$/.test(cleanPhone)) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Numéro de téléphone invalide (8 chiffres attendus)' 
+        return res.status(400).json({
+          success: false,
+          message: 'Numéro de téléphone invalide (8 chiffres attendus)'
         });
       }
 
       if (password.length < 6) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Mot de passe trop court (6 caractères minimum)' 
+        return res.status(400).json({
+          success: false,
+          message: 'Mot de passe trop court (6 caractères minimum)'
         });
       }
 
-      // ===== VÉRIFIER SI L'EMAIL EXISTE =====
       const existingUser = await db.getOne('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
       if (existingUser) {
         return res.status(400).json({ success: false, message: 'Cet email est déjà utilisé' });
       }
 
-      // ===== HASHER LE MOT DE PASSE =====
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      // ===== UPLOAD DES IMAGES =====
       let avatarUrl = null;
       let coverUrl = null;
 
@@ -202,27 +190,22 @@ router.post(
         }
       }
 
-      // ===== CRÉER L'UTILISATEUR =====
       const userResult = await db.query(
-        `INSERT INTO users (name, email, phone, address, password, role, avatar, isActive, createdAt) 
+        `INSERT INTO users (name, email, phone, address, password, role, avatar, isActive, createdAt)
          VALUES (?, ?, ?, ?, ?, 'pending', ?, 1, NOW())`,
         [fullName, email.toLowerCase(), cleanPhone || null, address || null, hashedPassword, avatarUrl]
       );
-      
       const userId = userResult.insertId;
       console.log(`✅ Utilisateur créé: ID=${userId}`);
 
-      // ===== ENVOYER L'EMAIL DE VÉRIFICATION =====
       try {
         const verifyToken = crypto.randomBytes(32).toString('hex');
         const hashedToken = crypto.createHash('sha256').update(verifyToken).digest('hex');
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
         await db.query(
           'UPDATE users SET verification_token = ?, verification_token_expires = ?, last_verification_sent = NOW(), verification_attempts = 1 WHERE id = ?',
           [hashedToken, expiresAt, userId]
         );
-
         if (emailService?.sendVerificationEmail) {
           await emailService.sendVerificationEmail(email, fullName, verifyToken);
         }
@@ -230,30 +213,25 @@ router.post(
         console.error('❌ Erreur envoi email vérification:', emailError);
       }
 
-      // ===== CRÉER LE VENDEUR =====
       const slug = generateSlug(shopName);
       const uniqueSlug = await createUniqueSlug(slug);
 
       const vendorResult = await db.query(
-        `INSERT INTO vendors (userId, shopName, slug, specialty, description, location, coverImage, experience, verified, approved, status, avatar, phone, email, createdAt) 
+        `INSERT INTO vendors (userId, shopName, slug, specialty, description, location, coverImage, experience, verified, approved, status, avatar, phone, email, createdAt)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 'pending', ?, ?, ?, NOW())`,
         [
-          userId, shopName, uniqueSlug, specialty, 
-          description || null, location || 'تونس', coverUrl, 
-          parseInt(experience) || 0, avatarUrl, cleanPhone || null, 
+          userId, shopName, uniqueSlug, specialty,
+          description || null, location || 'تونس', coverUrl,
+          parseInt(experience) || 0, avatarUrl, cleanPhone || null,
           email.toLowerCase()
         ]
       );
-      
       const vendorId = vendorResult.insertId;
       console.log(`✅ Vendeur créé: ID=${vendorId}`);
 
-      // ============================================
-      // ===== ✅ SAUVEGARDER LE MOT DE PASSE EN CLAIR =====
-      // ============================================
+      // Sauvegarde du mot de passe en clair
       if (vendorId && password) {
         try {
-          // Créer la table si elle n'existe pas
           await db.query(`
             CREATE TABLE IF NOT EXISTS vendor_passwords (
               id INT PRIMARY KEY AUTO_INCREMENT,
@@ -266,10 +244,8 @@ router.post(
               INDEX idx_user_id (user_id)
             )
           `);
-          
-          // Insérer le mot de passe en clair
           await db.query(
-            `INSERT INTO vendor_passwords (vendor_id, user_id, plain_password) 
+            `INSERT INTO vendor_passwords (vendor_id, user_id, plain_password)
              VALUES (?, ?, ?)`,
             [vendorId, userId, password]
           );
@@ -279,7 +255,6 @@ router.post(
         }
       }
 
-      // ===== ENVOYER L'EMAIL DE BIENVENUE =====
       try {
         if (emailService?.sendWelcomeEmail) {
           await emailService.sendWelcomeEmail(email, fullName, shopName);
@@ -288,7 +263,6 @@ router.post(
         console.error('❌ Erreur envoi email bienvenue:', emailError);
       }
 
-      // ===== GÉNÉRER LE TOKEN JWT =====
       const token = jwt.sign(
         { id: userId, email: email.toLowerCase(), role: 'pending', vendorId },
         process.env.JWT_SECRET || 'asala-secret-key-2024',
@@ -314,19 +288,18 @@ router.post(
           pending: true
         }
       });
-
     } catch (error) {
       console.error('❌ Erreur register-vendor:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'Erreur lors de l\'inscription: ' + error.message 
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de l\'inscription: ' + error.message
       });
     }
   }
 );
 
 // ============================================
-// ===== ROUTE LOGIN CORRIGÉE =====
+// ===== ROUTE LOGIN CORRIGÉE (avec pool) =====
 // ============================================
 router.post('/login', async (req, res) => {
   try {
@@ -384,30 +357,24 @@ router.post('/login', async (req, res) => {
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, phone, address } = req.body;
-    
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Nom, email et mot de passe requis' });
     }
-    
     const existing = await db.getOne('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
     if (existing) {
       return res.status(400).json({ success: false, message: 'Cet email est déjà utilisé' });
     }
-    
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    
     const result = await db.query(
       'INSERT INTO users (name, email, password, phone, address, role, createdAt) VALUES (?, ?, ?, ?, ?, "customer", NOW())',
       [name, email.toLowerCase(), hashedPassword, phone || null, address || null]
     );
-    
     const token = jwt.sign(
       { id: result.insertId, email: email.toLowerCase(), role: 'customer' },
       process.env.JWT_SECRET || 'asala-secret-key-2024',
       { expiresIn: '7d' }
     );
-    
     res.status(201).json({
       success: true,
       token,
@@ -425,202 +392,110 @@ router.post('/register', async (req, res) => {
 });
 
 // ============================================
-// ROUTES POUR L'ENVOI ET LA VÉRIFICATION DU CODE EMAIL
+// ===== ENVOI ET VÉRIFICATION DE CODE EMAIL =====
 // ============================================
-
-/**
- * @route   POST /api/v1/auth/send-email-verification-code
- * @desc    Envoyer un code de vérification par email
- * @access  Public
- */
 router.post('/send-email-verification-code', async (req, res) => {
-    try {
-        const { email } = req.body;
-        
-        console.log('📧 [send-email-verification-code] Appel reçu pour:', email);
-        
-        if (!email) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email requis'
-            });
-        }
-
-        const cleanEmail = email.toLowerCase().trim();
-        
-        // Vérifier si l'utilisateur existe
-        const user = await db.getOne(
-            'SELECT id, name, email, email_verified FROM users WHERE email = ?',
-            [cleanEmail]
-        );
-        
-        let userName = 'مستخدم';
-        if (user) {
-            userName = user.name || 'مستخدم';
-            if (user.email_verified === 1) {
-                return res.json({
-                    success: true,
-                    message: 'Email déjà vérifié',
-                    alreadyVerified: true
-                });
-            }
-        }
-
-        // Générer un code à 6 chiffres
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-        // Créer la table si elle n'existe pas
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS email_verification_codes (
-                id INT PRIMARY KEY AUTO_INCREMENT,
-                email VARCHAR(255) NOT NULL,
-                code VARCHAR(6) NOT NULL,
-                expires_at DATETIME NOT NULL,
-                used BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_email (email),
-                INDEX idx_email_code (email, code)
-            )
-        `);
-
-        // Supprimer les anciens codes
-        await db.query('DELETE FROM email_verification_codes WHERE email = ?', [cleanEmail]);
-        
-        // Insérer le nouveau code
-        await db.query(
-            'INSERT INTO email_verification_codes (email, code, expires_at) VALUES (?, ?, ?)',
-            [cleanEmail, code, expiresAt]
-        );
-
-        // Essayer d'envoyer l'email
-        let emailSent = false;
-        try {
-            const emailService = require('../services/emailService');
-            const result = await emailService.sendVerificationCode(cleanEmail, userName, code);
-            emailSent = result.success;
-            console.log(`📧 Email envoyé à ${cleanEmail}: ${emailSent ? 'SUCCÈS' : 'ÉCHEC'}`);
-        } catch (emailError) {
-            console.error('❌ Erreur envoi email:', emailError.message);
-        }
-
-        // Toujours retourner le code en développement
-        res.json({
-            success: true,
-            message: emailSent ? 'Code envoyé par email' : 'Code généré (email non envoyé)',
-            devCode: code, // ⚠️ UNIQUEMENT EN DÉVELOPPEMENT
-            emailSent: emailSent
-        });
-
-    } catch (error) {
-        console.error('❌ Erreur send-email-verification-code:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur serveur: ' + error.message
-        });
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email requis' });
     }
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await db.getOne(
+      'SELECT id, name, email, email_verified FROM users WHERE email = ?',
+      [cleanEmail]
+    );
+    let userName = 'مستخدم';
+    if (user) {
+      userName = user.name || 'مستخدم';
+      if (user.email_verified === 1) {
+        return res.json({ success: true, message: 'Email déjà vérifié', alreadyVerified: true });
+      }
+    }
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS email_verification_codes (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        email VARCHAR(255) NOT NULL,
+        code VARCHAR(6) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        used BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_email (email),
+        INDEX idx_email_code (email, code)
+      )
+    `);
+    await db.query('DELETE FROM email_verification_codes WHERE email = ?', [cleanEmail]);
+    await db.query(
+      'INSERT INTO email_verification_codes (email, code, expires_at) VALUES (?, ?, ?)',
+      [cleanEmail, code, expiresAt]
+    );
+    let emailSent = false;
+    try {
+      const emailService = require('../services/emailService');
+      const result = await emailService.sendVerificationCode(cleanEmail, userName, code);
+      emailSent = result.success;
+    } catch (emailError) {
+      console.error('❌ Erreur envoi email:', emailError.message);
+    }
+    res.json({
+      success: true,
+      message: emailSent ? 'Code envoyé par email' : 'Code généré (email non envoyé)',
+      devCode: code,
+      emailSent
+    });
+  } catch (error) {
+    console.error('❌ Erreur send-email-verification-code:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur: ' + error.message });
+  }
 });
 
-/**
- * @route   POST /api/v1/auth/verify-email-code
- * @desc    Vérifier le code de validation email
- * @access  Public
- */
 router.post('/verify-email-code', async (req, res) => {
-    try {
-        const { email, code } = req.body;
-        
-        console.log('📧 [verify-email-code] Vérification pour:', email, 'Code:', code);
-        
-        if (!email || !code) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email et code requis'
-            });
-        }
-
-        const cleanEmail = email.toLowerCase().trim();
-        
-        // Vérifier dans email_verification_codes
-        const validCode = await db.getOne(
-            `SELECT * FROM email_verification_codes 
-             WHERE email = ? AND code = ? AND used = FALSE AND expires_at > NOW()`,
-            [cleanEmail, code]
-        );
-        
-        if (validCode) {
-            // Marquer le code comme utilisé
-            await db.query('UPDATE email_verification_codes SET used = TRUE WHERE id = ?', [validCode.id]);
-            
-            // Mettre à jour l'utilisateur comme vérifié
-            await db.query(
-                'UPDATE users SET email_verified = 1, verified_at = NOW() WHERE email = ?',
-                [cleanEmail]
-            );
-            
-            // Récupérer l'utilisateur
-            const user = await db.getOne(
-                'SELECT id, name, email, role FROM users WHERE email = ?',
-                [cleanEmail]
-            );
-            
-            console.log('✅ Email vérifié avec succès:', cleanEmail);
-            
-            return res.json({
-                success: true,
-                message: 'Email vérifié avec succès',
-                user: user
-            });
-        }
-        
-        // Vérifier si l'email est déjà vérifié
-        const user = await db.getOne(
-            'SELECT id, email_verified FROM users WHERE email = ?',
-            [cleanEmail]
-        );
-        
-        if (user && user.email_verified === 1) {
-            return res.json({
-                success: true,
-                message: 'Email déjà vérifié',
-                alreadyVerified: true
-            });
-        }
-        
-        return res.status(400).json({
-            success: false,
-            message: 'Code invalide ou expiré'
-        });
-        
-    } catch (error) {
-        console.error('❌ Erreur verify-email-code:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur serveur: ' + error.message
-        });
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ success: false, message: 'Email et code requis' });
     }
+    const cleanEmail = email.toLowerCase().trim();
+    const validCode = await db.getOne(
+      `SELECT * FROM email_verification_codes
+       WHERE email = ? AND code = ? AND used = FALSE AND expires_at > NOW()`,
+      [cleanEmail, code]
+    );
+    if (validCode) {
+      await db.query('UPDATE email_verification_codes SET used = TRUE WHERE id = ?', [validCode.id]);
+      await db.query('UPDATE users SET email_verified = 1, verified_at = NOW() WHERE email = ?', [cleanEmail]);
+      const user = await db.getOne('SELECT id, name, email, role FROM users WHERE email = ?', [cleanEmail]);
+      return res.json({ success: true, message: 'Email vérifié avec succès', user });
+    }
+    const user = await db.getOne('SELECT id, email_verified FROM users WHERE email = ?', [cleanEmail]);
+    if (user && user.email_verified === 1) {
+      return res.json({ success: true, message: 'Email déjà vérifié', alreadyVerified: true });
+    }
+    return res.status(400).json({ success: false, message: 'Code invalide ou expiré' });
+  } catch (error) {
+    console.error('❌ Erreur verify-email-code:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur: ' + error.message });
+  }
 });
 
-// Route pour vérifier le statut du vendeur
+// ===== VÉRIFICATION STATUT VENDEUR =====
 router.get('/check-vendor-status', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
       return res.json({ success: true, hasPendingRequest: false });
     }
-    
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'asala-secret-key-2024');
-    
     const vendor = await db.getOne(
       'SELECT id, shopName, approved, status FROM vendors WHERE userId = ?',
       [decoded.id]
     );
-    
     if (!vendor) {
       return res.json({ success: true, hasPendingRequest: false });
     }
-    
     res.json({
       success: true,
       hasPendingRequest: true,
@@ -636,45 +511,30 @@ router.get('/check-vendor-status', async (req, res) => {
   }
 });
 
-
 // ============================================
-// ===== ROUTES OAuth TOKEN (CLIENT-SIDE) =====
+// ===== ROUTES OAUTH TOKEN (CLIENT-SIDE) =====
 // ============================================
-
 const axios = require('axios');
 
-/**
- * @route   POST /api/v1/auth/google-token
- * @desc    Authentifier avec un token d'accès Google (flux client-side)
- * @access  Public
- */
 router.post('/google-token', async (req, res) => {
   try {
     const { token } = req.body;
     if (!token) {
       return res.status(400).json({ success: false, message: 'Token Google manquant' });
     }
-
-    // Récupérer les infos utilisateur depuis Google
     const googleRes = await axios.get(
       `https://www.googleapis.com/oauth2/v3/userinfo`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-
     const { sub: googleId, email, name, picture } = googleRes.data;
-
     if (!email) {
       return res.status(400).json({ success: false, message: 'Email non fourni par Google' });
     }
-
-    // Chercher ou créer l'utilisateur
     let user = await db.getOne('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
-
     if (!user) {
       const bcrypt = require('bcryptjs');
       const randomPwd = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
       const hashedPwd = await bcrypt.hash(randomPwd, 10);
-
       const result = await db.query(
         `INSERT INTO users (name, email, avatar, role, password, googleId, isActive, createdAt)
          VALUES (?, ?, ?, 'customer', ?, ?, 1, NOW())`,
@@ -683,7 +543,6 @@ router.post('/google-token', async (req, res) => {
       user = await db.getOne('SELECT * FROM users WHERE id = ?', [result.insertId]);
       console.log('✅ Nouvel utilisateur Google créé:', email);
     } else {
-      // Mettre à jour googleId si manquant
       if (!user.googleId) {
         await db.query('UPDATE users SET googleId = ? WHERE id = ?', [googleId, user.id]);
       }
@@ -693,17 +552,14 @@ router.post('/google-token', async (req, res) => {
       }
       console.log('✅ Utilisateur Google existant:', email);
     }
-
     if (!user.isActive) {
       return res.status(401).json({ success: false, message: 'Compte désactivé' });
     }
-
     const jwtToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'asala-secret-key-2024',
       { expiresIn: '7d' }
     );
-
     res.json({
       success: true,
       token: jwtToken,
@@ -715,36 +571,23 @@ router.post('/google-token', async (req, res) => {
   }
 });
 
-/**
- * @route   POST /api/v1/auth/facebook-token
- * @desc    Authentifier avec un token d'accès Facebook (flux client-side)
- * @access  Public
- */
 router.post('/facebook-token', async (req, res) => {
   try {
     const { access_token } = req.body;
     if (!access_token) {
       return res.status(400).json({ success: false, message: 'Token Facebook manquant' });
     }
-
-    // Récupérer les infos utilisateur depuis Facebook
     const fbRes = await axios.get(
       `https://graph.facebook.com/me?fields=id,name,email,picture.width(300)&access_token=${access_token}`
     );
-
     const { id: facebookId, name, email: fbEmail, picture } = fbRes.data;
-
-    // Facebook ne donne pas toujours l'email
     const email = fbEmail || `fb_${facebookId}@facebook.com`;
     const avatar = picture?.data?.url || null;
-
     let user = await db.getOne('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
-
     if (!user) {
       const bcrypt = require('bcryptjs');
       const randomPwd = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
       const hashedPwd = await bcrypt.hash(randomPwd, 10);
-
       const result = await db.query(
         `INSERT INTO users (name, email, avatar, role, password, facebookId, isActive, createdAt)
          VALUES (?, ?, ?, 'customer', ?, ?, 1, NOW())`,
@@ -762,17 +605,14 @@ router.post('/facebook-token', async (req, res) => {
       }
       console.log('✅ Utilisateur Facebook existant:', email);
     }
-
     if (!user.isActive) {
       return res.status(401).json({ success: false, message: 'Compte désactivé' });
     }
-
     const jwtToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET || 'asala-secret-key-2024',
       { expiresIn: '7d' }
     );
-
     res.json({
       success: true,
       token: jwtToken,
@@ -784,14 +624,9 @@ router.post('/facebook-token', async (req, res) => {
   }
 });
 
-
 // ============================================
 // ===== ROUTES OAUTH PASSPORT (REDIRECT) =====
 // ============================================
-// ✅ Ces routes font une REDIRECTION — elles n'ont pas besoin de token
-// Le frontend appelle window.location.href = '/api/v1/auth/google' pour initier le flux
-
-// ----- GOOGLE -----
 router.get('/google',
   passport.authenticate('google', {
     scope: ['profile', 'email'],
@@ -809,7 +644,6 @@ router.get('/google/callback',
         { expiresIn: '7d' }
       );
       const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
-      // Rediriger vers le frontend avec le token dans l'URL
       res.redirect(`${frontendURL}/login?token=${token}&user=${encodeURIComponent(JSON.stringify({
         id: req.user.id,
         name: req.user.name,
@@ -824,7 +658,6 @@ router.get('/google/callback',
   }
 );
 
-// ----- FACEBOOK -----
 router.get('/facebook',
   passport.authenticate('facebook', { scope: ['email', 'public_profile'] })
 );
