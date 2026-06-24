@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const multer = require('multer');
 const dns = require('dns').promises;
 const db = require('../models/db');
+const pool = require('../config/database').pool; // ✅ AJOUT : connexion directe
 
 // Importer les services
 const emailService = require('../services/emailService');
@@ -324,7 +325,9 @@ router.post(
   }
 );
 
-// ===== AUTRES ROUTES AUTH =====
+// ============================================
+// ===== ROUTE LOGIN CORRIGÉE =====
+// ============================================
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -332,8 +335,13 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email et mot de passe requis' });
     }
 
-    const user = await db.getOne('SELECT id, name, email, password, role, avatar, isActive FROM users WHERE email = ?', [email.toLowerCase()]);
-    
+    // Utilisation directe du pool pour éviter les problèmes avec db.getOne()
+    const [rows] = await pool.execute(
+      'SELECT id, name, email, password, role, avatar, isActive FROM users WHERE email = ?',
+      [email.toLowerCase()]
+    );
+    const user = rows[0];
+
     if (!user) {
       return res.status(401).json({ success: false, message: 'Email ou mot de passe incorrect' });
     }
@@ -370,6 +378,9 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// ============================================
+// ===== ROUTE REGISTER CLASSIQUE =====
+// ============================================
 router.post('/register', async (req, res) => {
   try {
     const { name, email, password, phone, address } = req.body;
@@ -412,7 +423,6 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
 });
-// backend/src/routes/auth.js - AJOUTER CES ROUTES
 
 // ============================================
 // ROUTES POUR L'ENVOI ET LA VÉRIFICATION DU CODE EMAIL
