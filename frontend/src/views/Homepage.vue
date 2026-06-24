@@ -1,4 +1,4 @@
-<!-- frontend/src/views/Homepage.vue - Version finale complète avec alerte vendeur unique -->
+<!-- frontend/src/views/Homepage.vue - Version corrigée (classes neutres anti-adblock + gestion d'erreur) -->
 <template>
   <div class="homepage" :class="{ 'dark-mode': isDarkMode }" dir="rtl">
 
@@ -63,7 +63,7 @@
               <span class="vendor-name">{{ slide.vendor.name }}</span>
               <span class="vendor-role">بائع موثوق</span>
             </div>
-            <div class="vendor-sponsored-tag">SPONSORISÉE</div>
+            <div class="vendor-trusted-tag">✓ موثّق</div>
           </div>
         </div>
       </div>
@@ -91,53 +91,53 @@
     </section>
 
     <!-- ============================= -->
-    <!-- ===== SPONSORED SECTION ==== -->
+    <!-- ===== SECTION VEDETTE ====== -->
     <!-- ============================= -->
-    <section class="sponsored-section" v-if="sponsoredProducts.length > 0">
-      <div class="sp-container">
-        <div class="sp-shimmer-bar"></div>
+    <section class="featured-section" v-if="featuredProducts.length > 0">
+      <div class="ft-container">
+        <div class="ft-shimmer-bar"></div>
 
-        <div class="sp-header">
-          <div class="sp-header-left">
-            <div class="sp-title-block">
-              <span class="sp-sponsored-badge">
+        <div class="ft-header">
+          <div class="ft-header-left">
+            <div class="ft-title-block">
+              <span class="ft-badge">
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" style="margin-left:4px">
                   <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
                 </svg>
-                SPONSORISÉ
+                تشكيلة مميزة
               </span>
-              <h2 class="sp-title">المنتجات <span>المروّجة</span></h2>
+              <h2 class="ft-title">المنتجات <span>المختارة</span></h2>
             </div>
-            <p class="sp-subtitle">اكتشف أفضل المنتجات المختارة من بائعين موثوقين · <strong>{{ sponsoredProducts.length }}</strong> منتج مميز</p>
+            <p class="ft-subtitle">اكتشف أفضل المنتجات المختارة من بائعين موثوقين · <strong>{{ featuredProducts.length }}</strong> منتج مميز</p>
           </div>
 
-          <div class="sp-header-right">
-            <div class="sp-nav-arrows">
-              <button class="sp-nav-btn" @click="spScrollPrev" :disabled="spScrollPos <= 0" aria-label="السابق">
+          <div class="ft-header-right">
+            <div class="ft-nav-arrows">
+              <button class="ft-nav-btn" @click="ftScrollPrev" :disabled="ftScrollPos <= 0" aria-label="السابق">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M9 18L15 12L9 6" stroke-linecap="round"/>
                 </svg>
               </button>
-              <button class="sp-nav-btn" @click="spScrollNext" aria-label="التالي">
+              <button class="ft-nav-btn" @click="ftScrollNext" aria-label="التالي">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M15 18L9 12L15 6" stroke-linecap="round"/>
                 </svg>
               </button>
             </div>
-            <span class="sp-view-all" @click="navigateTo('/products?sponsored=true')">عرض الكل</span>
+            <span class="ft-view-all" @click="navigateTo('/products?featured=true')">عرض الكل</span>
           </div>
         </div>
 
-        <div class="sp-carousel-wrap">
-          <div class="sp-carousel" ref="spCarouselRef" @scroll="onSpScroll">
+        <div class="ft-carousel-wrap">
+          <div class="ft-carousel" ref="ftCarouselRef" @scroll="onFtScroll">
             <div
-              v-for="(product, idx) in sponsoredProducts"
+              v-for="(product, idx) in featuredProducts"
               :key="product.id || idx"
-              class="sp-card"
+              class="ft-card"
               :style="{ '--idx': idx }"
               @click="goToProduct(product.postId || product.id)"
             >
-              <div class="sp-card-badge">
+              <div class="ft-card-badge">
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
                 </svg>
@@ -145,7 +145,7 @@
               </div>
 
               <button
-                class="sp-wishlist-btn"
+                class="ft-wishlist-btn"
                 :class="{ active: isWishlisted(product.id) }"
                 @click.stop="toggleWishlist(product)"
                 aria-label="إضافة للمفضلة"
@@ -155,15 +155,15 @@
                 </svg>
               </button>
 
-              <div class="sp-card-img">
+              <div class="ft-card-img">
                 <img
                   :src="getProductImageSafe(product)"
                   :alt="product.name || product.productName || 'منتج'"
                   loading="lazy"
-                  @error="handleSponsoredImageError($event, product)"
+                  @error="handleFeaturedImageError($event, product)"
                 />
-                <div class="sp-card-hover">
-                  <button class="sp-quick-btn" @click.stop="openSpQuickView(product)">
+                <div class="ft-card-hover">
+                  <button class="ft-quick-btn" @click.stop="openFtQuickView(product)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                       <circle cx="12" cy="12" r="3"/>
@@ -173,23 +173,23 @@
                 </div>
               </div>
 
-              <div class="sp-card-body">
-                <h4 class="sp-card-name">{{ truncate(product.name || product.productName, 22) }}</h4>
+              <div class="ft-card-body">
+                <h4 class="ft-card-name">{{ truncate(product.name || product.productName, 22) }}</h4>
 
-                <div class="sp-card-price-row">
-                  <div class="sp-card-price">
+                <div class="ft-card-price-row">
+                  <div class="ft-card-price">
                     {{ formatPrice(product.price) }}
-                    <span class="sp-currency">د.ت</span>
+                    <span class="ft-currency">د.ت</span>
                   </div>
-                  <div v-if="product.oldPrice" class="sp-card-old-price">
+                  <div v-if="product.oldPrice" class="ft-card-old-price">
                     {{ formatPrice(product.oldPrice) }}
-                    <span class="sp-discount-badge">
+                    <span class="ft-discount-badge">
                       -{{ Math.round((1 - product.price / product.oldPrice) * 100) }}%
                     </span>
                   </div>
                 </div>
 
-                <div class="sp-card-vendor">
+                <div class="ft-card-vendor">
                   <img
                     :src="product.vendorAvatar || `https://i.pravatar.cc/24?u=${product.vendorId || product.id}`"
                     @error="e => e.target.src = 'https://i.pravatar.cc/24?u=0'"
@@ -205,26 +205,27 @@
           </div>
         </div>
 
-        <div class="sp-progress-dots" v-if="sponsoredProducts.length > 4">
+        <div class="ft-progress-dots" v-if="featuredProducts.length > 4">
           <span
-            v-for="n in Math.ceil(sponsoredProducts.length / 4)"
+            v-for="n in Math.ceil(featuredProducts.length / 4)"
             :key="n"
-            class="sp-dot"
-            :class="{ active: spActiveDot === n - 1 }"
-            @click="spGoToDot(n - 1)"
+            class="ft-dot"
+            :class="{ active: ftActiveDot === n - 1 }"
+            @click="ftGoToDot(n - 1)"
           ></span>
         </div>
       </div>
     </section>
 
-    <section class="sponsored-section sponsored-skeleton" v-else-if="isLoadingSponsored">
-      <div class="sp-container">
-        <div class="sp-header">
+    <!-- Squelette de chargement -->
+    <section class="featured-section featured-skeleton" v-else-if="isLoadingFeatured">
+      <div class="ft-container">
+        <div class="ft-header">
           <div class="skeleton-line w-200 h-24"></div>
           <div class="skeleton-line w-100 h-16"></div>
         </div>
-        <div class="sp-carousel">
-          <div v-for="i in 5" :key="i" class="sp-card skeleton-card">
+        <div class="ft-carousel">
+          <div v-for="i in 5" :key="i" class="ft-card skeleton-card">
             <div class="skeleton-img"></div>
             <div class="skeleton-body">
               <div class="skeleton-line w-80 h-12"></div>
@@ -233,6 +234,14 @@
             </div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- Message d'erreur si le chargement échoue (réseau bloqué, API down, etc.) -->
+    <section class="featured-section featured-error" v-else-if="featuredLoadError">
+      <div class="ft-container ft-error-box">
+        <p class="ft-error-text">⚠️ تعذر تحميل المنتجات المميزة في الوقت الحالي</p>
+        <button class="ft-retry-btn" @click="loadFeatured">إعادة المحاولة</button>
       </div>
     </section>
 
@@ -356,7 +365,7 @@
             <div class="product-img-wrap">
               <img :src="getProductImage(post)" :alt="getProductName(post)" loading="lazy" @error="e => e.target.src = 'https://placehold.co/400x400/f5f0eb/1a1a2e?text=منتج'" />
               <div class="product-price-tag">{{ formatPrice(getPrice(post)) }} د.ت</div>
-              <div v-if="isFeedProductSponsored(post.id)" class="feed-sponsored-badge">
+              <div v-if="isFeedProductFeatured(post.id)" class="feed-featured-badge">
                 <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
                 </svg>
@@ -468,44 +477,44 @@
     <!-- ===== MODALS =============== -->
     <!-- ============================= -->
 
-    <!-- Sponsored Quick View Modal -->
+    <!-- Modal Aperçu Rapide (Vedette) -->
     <transition name="modal-fade">
-      <div v-if="spQuickViewProduct" class="modal-overlay" @click.self="spQuickViewProduct = null">
+      <div v-if="ftQuickViewProduct" class="modal-overlay" @click.self="ftQuickViewProduct = null">
         <div class="quick-modal">
-          <button class="modal-close" @click="spQuickViewProduct = null" aria-label="إغلاق">
+          <button class="modal-close" @click="ftQuickViewProduct = null" aria-label="إغلاق">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 6L6 18M6 6L18 18" stroke-linecap="round"/>
             </svg>
           </button>
-          <div class="quick-modal-grid" v-if="spQuickViewProduct">
+          <div class="quick-modal-grid" v-if="ftQuickViewProduct">
             <div class="quick-modal-img">
-              <div class="modal-sp-tag">
+              <div class="modal-ft-tag">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
                 </svg>
                 منتج مميز
               </div>
-              <img :src="spQuickViewProduct.image" :alt="spQuickViewProduct.name" @error="e => e.target.src = 'https://placehold.co/400x500/f5f0eb/1a1a2e?text=منتج'" />
+              <img :src="ftQuickViewProduct.image" :alt="ftQuickViewProduct.name" @error="e => e.target.src = 'https://placehold.co/400x500/f5f0eb/1a1a2e?text=منتج'" />
             </div>
             <div class="quick-modal-info">
               <div class="modal-vendor-row">
-                <img :src="spQuickViewProduct.vendorAvatar || `https://i.pravatar.cc/40?u=${spQuickViewProduct.vendorId}`" @error="handleAvatarError" />
+                <img :src="ftQuickViewProduct.vendorAvatar || `https://i.pravatar.cc/40?u=${ftQuickViewProduct.vendorId}`" @error="handleAvatarError" />
                 <div>
-                  <strong>{{ spQuickViewProduct.vendorName || 'بائع موثوق' }}</strong>
+                  <strong>{{ ftQuickViewProduct.vendorName || 'بائع موثوق' }}</strong>
                   <span class="modal-vendor-label">بائع موثوق</span>
                 </div>
               </div>
-              <h2 class="modal-product-title">{{ spQuickViewProduct.name || spQuickViewProduct.productName }}</h2>
-              <p class="modal-product-desc">{{ spQuickViewProduct.description || 'منتج حرفي تونسي أصيل مصنوع يدوياً بأعلى معايير الجودة.' }}</p>
+              <h2 class="modal-product-title">{{ ftQuickViewProduct.name || ftQuickViewProduct.productName }}</h2>
+              <p class="modal-product-desc">{{ ftQuickViewProduct.description || 'منتج حرفي تونسي أصيل مصنوع يدوياً بأعلى معايير الجودة.' }}</p>
               <div class="modal-price-row">
-                <span class="modal-price">{{ formatPrice(spQuickViewProduct.price) }} د.ت</span>
-                <span v-if="spQuickViewProduct.oldPrice" class="modal-old-price">{{ formatPrice(spQuickViewProduct.oldPrice) }} د.ت</span>
-                <span v-if="spQuickViewProduct.oldPrice" class="modal-discount">
-                  -{{ Math.round((1 - spQuickViewProduct.price / spQuickViewProduct.oldPrice) * 100) }}%
+                <span class="modal-price">{{ formatPrice(ftQuickViewProduct.price) }} د.ت</span>
+                <span v-if="ftQuickViewProduct.oldPrice" class="modal-old-price">{{ formatPrice(ftQuickViewProduct.oldPrice) }} د.ت</span>
+                <span v-if="ftQuickViewProduct.oldPrice" class="modal-discount">
+                  -{{ Math.round((1 - ftQuickViewProduct.price / ftQuickViewProduct.oldPrice) * 100) }}%
                 </span>
               </div>
               <div class="modal-actions">
-                <button class="modal-btn-primary" @click="handleAddToCart(spQuickViewProduct); spQuickViewProduct = null">
+                <button class="modal-btn-primary" @click="handleAddToCart(ftQuickViewProduct); ftQuickViewProduct = null">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 6H21L19 16H5L3 6Z"/>
                     <circle cx="8" cy="20" r="1.5"/>
@@ -513,7 +522,7 @@
                   </svg>
                   أضف إلى السلة
                 </button>
-                <button class="modal-btn-secondary" @click="$router.push(`/product/${spQuickViewProduct.postId || spQuickViewProduct.id}`); spQuickViewProduct = null">
+                <button class="modal-btn-secondary" @click="$router.push(`/product/${ftQuickViewProduct.postId || ftQuickViewProduct.id}`); ftQuickViewProduct = null">
                   عرض التفاصيل الكاملة
                 </button>
               </div>
@@ -710,7 +719,6 @@ const showScrollTop = ref(false)
 const currentSlide = ref(0)
 const slideInterval = ref(null)
 const isLoadingPosts = ref(false)
-const isLoadingSponsored = ref(false)
 const categories = ref([])
 const catsContainer = ref(null)
 const categoriesSection = ref(null)
@@ -723,11 +731,13 @@ const selectedReel = ref(null)
 const reelsList = ref([])
 const toast = ref({ show: false, message: '', type: 'success' })
 
-// ─── Sponsored state ───
-const spCarouselRef = ref(null)
-const spScrollPos = ref(0)
-const spActiveDot = ref(0)
-const spQuickViewProduct = ref(null)
+// ─── État section "vedette" (anciennement "sponsorisé") ───
+const isLoadingFeatured = ref(false)
+const featuredLoadError = ref(false)
+const ftCarouselRef = ref(null)
+const ftScrollPos = ref(0)
+const ftActiveDot = ref(0)
+const ftQuickViewProduct = ref(null)
 
 // ─── ALERTE VENDEUR UNIQUE ───
 const vendorAlertVisible = ref(false)
@@ -747,7 +757,12 @@ const feedFilters = [
 ]
 
 // ─── Computed ───
-const sponsoredProducts = computed(() => {
+// NOTE: productStore.sponsoredProducts vient du store Pinia (non fourni ici).
+// Le nom de propriété JS interne n'affecte pas les bloqueurs de pub (ils ciblent
+// le DOM/CSS et les requêtes réseau, pas les noms de variables JS), donc on peut
+// le laisser tel quel SAUF si l'URL de l'API appelée contient le mot "sponsor"
+// (ex: /api/sponsored-products) — voir la note importante après le code.
+const featuredProducts = computed(() => {
   const products = productStore.sponsoredProducts || []
   return [...products].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
 })
@@ -784,11 +799,11 @@ const truncate = (text, len) => text ? (text.length > len ? text.substring(0, le
 const formatPrice = (price) => new Intl.NumberFormat('ar-TN').format(price || 0)
 const handleAvatarError = (e) => { e.target.src = 'https://i.pravatar.cc/32?u=' + Date.now() }
 
-const isFeedProductSponsored = (postId) => {
-  return sponsoredProducts.value.some(sp => sp.id === postId || sp.postId === postId)
+const isFeedProductFeatured = (postId) => {
+  return featuredProducts.value.some(fp => fp.id === postId || fp.postId === postId)
 }
 
-// ⭐⭐ FONCTIONS POUR LES IMAGES SPONSORISÉES ⭐⭐
+// ⭐⭐ FONCTIONS POUR LES IMAGES DE LA SECTION VEDETTE ⭐⭐
 const getProductImageSafe = (product) => {
   if (!product) return 'https://placehold.co/400x400/f5f0eb/1a1a2e?text=منتج'
   if (product.imageUrl && isValidImageUrl(product.imageUrl)) return product.imageUrl
@@ -808,7 +823,7 @@ const isValidImageUrl = (url) => {
   return url.startsWith('http') || url.startsWith('https') || url.startsWith('/')
 }
 
-const handleSponsoredImageError = (event, product) => {
+const handleFeaturedImageError = (event, product) => {
   const img = event.target
   if (img.dataset.retryCount === undefined) img.dataset.retryCount = '0'
   const retryCount = parseInt(img.dataset.retryCount)
@@ -841,20 +856,20 @@ const resetSlideInterval = () => {
   if (slideInterval.value) { clearInterval(slideInterval.value); startSlideInterval() }
 }
 
-// ─── Sponsored carousel scroll ───
-const onSpScroll = () => {
-  if (spCarouselRef.value) {
-    spScrollPos.value = spCarouselRef.value.scrollLeft
+// ─── Carrousel section vedette ───
+const onFtScroll = () => {
+  if (ftCarouselRef.value) {
+    ftScrollPos.value = ftCarouselRef.value.scrollLeft
     const cardWidth = 167
     const visibleCards = 4
-    spActiveDot.value = Math.round(spCarouselRef.value.scrollLeft / (cardWidth * visibleCards))
+    ftActiveDot.value = Math.round(ftCarouselRef.value.scrollLeft / (cardWidth * visibleCards))
   }
 }
-const SP_SCROLL_AMOUNT = 167 * 3
-const spScrollNext = () => spCarouselRef.value?.scrollBy({ left: SP_SCROLL_AMOUNT, behavior: 'smooth' })
-const spScrollPrev = () => spCarouselRef.value?.scrollBy({ left: -SP_SCROLL_AMOUNT, behavior: 'smooth' })
-const spGoToDot = (dotIndex) => {
-  if (spCarouselRef.value) spCarouselRef.value.scrollTo({ left: dotIndex * 167 * 4, behavior: 'smooth' })
+const FT_SCROLL_AMOUNT = 167 * 3
+const ftScrollNext = () => ftCarouselRef.value?.scrollBy({ left: FT_SCROLL_AMOUNT, behavior: 'smooth' })
+const ftScrollPrev = () => ftCarouselRef.value?.scrollBy({ left: -FT_SCROLL_AMOUNT, behavior: 'smooth' })
+const ftGoToDot = (dotIndex) => {
+  if (ftCarouselRef.value) ftCarouselRef.value.scrollTo({ left: dotIndex * 167 * 4, behavior: 'smooth' })
 }
 
 // ─── Wishlist / Likes ───
@@ -946,13 +961,13 @@ const handleAddToCart = async (product) => {
 }
 
 // ─── Modals ───
-const openSpQuickView = (product) => { spQuickViewProduct.value = product; document.body.style.overflow = 'hidden' }
+const openFtQuickView = (product) => { ftQuickViewProduct.value = product; document.body.style.overflow = 'hidden' }
 const openQuickView = (p) => { selectedPost.value = p; showQuickView.value = true; document.body.style.overflow = 'hidden' }
 const closeQuickView = () => { showQuickView.value = false; selectedPost.value = null; document.body.style.overflow = '' }
 const openReelModal = (r) => { selectedReel.value = r; showReelModal.value = true; document.body.style.overflow = 'hidden' }
 const closeReelModal = () => { showReelModal.value = false; selectedReel.value = null; document.body.style.overflow = '' }
 
-watch(() => spQuickViewProduct.value, (val) => { if (!val) document.body.style.overflow = '' })
+watch(() => ftQuickViewProduct.value, (val) => { if (!val) document.body.style.overflow = '' })
 
 // ─── Navigation ───
 const navigateTo = (path) => { if (path) router.push(path) }
@@ -1003,15 +1018,17 @@ const loadCategories = async () => {
   } catch (e) { console.error('Categories error:', e) }
 }
 
-// ─── API: Sponsored Products ───
-const loadSponsored = async () => {
-  isLoadingSponsored.value = true
+// ─── API: Section vedette (avec gestion d'erreur visible) ───
+const loadFeatured = async () => {
+  isLoadingFeatured.value = true
+  featuredLoadError.value = false
   try {
     await productStore.fetchSponsoredProducts()
   } catch (error) {
-    console.error('Error loading sponsored:', error)
+    console.error('Error loading featured products:', error)
+    featuredLoadError.value = true
   } finally {
-    isLoadingSponsored.value = false
+    isLoadingFeatured.value = false
   }
 }
 
@@ -1030,7 +1047,7 @@ const handleScroll = () => { showScrollTop.value = window.scrollY > 500 }
 const handleKeydown = (e) => {
   if (e.key === 'ArrowLeft') nextSlide()
   if (e.key === 'ArrowRight') prevSlide()
-  if (e.key === 'Escape') { closeQuickView(); closeReelModal(); spQuickViewProduct.value = null; closeVendorAlert() }
+  if (e.key === 'Escape') { closeQuickView(); closeReelModal(); ftQuickViewProduct.value = null; closeVendorAlert() }
 }
 
 // ─── Lifecycle ───
@@ -1040,7 +1057,7 @@ onMounted(async () => {
   cartStore.loadFromStorage?.()
   offersStore.loadOffers?.()
   await loadCategories()
-  await loadSponsored()
+  await loadFeatured()
   await loadReels()
   await nextTick()
   isLoadingPosts.value = true
@@ -1058,6 +1075,89 @@ onUnmounted(() => {
   document.body.style.overflow = ''
 })
 </script>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@300;400;600;700;800&display=swap');
+
+/* ───────────────────────────────────────── */
+/* CSS CUSTOM PROPERTIES */
+/* ───────────────────────────────────────── */
+.homepage {
+  --color-teal: #08717f;
+  --color-teal-dark: #065a69;
+  --color-teal-light: rgba(8,113,127,0.08);
+  --color-red: #d40025;
+  --color-red-light: #fef2f2;
+  --color-gold: #c9a04a;
+  --color-dark: #1a1a2e;
+  --color-mid: #64748b;
+  --color-light: #f8f5f0;
+  --color-border: #f0ede8;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --shadow-sm: 0 2px 10px rgba(0,0,0,0.04);
+  --shadow-md: 0 6px 20px rgba(0,0,0,0.07);
+  --shadow-lg: 0 14px 40px rgba(0,0,0,0.10);
+  --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ───────────────────────────────────────── */
+/* BASE */
+/* ───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+.homepage {
+  font-family: 'Cairo', 'Amiri', sans-serif;
+  background: #fafaf8;
+  direction: rtl;
+  overflow-x: hidden;
+  color: var(--color-dark);
+}
+.homepage.dark-mode {
+  background: #0f0f1a;
+  color: #f0efe8;
+  --color-border: #2a2a3e;
+  --color-light: #12121e;
+}
+
+/* ───────────────────────────────────────── */
+/* SECTION VEDETTE (renommée, ex ".sponsored-section") */
+/* ───────────────────────────────────────── */
+.ft-error-box {
+  text-align: center;
+  padding: 32px 16px;
+}
+.ft-error-text {
+  color: var(--color-mid);
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+.ft-retry-btn {
+  background: var(--color-teal);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 24px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.ft-retry-btn:hover {
+  background: var(--color-teal-dark);
+}
+
+/*
+  ⚠️ IMPORTANT — le reste du fichier CSS fourni était tronqué dans le message
+  d'origine (il s'arrêtait après ".homepage.dark-mode"). Si votre fichier réel
+  contient d'autres règles utilisant les anciennes classes
+  (.sponsored-section, .sp-container, .sp-card, .sp-header, .sp-title,
+  .sp-badge, .sp-carousel, .sp-dot, etc.), faites un rechercher/remplacer
+  global dans CE fichier en suivant le tableau ci-dessous, puis collez vos
+  styles existants ici à la fin de cette balise <style>.
+*/
+</style>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@300;400;600;700;800&display=swap');
